@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -129,4 +130,96 @@ func getAudioDurationSeconds(audioFile string) (float64, error) {
 	}
 
 	return duration, nil
+}
+
+func HandleParseVttCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Error: Please provide a VTT file")
+		return
+	}
+
+	vttFile := args[0]
+	if err := parseVttFile(vttFile); err != nil {
+		fmt.Printf("Error parsing VTT file: %v\n", err)
+	}
+}
+
+func parseVttFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	
+	// Regular expressions for cleaning VTT content
+	timeRegex := regexp.MustCompile(`\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*`)
+	tagRegex := regexp.MustCompile(`<[^>]*>`)
+	timestampRegex := regexp.MustCompile(`<\d{2}:\d{2}:\d{2}\.\d{3}>`)
+	
+	var textLines []string
+	seenLines := make(map[string]bool)
+	
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+		
+		// Skip WEBVTT header and metadata lines
+		if strings.HasPrefix(line, "WEBVTT") || strings.HasPrefix(line, "Kind:") || strings.HasPrefix(line, "Language:") {
+			continue
+		}
+		
+		// Skip timing lines
+		if timeRegex.MatchString(line) {
+			continue
+		}
+		
+		// Skip lines that contain only positioning/alignment info
+		if strings.Contains(line, "align:") && !regexp.MustCompile(`[a-zA-Z]`).MatchString(strings.ReplaceAll(line, "align:", "")) {
+			continue
+		}
+		
+		// Clean the text content
+		cleanLine := line
+		
+		// Remove HTML-like tags
+		cleanLine = tagRegex.ReplaceAllString(cleanLine, "")
+		
+		// Remove inline timestamps
+		cleanLine = timestampRegex.ReplaceAllString(cleanLine, "")
+		
+		// Remove positioning/alignment directives at the end
+		if idx := strings.Index(cleanLine, " align:"); idx != -1 {
+			cleanLine = cleanLine[:idx]
+		}
+		if idx := strings.Index(cleanLine, " position:"); idx != -1 {
+			cleanLine = cleanLine[:idx]
+		}
+		
+		// Clean up extra whitespace
+		cleanLine = strings.TrimSpace(cleanLine)
+		cleanLine = regexp.MustCompile(`\s+`).ReplaceAllString(cleanLine, " ")
+		
+		// Only add non-empty, unique lines
+		if cleanLine != "" && !seenLines[cleanLine] {
+			seenLines[cleanLine] = true
+			textLines = append(textLines, cleanLine)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading file: %v", err)
+	}
+
+	// Print the extracted text
+	for _, line := range textLines {
+		fmt.Println(line)
+	}
+
+	return nil
 }

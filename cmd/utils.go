@@ -33,6 +33,24 @@ Audio files are generated using chatterbox TTS and skip existing files.`,
 	},
 }
 
+var parseVttCmd = &cobra.Command{
+	Use:   "parse-vtt <file.vtt>",
+	Short: "Parse VTT file and extract plain text content",
+	Long: `Parse a WebVTT subtitle file and extract only the plain text content.
+
+Removes all timing information, formatting tags, and positioning data.
+Outputs clean text suitable for further processing.
+
+Example:
+cutlass utils parse-vtt data/video.en.vtt`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.HandleParseVttCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
+	utilsCmd.AddCommand(parseVttCmd)
 }

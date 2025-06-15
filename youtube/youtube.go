@@ -14,7 +14,7 @@ func IsYouTubeID(input string) bool {
 }
 
 func DownloadVideo(youtubeID string) (string, error) {
-	mp4File := youtubeID + ".mp4"
+	mp4File := youtubeID
 
 	fmt.Printf("Detected YouTube ID: %s, downloading and converting to MOV...\n", youtubeID)
 
@@ -22,7 +22,8 @@ func DownloadVideo(youtubeID string) (string, error) {
 	cmd := exec.Command("yt-dlp",
 		"-o", "./data/"+mp4File,
 		"--restrict-filenames",
-		"--exec", fmt.Sprintf("ffmpeg -i {} -c:v h264_videotoolbox -b:v 10000k -c:a copy ./data/%s.mov && rm {}", youtubeID),
+		//"--exec", fmt.Sprintf("ffmpeg -i {} -c:v h264_videotoolbox -b:v 10000k -c:a copy ./data/%s.mov && rm {}", youtubeID),
+		"--exec", fmt.Sprintf("ffmpeg -i {} -c:v h264_videotoolbox -b:v 10000k ./data/%s.mov && rm {}", youtubeID),
 		youtubeID)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
