@@ -16,10 +16,12 @@ pipeline = pipeline.to("mps")
 pipeline.enable_attention_slicing()
 
 # Load the input image
-input_image = Image.open("k.jpg")
+input_image = Image.open("/Users/aa/Documents/two_b.png")
+# Convert to RGB to ensure 3 channels (remove alpha channel if present)
+input_image = input_image.convert("RGB")
 
-prompt = "character standing upright, full body visible, complete legs and feet drawn, no desk, no furniture, clean background, anatomically correct proportions"
-negative_prompt = "sitting, desk, furniture, chair, deformed legs, missing legs, cropped body, partial body"
+prompt = "turn into cartoon"
+negative_prompt = ""
 
 image = pipeline(
     prompt=prompt,  # Text description of desired output
@@ -35,4 +37,4 @@ image = pipeline(
     # guidance_rescale=0.0,  # Rescale guidance to prevent over-exposure (0.0-1.0)
     # clip_skip=None,  # Skip layers in CLIP text encoder (None or 1-12)
 ).images[0]
-image.save("whimsical.png")
+image.save("../data/cartoon.png")

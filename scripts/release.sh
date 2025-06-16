@@ -1,1 +1,1 @@
-python3 main.py --title "Los Angeles in a 🚗 WAYMO ⏱️ Timeout! Why LA is PAUSED..." --description ../data/waymo.txt --privacy public --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --thumbnail ~/Documents/waymo.png ~/Desktop/waymo.mov
+python3 main.py --title "Sturniolo Triplets 🦄 Magic 🪄" --description ../data/trip.txt --privacy unlisted --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --thumbnail ~/Documents/trip.png ~/Desktop/trip.mov
