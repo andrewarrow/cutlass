@@ -285,3 +285,226 @@ func TestSlideAnimationBackwardsCompatibility(t *testing.T) {
 		t.Errorf("AddImage should not add animation, but adjust-transform was found")
 	}
 }
+
+// TestAddSlideToVideoAtOffset tests that video files maintain AssetClip structure with timeline-based animation
+func TestAddSlideToVideoAtOffset(t *testing.T) {
+	// Create test video file (mock with .mov extension)
+	testVideoPath := "test_slide_video.mov"
+	err := os.WriteFile(testVideoPath, []byte("fake mov data"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test video file: %v", err)
+	}
+	defer os.Remove(testVideoPath)
+
+	// Generate empty FCPXML
+	fcpxml, err := GenerateEmpty("")
+	if err != nil {
+		t.Fatalf("Failed to generate empty FCPXML: %v", err)
+	}
+
+	// Add video (should create AssetClip)
+	err = AddVideo(fcpxml, testVideoPath)
+	if err != nil {
+		t.Fatalf("Failed to add video: %v", err)
+	}
+
+	// Verify video was added as AssetClip
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.AssetClips) != 1 {
+		t.Fatalf("Expected 1 asset-clip, got %d", len(sequence.Spine.AssetClips))
+	}
+	if len(sequence.Spine.Videos) != 0 {
+		t.Fatalf("Expected 0 video elements for video file, got %d", len(sequence.Spine.Videos))
+	}
+
+	// Add slide animation at offset 0
+	err = AddSlideToVideoAtOffset(fcpxml, 0.0)
+	if err != nil {
+		t.Fatalf("Failed to add slide animation to video: %v", err)
+	}
+
+	// Verify AssetClip still exists (not converted to Video)
+	if len(sequence.Spine.AssetClips) != 1 {
+		t.Fatalf("Expected 1 asset-clip after animation, got %d", len(sequence.Spine.AssetClips))
+	}
+	if len(sequence.Spine.Videos) != 0 {
+		t.Fatalf("Expected 0 video elements after animation (AssetClip should be preserved), got %d", len(sequence.Spine.Videos))
+	}
+
+	// Verify AssetClip has adjust-transform
+	assetClip := sequence.Spine.AssetClips[0]
+	if assetClip.AdjustTransform == nil {
+		t.Fatalf("Expected AssetClip to have adjust-transform after adding slide animation")
+	}
+
+	// Verify animation parameters
+	params := assetClip.AdjustTransform.Params
+	if len(params) != 4 {
+		t.Errorf("Expected 4 animation params (anchor, position, rotation, scale), got %d", len(params))
+	}
+
+	// Check parameter names
+	expectedParams := []string{"anchor", "position", "rotation", "scale"}
+	for i, expectedParam := range expectedParams {
+		if i >= len(params) {
+			t.Errorf("Missing param: %s", expectedParam)
+			continue
+		}
+		if params[i].Name != expectedParam {
+			t.Errorf("Expected param %s, got %s", expectedParam, params[i].Name)
+		}
+	}
+
+	// Verify position keyframes use timeline-based timing (not image start time)
+	positionParam := params[1] // position is second param
+	if positionParam.KeyframeAnimation == nil {
+		t.Fatalf("Position param should have keyframe animation")
+	}
+
+	keyframes := positionParam.KeyframeAnimation.Keyframes
+	if len(keyframes) != 2 {
+		t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
+	}
+
+	// Check keyframe values (same as image animation)
+	if keyframes[0].Value != "0 0" {
+		t.Errorf("Expected first keyframe value '0 0', got '%s'", keyframes[0].Value)
+	}
+	if keyframes[1].Value != "59.3109 0" {
+		t.Errorf("Expected second keyframe value '59.3109 0', got '%s'", keyframes[1].Value)
+	}
+
+	// Check timeline-based timing (NOT image-based timing)
+	// Should start at clip offset (0s) and go for 1 frame-aligned second
+	if keyframes[0].Time != "0/24000s" {
+		t.Errorf("Expected first keyframe time '0/24000s' (timeline-based), got '%s'", keyframes[0].Time)
+	}
+	if keyframes[1].Time != "24024/24000s" {
+		t.Errorf("Expected second keyframe time '24024/24000s' (frame-aligned 1 second), got '%s'", keyframes[1].Time)
+	}
+
+	// Verify this is NOT using image start time
+	if keyframes[0].Time == "86399313/24000s" || keyframes[1].Time == "86423337/24000s" {
+		t.Errorf("AssetClip animation should use timeline-based timing, not image start time")
+	}
+}
+
+// TestCreateAssetClipSlideAnimation tests the AssetClip slide animation creation function
+func TestCreateAssetClipSlideAnimation(t *testing.T) {
+	// Test the createAssetClipSlideAnimation function with offset 0
+	adjustTransform := createAssetClipSlideAnimation("0s", 1.0)
+
+	if adjustTransform == nil {
+		t.Fatalf("createAssetClipSlideAnimation returned nil")
+	}
+
+	// Check that we have 4 parameters
+	if len(adjustTransform.Params) != 4 {
+		t.Errorf("Expected 4 params, got %d", len(adjustTransform.Params))
+	}
+
+	// Verify position parameter keyframes
+	var positionParam *Param
+	for _, param := range adjustTransform.Params {
+		if param.Name == "position" {
+			positionParam = &param
+			break
+		}
+	}
+
+	if positionParam == nil {
+		t.Fatalf("Could not find position parameter")
+	}
+
+	if positionParam.KeyframeAnimation == nil {
+		t.Fatalf("Position parameter should have keyframe animation")
+	}
+
+	keyframes := positionParam.KeyframeAnimation.Keyframes
+	if len(keyframes) != 2 {
+		t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
+	}
+
+	// Test timeline-based timing (should start at offset and go for 1 second)
+	if keyframes[0].Time != "0/24000s" {
+		t.Errorf("Expected start time 0/24000s, got %s", keyframes[0].Time)
+	}
+	if keyframes[1].Time != "24024/24000s" {
+		t.Errorf("Expected end time 24024/24000s (frame-aligned 1 second), got %s", keyframes[1].Time)
+	}
+
+	// Verify the slide values (same as image animation)
+	if keyframes[0].Value != "0 0" {
+		t.Errorf("Expected start position '0 0', got '%s'", keyframes[0].Value)
+	}
+	if keyframes[1].Value != "59.3109 0" {
+		t.Errorf("Expected end position '59.3109 0', got '%s'", keyframes[1].Value)
+	}
+}
+
+// TestVideoSlideAnimationXMLOutput tests that video slide animation produces correct XML structure
+func TestVideoSlideAnimationXMLOutput(t *testing.T) {
+	// Create test video file
+	testVideoPath := "test_xml_video_slide.mov"
+	err := os.WriteFile(testVideoPath, []byte("fake mov data"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test video file: %v", err)
+	}
+	defer os.Remove(testVideoPath)
+
+	// Generate empty FCPXML and add video with slide
+	fcpxml, err := GenerateEmpty("")
+	if err != nil {
+		t.Fatalf("Failed to generate empty FCPXML: %v", err)
+	}
+
+	err = AddVideo(fcpxml, testVideoPath)
+	if err != nil {
+		t.Fatalf("Failed to add video: %v", err)
+	}
+
+	err = AddSlideToVideoAtOffset(fcpxml, 0.0)
+	if err != nil {
+		t.Fatalf("Failed to add slide animation: %v", err)
+	}
+
+	// Marshal to XML
+	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		t.Fatalf("Failed to marshal XML: %v", err)
+	}
+
+	xmlString := string(output)
+
+	// Check for AssetClip with adjust-transform (not Video element)
+	expectedElements := []string{
+		"<asset-clip",
+		"<adjust-transform>",
+		`<param name="anchor">`,
+		`<param name="position">`,
+		`<param name="rotation">`,
+		`<param name="scale">`,
+		"<keyframeAnimation>",
+		`time="0/24000s"`,        // Timeline-based start
+		`time="24024/24000s"`,    // Frame-aligned 1 second
+		`value="0 0"`,
+		`value="59.3109 0"`,
+		`curve="linear"`,
+	}
+
+	for _, expected := range expectedElements {
+		if !strings.Contains(xmlString, expected) {
+			t.Errorf("Expected XML to contain '%s', but it doesn't", expected)
+		}
+	}
+
+	// Check that Video element is NOT present for video files
+	if strings.Contains(xmlString, "<video ") {
+		t.Errorf("XML should not contain <video> elements for video files - should use <asset-clip>")
+	}
+
+	// Check that image-based timing is NOT present
+	if strings.Contains(xmlString, "86399313/24000s") || strings.Contains(xmlString, "86423337/24000s") {
+		t.Errorf("XML should not contain image-based timing for video files")
+	}
+}
