@@ -615,6 +615,11 @@ func TestAddTextFromFileEdgeCases(t *testing.T) {
 	}
 
 	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	// My new implementation prioritizes AssetClips, but this test only has Videos
+	// So it should fall back to adding text to the last Video element
+	if len(sequence.Spine.Videos) == 0 {
+		t.Fatal("Expected Videos to exist for fallback")
+	}
 	lastVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 	if len(lastVideo.NestedTitles) != 1 {
 		t.Errorf("Expected text to be added to last video when offset is beyond all videos")
@@ -687,7 +692,7 @@ func createTestFCPXMLWithVideos() *FCPXML {
 	}
 }
 
-// TestAddTextFromFilePreservesSlideAnimation tests that slide animations are preserved when converting AssetClip to Video
+// TestAddTextFromFilePreservesSlideAnimation tests that slide animations are preserved when adding text to AssetClip elements
 func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 	tempDir := t.TempDir()
 
@@ -823,24 +828,24 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
 
-	// Verify the AssetClip was converted to Video
+	// Verify the AssetClip was NOT converted to Video (new behavior - keep as AssetClip)
 	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-	if len(sequence.Spine.AssetClips) != 0 {
-		t.Error("Expected AssetClip to be converted to Video element")
+	if len(sequence.Spine.AssetClips) != 1 {
+		t.Fatalf("Expected AssetClip to remain as AssetClip, got %d AssetClips", len(sequence.Spine.AssetClips))
 	}
-	if len(sequence.Spine.Videos) != 1 {
-		t.Fatalf("Expected 1 Video element after conversion, got %d", len(sequence.Spine.Videos))
+	if len(sequence.Spine.Videos) != 0 {
+		t.Errorf("Expected no Video elements (AssetClip should not be converted), got %d", len(sequence.Spine.Videos))
 	}
 
-	// CRITICAL TEST: Verify AdjustTransform with slide animation was preserved
-	video := &sequence.Spine.Videos[0]
-	if video.AdjustTransform == nil {
-		t.Fatal("CRITICAL BUG: AdjustTransform was lost during AssetClip to Video conversion")
+	// CRITICAL TEST: Verify AdjustTransform with slide animation was preserved on AssetClip
+	assetClip = &sequence.Spine.AssetClips[0]
+	if assetClip.AdjustTransform == nil {
+		t.Fatal("CRITICAL BUG: AdjustTransform was lost from AssetClip")
 	}
 
 	// Count preserved keyframes
 	preservedKeyframeCount := 0
-	for _, param := range video.AdjustTransform.Params {
+	for _, param := range assetClip.AdjustTransform.Params {
 		if param.KeyframeAnimation != nil {
 			preservedKeyframeCount += len(param.KeyframeAnimation.Keyframes)
 		}
@@ -853,7 +858,7 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 	// Verify specific slide animation parameters were preserved
 	foundPosition := false
 	foundAnchor := false
-	for _, param := range video.AdjustTransform.Params {
+	for _, param := range assetClip.AdjustTransform.Params {
 		if param.Name == "position" && param.KeyframeAnimation != nil {
 			foundPosition = true
 			// Verify the slide animation keyframes
@@ -883,9 +888,9 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 		t.Error("CRITICAL BUG: Anchor animation parameter was lost during conversion")
 	}
 
-	// Verify text was added successfully
-	if len(video.NestedTitles) != 1 {
-		t.Errorf("Expected 1 nested title, got %d", len(video.NestedTitles))
+	// Verify text was added successfully to AssetClip
+	if len(assetClip.Titles) != 1 {
+		t.Errorf("Expected 1 title in AssetClip, got %d", len(assetClip.Titles))
 	}
 
 	// Verify XML marshaling works with preserved animations
@@ -910,6 +915,147 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 	keyframeCount := strings.Count(xmlStr, "<keyframe")
 	if keyframeCount < originalKeyframeCount {
 		t.Errorf("CRITICAL BUG: Expected at least %d keyframes in XML, got %d", originalKeyframeCount, keyframeCount)
+	}
+}
+
+// TestAddTextFromFilePreservesAudio tests that audio attributes are preserved when adding text to AssetClips
+func TestAddTextFromFilePreservesAudio(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test text file
+	testTextFile := filepath.Join(tempDir, "audio_test.txt")
+	err := os.WriteFile(testTextFile, []byte("Audio Test"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test text file: %v", err)
+	}
+
+	// Create FCPXML with AssetClip that has audio attributes
+	fcpxml := &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{
+					ID:       "r2",
+					Name:     "test_video_with_audio",
+					UID:      "TEST-AUDIO-UID",
+					Start:    "0s",
+					Duration: "240240/24000s",
+					HasVideo: "1",
+					HasAudio: "1",
+					AudioSources: "1",
+					AudioChannels: "2",
+					AudioRate: "48000",
+					Format:   "r1",
+				},
+			},
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat720p2398",
+					FrameDuration: "1001/24000s",
+					Width:         "1280",
+					Height:        "720",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Effects: []Effect{
+				{
+					ID:   "r3",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							Sequences: []Sequence{
+								{
+									Format:   "r1",
+									Duration: "240240/24000s",
+									Spine: Spine{
+										AssetClips: []AssetClip{
+											{
+												Ref:       "r2",
+												Offset:    "0s",
+												Duration:  "240240/24000s",
+												Start:     "86399313/24000s",
+												Format:    "r1",
+												TCFormat:  "NDF",
+												AudioRole: "dialogue",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Store original audio attributes for comparison
+	originalAssetClip := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.AssetClips[0]
+	originalFormat := originalAssetClip.Format
+	originalTCFormat := originalAssetClip.TCFormat
+	originalAudioRole := originalAssetClip.AudioRole
+
+	// Test: Add text which should preserve all audio attributes
+	err = AddTextFromFile(fcpxml, testTextFile, 0.0)
+	if err != nil {
+		t.Fatalf("AddTextFromFile failed: %v", err)
+	}
+
+	// Verify the AssetClip remains an AssetClip (not converted)
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.AssetClips) != 1 {
+		t.Fatalf("Expected 1 AssetClip to remain, got %d", len(sequence.Spine.AssetClips))
+	}
+	if len(sequence.Spine.Videos) != 0 {
+		t.Errorf("Expected no Video elements (AssetClip should not be converted), got %d", len(sequence.Spine.Videos))
+	}
+
+	// CRITICAL TEST: Verify all audio attributes were preserved
+	assetClip := &sequence.Spine.AssetClips[0]
+	if assetClip.Format != originalFormat {
+		t.Errorf("CRITICAL BUG: Format attribute lost. Expected '%s', got '%s'", originalFormat, assetClip.Format)
+	}
+	if assetClip.TCFormat != originalTCFormat {
+		t.Errorf("CRITICAL BUG: TCFormat attribute lost. Expected '%s', got '%s'", originalTCFormat, assetClip.TCFormat)
+	}
+	if assetClip.AudioRole != originalAudioRole {
+		t.Errorf("CRITICAL BUG: AudioRole attribute lost. Expected '%s', got '%s'", originalAudioRole, assetClip.AudioRole)
+	}
+
+	// Verify text was added successfully
+	if len(assetClip.Titles) != 1 {
+		t.Errorf("Expected 1 title in AssetClip, got %d", len(assetClip.Titles))
+	}
+
+	// Verify XML output contains audio attributes
+	outputXML, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		t.Fatalf("Failed to marshal FCPXML with preserved audio: %v", err)
+	}
+
+	xmlStr := string(outputXML)
+	// Verify audio attributes appear in XML output
+	if !strings.Contains(xmlStr, `format="r1"`) {
+		t.Error("Expected format attribute in XML output")
+	}
+	if !strings.Contains(xmlStr, `tcFormat="NDF"`) {
+		t.Error("Expected tcFormat attribute in XML output")
+	}
+	if !strings.Contains(xmlStr, `audioRole="dialogue"`) {
+		t.Error("Expected audioRole attribute in XML output")
+	}
+	if !strings.Contains(xmlStr, "Audio Test") {
+		t.Error("Expected text 'Audio Test' not found in XML output")
 	}
 }
 

@@ -936,9 +936,11 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 		// Use fallback logic if no element covers the text timing
 		if targetAssetClip == nil && targetVideo == nil {
 			if len(sequence.Spine.AssetClips) > 0 {
-				targetAssetClip = &sequence.Spine.AssetClips[0]
+				// Use last AssetClip as fallback (common when offset is beyond timeline)
+				targetAssetClip = &sequence.Spine.AssetClips[len(sequence.Spine.AssetClips)-1]
 			} else if len(sequence.Spine.Videos) > 0 {
-				targetVideo = &sequence.Spine.Videos[0]
+				// Use last Video as fallback (common when offset is beyond timeline)
+				targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 			}
 		}
 
