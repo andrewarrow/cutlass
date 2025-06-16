@@ -927,12 +927,14 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				// Check if the text offset falls within this clip's timeline
 				if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
 					// Convert AssetClip to Video element for text overlay attachment
+					// CRITICAL: Preserve AdjustTransform to maintain slide animations
 					video := &Video{
-						Ref:      clip.Ref,
-						Offset:   clip.Offset,
-						Name:     clip.Name,
-						Duration: clip.Duration,
-						Start:    clip.Start,
+						Ref:             clip.Ref,
+						Offset:          clip.Offset,
+						Name:            clip.Name,
+						Duration:        clip.Duration,
+						Start:           clip.Start,
+						AdjustTransform: clip.AdjustTransform, // Preserve slide animations
 					}
 
 					// Remove the AssetClip and replace with Video
@@ -952,13 +954,15 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 		// If still no Video elements, check if we can convert any AssetClip as fallback
 		if targetVideo == nil && len(sequence.Spine.AssetClips) > 0 {
 			// Convert the first AssetClip to Video as fallback
+			// CRITICAL: Preserve AdjustTransform to maintain slide animations
 			clip := &sequence.Spine.AssetClips[0]
 			video := &Video{
-				Ref:      clip.Ref,
-				Offset:   clip.Offset,
-				Name:     clip.Name,
-				Duration: clip.Duration,
-				Start:    clip.Start,
+				Ref:             clip.Ref,
+				Offset:          clip.Offset,
+				Name:            clip.Name,
+				Duration:        clip.Duration,
+				Start:           clip.Start,
+				AdjustTransform: clip.AdjustTransform, // Preserve slide animations
 			}
 
 			// Remove the AssetClip and replace with Video
