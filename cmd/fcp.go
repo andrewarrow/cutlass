@@ -210,6 +210,14 @@ Otherwise, a new FCPXML file is created.`,
 			return
 		}
 		
+		// Get duration from flag (default 9 seconds)
+		durationStr, _ := cmd.Flags().GetString("duration")
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
@@ -243,7 +251,7 @@ Otherwise, a new FCPXML file is created.`,
 		}
 		
 		// Add text elements to the structure
-		err = fcp.AddTextFromFile(fcpxml, textFile, offset)
+		err = fcp.AddTextFromFile(fcpxml, textFile, offset, duration)
 		if err != nil {
 			fmt.Printf("Error adding text elements: %v\n", err)
 			return
@@ -257,9 +265,9 @@ Otherwise, a new FCPXML file is created.`,
 		}
 		
 		if input != "" {
-			fmt.Printf("Added text elements to existing FCPXML and saved to: %s (offset: %.1fs)\n", filename, offset)
+			fmt.Printf("Added text elements to existing FCPXML and saved to: %s (offset: %.1fs, duration: %.1fs)\n", filename, offset, duration)
 		} else {
-			fmt.Printf("Generated FCPXML with text elements: %s (offset: %.1fs)\n", filename, offset)
+			fmt.Printf("Generated FCPXML with text elements: %s (offset: %.1fs, duration: %.1fs)\n", filename, offset, duration)
 		}
 	},
 }
@@ -410,6 +418,7 @@ func init() {
 	addTextCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
 	addTextCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addTextCmd.Flags().StringP("offset", "t", "1", "Start time offset in seconds (default 1)")
+	addTextCmd.Flags().StringP("duration", "d", "9", "Duration of each text element in seconds (default 9)")
 	
 	// Add flags to add-slide subcommand
 	addSlideCmd.Flags().StringP("input", "i", "", "Input FCPXML file to read from (required)")

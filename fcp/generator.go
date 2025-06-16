@@ -839,7 +839,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 //
 // ❌ NEVER: fmt.Sprintf("<title ref='%s'...") - CRITICAL VIOLATION!
 // ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
-func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64) error {
+func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64, durationSeconds float64) error {
 	// Read text file
 	data, err := os.ReadFile(textFilePath)
 	if err != nil {
@@ -948,9 +948,8 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			return fmt.Errorf("no video or asset-clip element found in spine to add text overlays to")
 		}
 
-		// Default text duration of 10 seconds
-		textDurationSeconds := 10.0
-		textDuration := ConvertSecondsToFCPDuration(textDurationSeconds)
+		// Use the provided duration for each text element
+		textDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
 		// Process each text line
 		for i, textLine := range textLines {
@@ -969,7 +968,11 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			} else if targetVideo != nil {
 				clipStartFrames = parseFCPDuration(targetVideo.Start)
 			}
-			staggerFrames := i * 144144 // 144144 frames = 6 seconds (24024 * 6)
+			// Calculate stagger based on 50% of text duration (e.g., 2s duration = 1s stagger)
+			staggerSeconds := durationSeconds * 0.5
+			staggerDuration := ConvertSecondsToFCPDuration(staggerSeconds)
+			staggerFramesPer := parseFCPDuration(staggerDuration)
+			staggerFrames := i * staggerFramesPer
 			elementOffsetFrames := clipStartFrames + staggerFrames
 			elementOffset := fmt.Sprintf("%d/24000s", elementOffsetFrames)
 

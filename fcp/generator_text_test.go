@@ -104,7 +104,7 @@ Third Text Line`
 	}
 
 	// Test AddTextFromFile
-	err = AddTextFromFile(baseFCPXML, testTextFile, 1.0)
+	err = AddTextFromFile(baseFCPXML, testTextFile, 1.0, 10.0)
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
@@ -134,9 +134,9 @@ Third Text Line`
 		}
 	}
 
-	// Test 4: Verify staggered timing - should be video start + i*6 seconds
+	// Test 4: Verify staggered timing - should be video start + i*5 seconds (50% of 10s duration)
 	for i, title := range video.NestedTitles {
-		expectedOffset := 86399313 + (i * 144144) // Video start + i*6 seconds (144144 frames per 6 seconds)
+		expectedOffset := 86399313 + (i * 120120) // Video start + i*5 seconds (120120 frames per 5 seconds)
 		actualOffsetStr := title.Offset
 		actualOffset := parseFCPDuration(actualOffsetStr)
 		
@@ -239,7 +239,7 @@ func TestAddTextFromFileErrorCases(t *testing.T) {
 	}
 
 	// Test 1: Non-existent file
-	err := AddTextFromFile(baseFCPXML, "/non/existent/file.txt", 1.0)
+	err := AddTextFromFile(baseFCPXML, "/non/existent/file.txt", 1.0, 10.0)
 	if err == nil {
 		t.Error("Expected error for non-existent file")
 	}
@@ -252,7 +252,7 @@ func TestAddTextFromFileErrorCases(t *testing.T) {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
-	err = AddTextFromFile(baseFCPXML, testTextFile, 1.0)
+	err = AddTextFromFile(baseFCPXML, testTextFile, 1.0, 10.0)
 	if err == nil || !strings.Contains(err.Error(), "no video or asset-clip element found") {
 		t.Error("Expected error about no video or asset-clip element found")
 	}
@@ -317,7 +317,7 @@ Line Four`
 	sequence.Spine.Videos = append(sequence.Spine.Videos, video)
 
 	// Now test AddTextFromFile
-	err = AddTextFromFile(fcpxml, testTextFile, 2.0) // 2 second offset
+	err = AddTextFromFile(fcpxml, testTextFile, 2.0, 10.0) // 2 second offset
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
@@ -338,10 +338,10 @@ Line Four`
 			t.Errorf("Expected first text offset %d, got %d", expectedFirstOffset, firstOffset)
 		}
 		
-		// Verify second element is staggered by 6 seconds
+		// Verify second element is staggered by 5 seconds (50% of 10s duration)
 		if len(updatedVideo.NestedTitles) > 1 {
 			secondOffset := parseFCPDuration(updatedVideo.NestedTitles[1].Offset)
-			expectedSecondOffset := 86399313 + 144144 // Video start + 6 seconds
+			expectedSecondOffset := 86399313 + 120120 // Video start + 5 seconds
 			if secondOffset != expectedSecondOffset {
 				t.Errorf("Expected second text offset %d, got %d", expectedSecondOffset, secondOffset)
 			}
@@ -486,7 +486,7 @@ Costs $200k`
 	}
 
 	// Test adding text at offset 14 seconds (should target the second video)
-	err = AddTextFromFile(fcpxml, testTextFile, 14.0)
+	err = AddTextFromFile(fcpxml, testTextFile, 14.0, 10.0)
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
@@ -511,10 +511,10 @@ Costs $200k`
 		}
 	}
 
-	// Test 2: Verify proper staggering with 6-second intervals
+	// Test 2: Verify proper staggering with 5-second intervals (50% of 10s duration)
 	videoStartFrames := 86399313 // The source start time for the second video
 	for i, title := range secondVideo.NestedTitles {
-		expectedOffsetFrames := videoStartFrames + (i * 144144) // i*6 seconds stagger
+		expectedOffsetFrames := videoStartFrames + (i * 120120) // i*5 seconds stagger
 		actualOffset := parseFCPDuration(title.Offset)
 		
 		if actualOffset != expectedOffsetFrames {
@@ -609,7 +609,7 @@ func TestAddTextFromFileEdgeCases(t *testing.T) {
 
 	// Test 1: Text offset beyond all videos (should use last video)
 	fcpxml := createTestFCPXMLWithVideos()
-	err = AddTextFromFile(fcpxml, testTextFile, 30.0) // Beyond 27s total duration
+	err = AddTextFromFile(fcpxml, testTextFile, 30.0, 10.0) // Beyond 27s total duration
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed with offset beyond videos: %v", err)
 	}
@@ -627,7 +627,7 @@ func TestAddTextFromFileEdgeCases(t *testing.T) {
 
 	// Test 2: Text offset at exact video boundary (should target the starting video)
 	fcpxml2 := createTestFCPXMLWithVideos()
-	err = AddTextFromFile(fcpxml2, testTextFile, 14.0) // Exactly at second video start
+	err = AddTextFromFile(fcpxml2, testTextFile, 14.0, 10.0) // Exactly at second video start
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed with offset at video boundary: %v", err)
 	}
@@ -823,7 +823,7 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 	}
 
 	// Test: Add text which should convert AssetClip to Video while preserving AdjustTransform
-	err = AddTextFromFile(fcpxml, testTextFile, 0.0)
+	err = AddTextFromFile(fcpxml, testTextFile, 0.0, 10.0)
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
@@ -1006,7 +1006,7 @@ func TestAddTextFromFilePreservesAudio(t *testing.T) {
 	originalAudioRole := originalAssetClip.AudioRole
 
 	// Test: Add text which should preserve all audio attributes
-	err = AddTextFromFile(fcpxml, testTextFile, 0.0)
+	err = AddTextFromFile(fcpxml, testTextFile, 0.0, 10.0)
 	if err != nil {
 		t.Fatalf("AddTextFromFile failed: %v", err)
 	}
