@@ -223,3 +223,224 @@ func parseVttFile(filename string) error {
 
 	return nil
 }
+
+// VttSegment represents a subtitle segment with timing and text
+type VttSegment struct {
+	StartTime string
+	EndTime   string
+	Text      string
+}
+
+func HandleParseVttAndCutCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Error: Please provide a video ID")
+		return
+	}
+
+	videoID := args[0]
+	if err := parseVttAndCutVideo(videoID); err != nil {
+		fmt.Printf("Error processing video: %v\n", err)
+	}
+}
+
+func parseVttAndCutVideo(videoID string) error {
+	vttFile := fmt.Sprintf("./data/%s.en.vtt", videoID)
+	videoFile := fmt.Sprintf("./data/%s.mov", videoID)
+	outputDir := fmt.Sprintf("./data/%s", videoID)
+
+	// Check if input files exist
+	if _, err := os.Stat(vttFile); os.IsNotExist(err) {
+		return fmt.Errorf("VTT file not found: %s", vttFile)
+	}
+	if _, err := os.Stat(videoFile); os.IsNotExist(err) {
+		return fmt.Errorf("video file not found: %s", videoFile)
+	}
+
+	// Create output directory
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	// Parse VTT file for segments
+	segments, err := parseVttForSegments(vttFile)
+	if err != nil {
+		return fmt.Errorf("failed to parse VTT file: %v", err)
+	}
+
+	fmt.Printf("Found %d segments to extract\n", len(segments))
+
+	// Filter out segments with zero or very short duration and extract meaningful clips
+	validSegmentNum := 1
+	for _, segment := range segments {
+		// Calculate duration
+		duration, err := calculateDuration(segment.StartTime, segment.EndTime)
+		if err != nil {
+			fmt.Printf("Warning: Could not calculate duration for segment: %v\n", err)
+			continue
+		}
+
+		// Skip segments that are too short (less than 0.1 seconds)
+		if duration < 0.1 {
+			continue
+		}
+
+		// Check if segment already exists
+		if existingFile := findExistingVideoSegment(outputDir, validSegmentNum); existingFile != "" {
+			fmt.Printf("Skipping segment %d (already exists: %s)\n", validSegmentNum, existingFile)
+			validSegmentNum++
+			continue
+		}
+
+		// Generate output filename
+		outputFile := filepath.Join(outputDir, fmt.Sprintf("s%03d_%.1fs.mov", validSegmentNum, duration))
+
+		// Extract segment using ffmpeg
+		if err := extractVideoSegment(videoFile, segment.StartTime, segment.EndTime, outputFile); err != nil {
+			fmt.Printf("Error extracting segment %d: %v\n", validSegmentNum, err)
+			continue
+		}
+
+		fmt.Printf("Extracted segment %d: %.1fs - %s\n", validSegmentNum, duration, strings.TrimSpace(segment.Text))
+		validSegmentNum++
+	}
+
+	return nil
+}
+
+func parseVttForSegments(filename string) ([]VttSegment, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	timeRegex := regexp.MustCompile(`(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3}).*`)
+	tagRegex := regexp.MustCompile(`<[^>]*>`)
+	
+	var segments []VttSegment
+	var currentSegment *VttSegment
+	seenSegments := make(map[string]bool)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		
+		// Skip empty lines and headers
+		if line == "" || strings.HasPrefix(line, "WEBVTT") || strings.HasPrefix(line, "Kind:") || strings.HasPrefix(line, "Language:") {
+			continue
+		}
+
+		// Check if this is a timing line
+		if matches := timeRegex.FindStringSubmatch(line); matches != nil {
+			// Save previous segment if it exists and has text
+			if currentSegment != nil && currentSegment.Text != "" {
+				segmentKey := fmt.Sprintf("%s-%s-%s", currentSegment.StartTime, currentSegment.EndTime, currentSegment.Text)
+				if !seenSegments[segmentKey] {
+					seenSegments[segmentKey] = true
+					segments = append(segments, *currentSegment)
+				}
+			}
+			
+			// Start new segment
+			currentSegment = &VttSegment{
+				StartTime: matches[1],
+				EndTime:   matches[2],
+				Text:      "",
+			}
+		} else if currentSegment != nil {
+			// This is text content for the current segment
+			cleanText := tagRegex.ReplaceAllString(line, "")
+			cleanText = strings.TrimSpace(cleanText)
+			
+			// Skip lines that are just positioning info
+			if strings.Contains(cleanText, "align:") || strings.Contains(cleanText, "position:") {
+				continue
+			}
+			
+			if cleanText != "" {
+				if currentSegment.Text != "" {
+					currentSegment.Text += " "
+				}
+				currentSegment.Text += cleanText
+			}
+		}
+	}
+
+	// Don't forget the last segment
+	if currentSegment != nil && currentSegment.Text != "" {
+		segmentKey := fmt.Sprintf("%s-%s-%s", currentSegment.StartTime, currentSegment.EndTime, currentSegment.Text)
+		if !seenSegments[segmentKey] {
+			segments = append(segments, *currentSegment)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file: %v", err)
+	}
+
+	return segments, nil
+}
+
+func calculateDuration(startTime, endTime string) (float64, error) {
+	start, err := parseVttTime(startTime)
+	if err != nil {
+		return 0, err
+	}
+	
+	end, err := parseVttTime(endTime)
+	if err != nil {
+		return 0, err
+	}
+	
+	return end - start, nil
+}
+
+func parseVttTime(timeStr string) (float64, error) {
+	// Parse format: HH:MM:SS.mmm
+	parts := strings.Split(timeStr, ":")
+	if len(parts) != 3 {
+		return 0, fmt.Errorf("invalid time format: %s", timeStr)
+	}
+	
+	hours, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	
+	minutes, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, err
+	}
+	
+	seconds, err := strconv.ParseFloat(parts[2], 64)
+	if err != nil {
+		return 0, err
+	}
+	
+	return float64(hours*3600 + minutes*60) + seconds, nil
+}
+
+func findExistingVideoSegment(outputDir string, segmentNum int) string {
+	pattern := fmt.Sprintf("s%03d*.mov", segmentNum)
+	matches, err := filepath.Glob(filepath.Join(outputDir, pattern))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	return filepath.Base(matches[0])
+}
+
+func extractVideoSegment(inputFile, startTime, endTime, outputFile string) error {
+	cmd := exec.Command("ffmpeg", 
+		"-i", inputFile,
+		"-ss", startTime,
+		"-to", endTime,
+		"-c", "copy",
+		"-avoid_negative_ts", "make_zero",
+		outputFile)
+	
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ffmpeg command failed: %v", err)
+	}
+	
+	return nil
+}

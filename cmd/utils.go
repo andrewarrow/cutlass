@@ -50,7 +50,31 @@ cutlass utils parse-vtt data/video.en.vtt`,
 	},
 }
 
+var parseVttAndCutCmd = &cobra.Command{
+	Use:   "parse-vtt-and-cut <video-id>",
+	Short: "Parse VTT file and cut video into sentence clips",
+	Long: `Parse a WebVTT subtitle file and use timecodes to cut video into individual sentence clips.
+
+Reads ./data/<video-id>.en.vtt for subtitle timecodes and text.
+Cuts ./data/<video-id>.mov into clips stored in ./data/<video-id>/ directory.
+Each clip is named with sentence number and duration.
+
+Example:
+cutlass utils parse-vtt-and-cut iPSP_j-QyX4
+
+This will:
+- Read ./data/iPSP_j-QyX4.en.vtt for timecodes
+- Cut ./data/iPSP_j-QyX4.mov into clips
+- Store clips in ./data/iPSP_j-QyX4/ directory`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.HandleParseVttAndCutCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
 	utilsCmd.AddCommand(parseVttCmd)
+	utilsCmd.AddCommand(parseVttAndCutCmd)
 }
