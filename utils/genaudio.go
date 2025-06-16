@@ -291,8 +291,9 @@ func parseVttAndCutVideo(videoID string) error {
 			continue
 		}
 
-		// Generate output filename
-		outputFile := filepath.Join(outputDir, fmt.Sprintf("s%03d_%.1fs.mov", validSegmentNum, duration))
+		// Generate output filename using sanitized sentence text
+		sanitizedText := sanitizeFilename(segment.Text)
+		outputFile := filepath.Join(outputDir, fmt.Sprintf("%04d_%s.mov", validSegmentNum, sanitizedText))
 
 		// Extract segment using ffmpeg
 		if err := extractVideoSegment(videoFile, segment.StartTime, segment.EndTime, outputFile); err != nil {
@@ -421,12 +422,49 @@ func parseVttTime(timeStr string) (float64, error) {
 }
 
 func findExistingVideoSegment(outputDir string, segmentNum int) string {
-	pattern := fmt.Sprintf("s%03d*.mov", segmentNum)
+	pattern := fmt.Sprintf("%04d_*.mov", segmentNum)
 	matches, err := filepath.Glob(filepath.Join(outputDir, pattern))
 	if err != nil || len(matches) == 0 {
 		return ""
 	}
 	return filepath.Base(matches[0])
+}
+
+func sanitizeFilename(text string) string {
+	// Trim and clean the text
+	text = strings.TrimSpace(text)
+	
+	// Replace spaces with underscores
+	text = strings.ReplaceAll(text, " ", "_")
+	
+	// Remove or replace characters that are problematic in Mac filenames
+	// Mac filenames cannot contain: : / \ * ? " < > |
+	problematicChars := []string{":", "/", "\\", "*", "?", "\"", "<", ">", "|", "\n", "\r", "\t"}
+	for _, char := range problematicChars {
+		text = strings.ReplaceAll(text, char, "")
+	}
+	
+	// Replace multiple underscores with single underscore
+	text = regexp.MustCompile(`_+`).ReplaceAllString(text, "_")
+	
+	// Remove leading/trailing underscores
+	text = strings.Trim(text, "_")
+	
+	// Limit length to reasonable filename size (Mac supports up to 255 chars, but let's be conservative)
+	if len(text) > 100 {
+		text = text[:100]
+		// Make sure we don't cut in the middle of a word
+		if lastUnderscore := strings.LastIndex(text, "_"); lastUnderscore > 80 {
+			text = text[:lastUnderscore]
+		}
+	}
+	
+	// If text is empty after sanitization, use a default
+	if text == "" {
+		text = "segment"
+	}
+	
+	return text
 }
 
 func extractVideoSegment(inputFile, startTime, endTime, outputFile string) error {
