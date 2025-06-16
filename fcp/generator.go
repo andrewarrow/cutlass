@@ -898,80 +898,51 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 
-		// Find the video element that covers the text offset time
+		// Find the clip element that covers the text offset time
+		var targetAssetClip *AssetClip = nil
 		var targetVideo *Video = nil
 		offsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(offsetSeconds))
 
-		// First check Video elements
-		for i := range sequence.Spine.Videos {
-			video := &sequence.Spine.Videos[i]
-			videoOffsetFrames := parseFCPDuration(video.Offset)
-			videoDurationFrames := parseFCPDuration(video.Duration)
-			videoEndFrames := videoOffsetFrames + videoDurationFrames
+		// First check AssetClip elements (these can directly contain titles per DTD)
+		for i := range sequence.Spine.AssetClips {
+			clip := &sequence.Spine.AssetClips[i]
+			clipOffsetFrames := parseFCPDuration(clip.Offset)
+			clipDurationFrames := parseFCPDuration(clip.Duration)
+			clipEndFrames := clipOffsetFrames + clipDurationFrames
 
-			// Check if the text offset falls within this video's timeline
-			if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
-				targetVideo = video
+			// Check if the text offset falls within this clip's timeline
+			if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
+				targetAssetClip = clip
 				break
 			}
 		}
 
-		// If no Video element found, check AssetClip elements and convert to Video
-		if targetVideo == nil {
-			for i := range sequence.Spine.AssetClips {
-				clip := &sequence.Spine.AssetClips[i]
-				clipOffsetFrames := parseFCPDuration(clip.Offset)
-				clipDurationFrames := parseFCPDuration(clip.Duration)
-				clipEndFrames := clipOffsetFrames + clipDurationFrames
+		// If no AssetClip found, check Video elements as fallback
+		if targetAssetClip == nil {
+			for i := range sequence.Spine.Videos {
+				video := &sequence.Spine.Videos[i]
+				videoOffsetFrames := parseFCPDuration(video.Offset)
+				videoDurationFrames := parseFCPDuration(video.Duration)
+				videoEndFrames := videoOffsetFrames + videoDurationFrames
 
-				// Check if the text offset falls within this clip's timeline
-				if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
-					// Convert AssetClip to Video element for text overlay attachment
-					// CRITICAL: Preserve AdjustTransform to maintain slide animations
-					video := &Video{
-						Ref:             clip.Ref,
-						Offset:          clip.Offset,
-						Name:            clip.Name,
-						Duration:        clip.Duration,
-						Start:           clip.Start,
-						AdjustTransform: clip.AdjustTransform, // Preserve slide animations
-					}
-
-					// Remove the AssetClip and replace with Video
-					sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
-					sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
-					targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+				// Check if the text offset falls within this video's timeline
+				if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
+					targetVideo = video
 					break
 				}
 			}
 		}
 
-		// If no video covers the text timing, use the last video or first video as fallback
-		if targetVideo == nil && len(sequence.Spine.Videos) > 0 {
-			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
-		}
-
-		// If still no Video elements, check if we can convert any AssetClip as fallback
-		if targetVideo == nil && len(sequence.Spine.AssetClips) > 0 {
-			// Convert the first AssetClip to Video as fallback
-			// CRITICAL: Preserve AdjustTransform to maintain slide animations
-			clip := &sequence.Spine.AssetClips[0]
-			video := &Video{
-				Ref:             clip.Ref,
-				Offset:          clip.Offset,
-				Name:            clip.Name,
-				Duration:        clip.Duration,
-				Start:           clip.Start,
-				AdjustTransform: clip.AdjustTransform, // Preserve slide animations
+		// Use fallback logic if no element covers the text timing
+		if targetAssetClip == nil && targetVideo == nil {
+			if len(sequence.Spine.AssetClips) > 0 {
+				targetAssetClip = &sequence.Spine.AssetClips[0]
+			} else if len(sequence.Spine.Videos) > 0 {
+				targetVideo = &sequence.Spine.Videos[0]
 			}
-
-			// Remove the AssetClip and replace with Video
-			sequence.Spine.AssetClips = sequence.Spine.AssetClips[1:]
-			sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
-			targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 		}
 
-		if targetVideo == nil {
+		if targetAssetClip == nil && targetVideo == nil {
 			return fmt.Errorf("no video or asset-clip element found in spine to add text overlays to")
 		}
 
@@ -989,10 +960,15 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 			textStyleID := GenerateTextStyleID(textLine, fmt.Sprintf("line_%d_offset_%.1f", i, offsetSeconds))
 
 			// Calculate staggered timing: first element at offsetSeconds in sequence timeline, each subsequent +6 seconds
-			// Text timing should use the video's start time as base for proper FCP timing
-			videoStartFrames := parseFCPDuration(targetVideo.Start)
+			// Text timing should use the clip's start time as base for proper FCP timing
+			var clipStartFrames int
+			if targetAssetClip != nil {
+				clipStartFrames = parseFCPDuration(targetAssetClip.Start)
+			} else if targetVideo != nil {
+				clipStartFrames = parseFCPDuration(targetVideo.Start)
+			}
 			staggerFrames := i * 144144 // 144144 frames = 6 seconds (24024 * 6)
-			elementOffsetFrames := videoStartFrames + staggerFrames
+			elementOffsetFrames := clipStartFrames + staggerFrames
 			elementOffset := fmt.Sprintf("%d/24000s", elementOffsetFrames)
 
 			// Calculate Y position offset: each element 300px lower (negative Y in FCP coordinates)
@@ -1124,8 +1100,12 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 				return fmt.Errorf("failed to commit text transaction for element %d: %v", i, err)
 			}
 
-			// Add title as nested element within the target video
-			targetVideo.NestedTitles = append(targetVideo.NestedTitles, title)
+			// Add title as nested element within the target clip
+			if targetAssetClip != nil {
+				targetAssetClip.Titles = append(targetAssetClip.Titles, title)
+			} else if targetVideo != nil {
+				targetVideo.NestedTitles = append(targetVideo.NestedTitles, title)
+			}
 		}
 
 		// Text elements are added as overlays - no need to extend underlying video duration
@@ -1133,6 +1113,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64)
 
 	return nil
 }
+
 
 // AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
 //
