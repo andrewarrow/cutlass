@@ -759,10 +759,11 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 	// We'll use the standard FCP start time for images
 	videoStartFrames := 86399313 // Standard FCP start time for image assets
 
-	// Calculate keyframe times:
+	// Calculate keyframe times using proper frame alignment:
 	// - Start keyframe: at the video start time
-	// - End keyframe: 1 second later (24024 frames = exactly 1 second in 1001/24000s timebase)
-	oneSecondFrames := 24024 // This is exactly 1 second in 1001/24000s timebase
+	// - End keyframe: 1 second later using ConvertSecondsToFCPDuration for frame alignment
+	oneSecondDuration := ConvertSecondsToFCPDuration(1.0)
+	oneSecondFrames := parseFCPDuration(oneSecondDuration)
 
 	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
 	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+oneSecondFrames)
@@ -1167,7 +1168,8 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 		}
 	}
 
-	// If no Video element found, check AssetClip elements and convert to Video
+	// If no Video element found, check AssetClip elements and add animation directly
+	var targetClip *AssetClip = nil
 	if targetVideo == nil {
 		for i := range sequence.Spine.AssetClips {
 			clip := &sequence.Spine.AssetClips[i]
@@ -1177,50 +1179,131 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 
 			// Check if the offset falls within this video's timeline
 			if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
-				// Convert AssetClip to Video element for slide animation
-				video := &Video{
-					Ref:      clip.Ref,
-					Offset:   clip.Offset,
-					Name:     clip.Name,
-					Duration: clip.Duration,
-					Start:    clip.Start,
-				}
-
-				// Remove the AssetClip and replace with Video
-				sequence.Spine.AssetClips = append(sequence.Spine.AssetClips[:i], sequence.Spine.AssetClips[i+1:]...)
-				sequence.Spine.Videos = append(sequence.Spine.Videos, *video)
-				targetVideo = &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+				// Add slide animation directly to AssetClip (don't convert to Video)
+				targetClip = &sequence.Spine.AssetClips[i]
 				break
 			}
 		}
 	}
 
-	if targetVideo == nil {
+	if targetVideo == nil && targetClip == nil {
 		return fmt.Errorf("no video found at offset %.1f seconds", offsetSeconds)
 	}
 
-	// Check if video already has slide animation
-	if targetVideo.AdjustTransform != nil {
-		// Check if position parameter already exists with keyframes
-		for _, param := range targetVideo.AdjustTransform.Params {
-			if param.Name == "position" && param.KeyframeAnimation != nil {
-				return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetVideo.Name, offsetSeconds)
+	// Handle Video elements (for images)
+	if targetVideo != nil {
+		// Check if video already has slide animation
+		if targetVideo.AdjustTransform != nil {
+			// Check if position parameter already exists with keyframes
+			for _, param := range targetVideo.AdjustTransform.Params {
+				if param.Name == "position" && param.KeyframeAnimation != nil {
+					return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetVideo.Name, offsetSeconds)
+				}
 			}
 		}
+
+		// Calculate slide animation duration (1 second from video start)
+		videoStartFrames := parseFCPDuration(targetVideo.Start)
+		if videoStartFrames == 0 {
+			// If no start time, use standard FCP start time for images
+			videoStartFrames = 86399313
+			targetVideo.Start = "86399313/24000s"
+		}
+
+		// Add slide animation to the video
+		targetVideo.AdjustTransform = createSlideAnimation(targetVideo.Offset, 1.0)
 	}
 
-	// Calculate slide animation duration (1 second from video start)
-	videoStartFrames := parseFCPDuration(targetVideo.Start)
-	if videoStartFrames == 0 {
-		// If no start time, use standard FCP start time for videos
-		videoStartFrames = 86399313
-		targetVideo.Start = "86399313/24000s"
-	}
+	// Handle AssetClip elements (for videos)
+	if targetClip != nil {
+		// Check if clip already has slide animation
+		if targetClip.AdjustTransform != nil {
+			// Check if position parameter already exists with keyframes
+			for _, param := range targetClip.AdjustTransform.Params {
+				if param.Name == "position" && param.KeyframeAnimation != nil {
+					return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetClip.Name, offsetSeconds)
+				}
+			}
+		}
 
-	// Add slide animation to the video
-	targetVideo.AdjustTransform = createSlideAnimation(targetVideo.Offset, 1.0)
+		// For AssetClip elements, use timeline-based animation (not the special image start time)
+		targetClip.AdjustTransform = createAssetClipSlideAnimation(targetClip.Offset, 1.0)
+	}
 
 	return nil
+}
+
+// createAssetClipSlideAnimation creates timeline-based slide animation for AssetClip elements (videos)
+func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float64) *AdjustTransform {
+	// For AssetClip elements, use timeline-based timing starting from clip offset
+	offsetFrames := parseFCPDuration(clipOffset)
+	
+	// Calculate keyframe times using proper frame alignment:
+	// - Start keyframe: at the clip offset time  
+	// - End keyframe: 1 second later using ConvertSecondsToFCPDuration for frame alignment
+	oneSecondDuration := ConvertSecondsToFCPDuration(1.0)
+	oneSecondFrames := parseFCPDuration(oneSecondDuration)
+
+	startTime := fmt.Sprintf("%d/24000s", offsetFrames)
+	endTime := fmt.Sprintf("%d/24000s", offsetFrames+oneSecondFrames)
+
+	// Create AdjustTransform with keyframe animation for AssetClip
+	// Same position animation as images but with timeline-based timing
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "anchor",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "0 0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0 0",
+						},
+						{
+							Time:  endTime,
+							Value: "59.3109 0",
+						},
+					},
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  endTime,
+							Value: "1 1",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+		},
+	}
 }
 
 // isAudioFile checks if the given file is an audio file (WAV, MP3, M4A).
