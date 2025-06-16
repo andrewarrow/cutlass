@@ -687,6 +687,232 @@ func createTestFCPXMLWithVideos() *FCPXML {
 	}
 }
 
+// TestAddTextFromFilePreservesSlideAnimation tests that slide animations are preserved when converting AssetClip to Video
+func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
+	tempDir := t.TempDir()
+
+	// Create test text file
+	testTextFile := filepath.Join(tempDir, "slide_test.txt")
+	err := os.WriteFile(testTextFile, []byte("Test with slide"), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test text file: %v", err)
+	}
+
+	// Create FCPXML with AssetClip that has slide animation (simulating the issue scenario)
+	fcpxml := &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{
+					ID:       "r2",
+					Name:     "test_video",
+					UID:      "TEST-VIDEO-UID",
+					Start:    "0s",
+					Duration: "240240/24000s",
+					HasVideo: "1",
+					Format:   "r1",
+				},
+			},
+			Formats: []Format{
+				{
+					ID:            "r1",
+					Name:          "FFVideoFormat720p2398",
+					FrameDuration: "1001/24000s",
+					Width:         "1280",
+					Height:        "720",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Effects: []Effect{
+				{
+					ID:   "r3",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							Sequences: []Sequence{
+								{
+									Format:   "r1",
+									Duration: "240240/24000s",
+									TCStart:  "0s",
+									TCFormat: "NDF",
+									Spine: Spine{
+										AssetClips: []AssetClip{
+											{
+												Ref:      "r2",
+												Offset:   "0s",
+												Name:     "test_video",
+												Duration: "240240/24000s",
+												// Create slide animation like AddSlideToVideoAtOffset does
+												AdjustTransform: &AdjustTransform{
+													Params: []Param{
+														{
+															Name: "anchor",
+															KeyframeAnimation: &KeyframeAnimation{
+																Keyframes: []Keyframe{
+																	{Time: "24024/24000s", Value: "0 0", Curve: "linear"},
+																},
+															},
+														},
+														{
+															Name: "position",
+															KeyframeAnimation: &KeyframeAnimation{
+																Keyframes: []Keyframe{
+																	{Time: "0/24000s", Value: "0 0"},
+																	{Time: "24024/24000s", Value: "59.3109 0"},
+																},
+															},
+														},
+														{
+															Name: "rotation",
+															KeyframeAnimation: &KeyframeAnimation{
+																Keyframes: []Keyframe{
+																	{Time: "24024/24000s", Value: "0", Curve: "linear"},
+																},
+															},
+														},
+														{
+															Name: "scale",
+															KeyframeAnimation: &KeyframeAnimation{
+																Keyframes: []Keyframe{
+																	{Time: "24024/24000s", Value: "1 1", Curve: "linear"},
+																},
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Count original keyframes (should be 8: 1+2+1+1 = 5 keyframes total from the 4 params)
+	// Actually: anchor=1, position=2, rotation=1, scale=1 = 5 keyframes total
+	originalKeyframeCount := 0
+	assetClip := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.AssetClips[0]
+	if assetClip.AdjustTransform != nil {
+		for _, param := range assetClip.AdjustTransform.Params {
+			if param.KeyframeAnimation != nil {
+				originalKeyframeCount += len(param.KeyframeAnimation.Keyframes)
+			}
+		}
+	}
+
+	if originalKeyframeCount != 5 {
+		t.Fatalf("Expected 5 original keyframes, got %d", originalKeyframeCount)
+	}
+
+	// Test: Add text which should convert AssetClip to Video while preserving AdjustTransform
+	err = AddTextFromFile(fcpxml, testTextFile, 0.0)
+	if err != nil {
+		t.Fatalf("AddTextFromFile failed: %v", err)
+	}
+
+	// Verify the AssetClip was converted to Video
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.AssetClips) != 0 {
+		t.Error("Expected AssetClip to be converted to Video element")
+	}
+	if len(sequence.Spine.Videos) != 1 {
+		t.Fatalf("Expected 1 Video element after conversion, got %d", len(sequence.Spine.Videos))
+	}
+
+	// CRITICAL TEST: Verify AdjustTransform with slide animation was preserved
+	video := &sequence.Spine.Videos[0]
+	if video.AdjustTransform == nil {
+		t.Fatal("CRITICAL BUG: AdjustTransform was lost during AssetClip to Video conversion")
+	}
+
+	// Count preserved keyframes
+	preservedKeyframeCount := 0
+	for _, param := range video.AdjustTransform.Params {
+		if param.KeyframeAnimation != nil {
+			preservedKeyframeCount += len(param.KeyframeAnimation.Keyframes)
+		}
+	}
+
+	if preservedKeyframeCount != originalKeyframeCount {
+		t.Errorf("CRITICAL BUG: Expected %d keyframes to be preserved, got %d", originalKeyframeCount, preservedKeyframeCount)
+	}
+
+	// Verify specific slide animation parameters were preserved
+	foundPosition := false
+	foundAnchor := false
+	for _, param := range video.AdjustTransform.Params {
+		if param.Name == "position" && param.KeyframeAnimation != nil {
+			foundPosition = true
+			// Verify the slide animation keyframes
+			keyframes := param.KeyframeAnimation.Keyframes
+			if len(keyframes) != 2 {
+				t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
+			} else {
+				// Check start position (0 0)
+				if keyframes[0].Time != "0/24000s" || keyframes[0].Value != "0 0" {
+					t.Errorf("Expected first keyframe '0/24000s' '0 0', got '%s' '%s'", keyframes[0].Time, keyframes[0].Value)
+				}
+				// Check end position (slide to right)
+				if keyframes[1].Time != "24024/24000s" || keyframes[1].Value != "59.3109 0" {
+					t.Errorf("Expected second keyframe '24024/24000s' '59.3109 0', got '%s' '%s'", keyframes[1].Time, keyframes[1].Value)
+				}
+			}
+		}
+		if param.Name == "anchor" && param.KeyframeAnimation != nil {
+			foundAnchor = true
+		}
+	}
+
+	if !foundPosition {
+		t.Error("CRITICAL BUG: Position animation parameter was lost during conversion")
+	}
+	if !foundAnchor {
+		t.Error("CRITICAL BUG: Anchor animation parameter was lost during conversion")
+	}
+
+	// Verify text was added successfully
+	if len(video.NestedTitles) != 1 {
+		t.Errorf("Expected 1 nested title, got %d", len(video.NestedTitles))
+	}
+
+	// Verify XML marshaling works with preserved animations
+	outputXML, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		t.Fatalf("Failed to marshal FCPXML with preserved slide animation: %v", err)
+	}
+
+	xmlStr := string(outputXML)
+	// Verify slide animation appears in XML
+	if !strings.Contains(xmlStr, "adjust-transform") {
+		t.Error("CRITICAL BUG: adjust-transform element missing from XML output")
+	}
+	if !strings.Contains(xmlStr, "59.3109 0") {
+		t.Error("CRITICAL BUG: Slide animation keyframe value missing from XML output")
+	}
+	if !strings.Contains(xmlStr, "Test with slide") {
+		t.Error("Expected text content missing from XML output")
+	}
+
+	// Count keyframes in XML to verify they're all preserved
+	keyframeCount := strings.Count(xmlStr, "<keyframe")
+	if keyframeCount < originalKeyframeCount {
+		t.Errorf("CRITICAL BUG: Expected at least %d keyframes in XML, got %d", originalKeyframeCount, keyframeCount)
+	}
+}
+
 // Helper functions
 func getTextContent(title Title) string {
 	if title.Text != nil {
