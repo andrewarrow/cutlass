@@ -267,41 +267,76 @@ func parseVttAndCutVideo(videoID string) error {
 		return fmt.Errorf("failed to parse VTT file: %v", err)
 	}
 
-	fmt.Printf("Found %d segments to extract\n", len(segments))
-
-	// Filter out segments with zero or very short duration and extract meaningful clips
-	validSegmentNum := 1
+	// Filter out segments with zero or very short duration first
+	var validSegments []VttSegment
 	for _, segment := range segments {
-		// Calculate duration
 		duration, err := calculateDuration(segment.StartTime, segment.EndTime)
-		if err != nil {
-			fmt.Printf("Warning: Could not calculate duration for segment: %v\n", err)
+		if err != nil || duration < 0.1 {
 			continue
 		}
+		validSegments = append(validSegments, segment)
+	}
 
-		// Skip segments that are too short (less than 0.1 seconds)
-		if duration < 0.1 {
-			continue
+	fmt.Printf("Found %d valid segments, combining into %d clips\n", len(validSegments), (len(validSegments)+3)/4)
+
+	// Combine consecutive segments into groups of 4 for longer clips
+	validSegmentNum := 1
+	for i := 0; i < len(validSegments); i += 4 {
+		var combinedSegment VttSegment
+		var combinedText string
+		var seenTexts = make(map[string]bool)
+		
+		// Always include the first segment
+		firstSegment := validSegments[i]
+		combinedSegment.StartTime = firstSegment.StartTime
+		combinedSegment.EndTime = firstSegment.EndTime
+		
+		// Combine up to 4 segments
+		for j := 0; j < 4 && i+j < len(validSegments); j++ {
+			segment := validSegments[i+j]
+			segmentText := strings.TrimSpace(segment.Text)
+			
+			// Update end time to the last segment's end time
+			combinedSegment.EndTime = segment.EndTime
+			
+			// Only add unique text to avoid repetition
+			if segmentText != "" && !seenTexts[segmentText] {
+				seenTexts[segmentText] = true
+				if combinedText != "" {
+					combinedText += " " + segmentText
+				} else {
+					combinedText = segmentText
+				}
+			}
 		}
+		
+		combinedSegment.Text = combinedText
 
-		// Check if segment already exists
+		// Check if combined segment already exists
 		if existingFile := findExistingVideoSegment(outputDir, validSegmentNum); existingFile != "" {
 			fmt.Printf("Skipping segment %d (already exists: %s)\n", validSegmentNum, existingFile)
 			validSegmentNum++
 			continue
 		}
 
-		// Generate output filename using sanitized sentence text
-		sanitizedText := sanitizeFilename(segment.Text)
+		// Calculate combined duration
+		duration, err := calculateDuration(combinedSegment.StartTime, combinedSegment.EndTime)
+		if err != nil {
+			fmt.Printf("Warning: Could not calculate duration for combined segment %d: %v\n", validSegmentNum, err)
+			continue
+		}
+
+		// Generate output filename using sanitized combined text
+		sanitizedText := sanitizeFilename(combinedSegment.Text)
 		outputFile := filepath.Join(outputDir, fmt.Sprintf("%04d_%s.mov", validSegmentNum, sanitizedText))
 
-		// Extract segment using ffmpeg
-		if err := extractVideoSegment(videoFile, segment.StartTime, segment.EndTime, outputFile); err != nil {
+		// Extract combined segment using ffmpeg
+		if err := extractVideoSegment(videoFile, combinedSegment.StartTime, combinedSegment.EndTime, outputFile); err != nil {
 			fmt.Printf("Error extracting segment %d: %v\n", validSegmentNum, err)
 			continue
 		}
 
-		fmt.Printf("Extracted segment %d: %.1fs - %s\n", validSegmentNum, duration, strings.TrimSpace(segment.Text))
+		fmt.Printf("Extracted segment %d: %.1fs - %s\n", validSegmentNum, duration, combinedSegment.Text)
 		validSegmentNum++
 	}
 
@@ -434,23 +469,52 @@ func sanitizeFilename(text string) string {
 	// Trim and clean the text
 	text = strings.TrimSpace(text)
 	
-	// Replace spaces with underscores
-	text = strings.ReplaceAll(text, " ", "_")
-	
-	// Remove or replace characters that are problematic in Mac filenames
+	// Remove or replace characters that are problematic in Mac filenames first
 	// Mac filenames cannot contain: : / \ * ? " < > |
 	problematicChars := []string{":", "/", "\\", "*", "?", "\"", "<", ">", "|", "\n", "\r", "\t"}
 	for _, char := range problematicChars {
 		text = strings.ReplaceAll(text, char, "")
 	}
 	
-	// Replace multiple underscores with single underscore
-	text = regexp.MustCompile(`_+`).ReplaceAllString(text, "_")
+	// Remove punctuation and special characters, keeping only letters, numbers, and spaces
+	text = regexp.MustCompile(`[^\w\s]`).ReplaceAllString(text, "")
 	
-	// Remove leading/trailing underscores
-	text = strings.Trim(text, "_")
+	// Split into words and filter out short words (1-4 letters)
+	words := strings.Fields(text)
+	var majorWords []string
 	
-	// Limit length to reasonable filename size (Mac supports up to 255 chars, but let's be conservative)
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		// Keep words longer than 4 characters
+		if len(word) > 4 {
+			majorWords = append(majorWords, word)
+		}
+	}
+	
+	// If no major words remain, keep words longer than 3 characters
+	if len(majorWords) == 0 {
+		for _, word := range words {
+			word = strings.TrimSpace(word)
+			if len(word) > 3 {
+				majorWords = append(majorWords, word)
+			}
+		}
+	}
+	
+	// If still no words, keep all non-empty words
+	if len(majorWords) == 0 {
+		for _, word := range words {
+			word = strings.TrimSpace(word)
+			if len(word) > 0 {
+				majorWords = append(majorWords, word)
+			}
+		}
+	}
+	
+	// Join with underscores
+	text = strings.Join(majorWords, "_")
+	
+	// Limit length to reasonable filename size
 	if len(text) > 100 {
 		text = text[:100]
 		// Make sure we don't cut in the middle of a word

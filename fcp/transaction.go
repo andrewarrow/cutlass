@@ -76,11 +76,15 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		// Image files (PNG, JPG, JPEG) should NOT have audio properties
 	} else if isAudioFile(absPath) {
 		// Audio files have only audio properties, NO video properties
-		asset.HasVideo = "" // Remove video properties for audio
+		// 🚨 FIX: Don't set HasVideo to empty string, just don't set it (omitempty will handle)
+		asset.HasVideo = "" // This will be omitted due to omitempty tag
 		asset.HasAudio = "1"
 		asset.AudioSources = "1"
 		asset.AudioChannels = "2"
 		asset.AudioRate = "48000"
+		// 🚨 FIX: Audio files should have format=="" which gets omitted due to omitempty
+		// Or we should create a specific audio format. For now, leave format empty.
+		asset.Format = "" // This will be omitted due to omitempty tag
 		// Note: Duration remains as provided by caller (audio duration)
 	} else {
 		// Video files have both audio and video properties

@@ -706,17 +706,36 @@ func parseOffsetAndDuration(offset, duration string) int {
 	return offsetFrames + durationFrames
 }
 
-// parseFCPDuration parses FCP duration format like "12345/24000s" and returns frames in 1001/24000s units
+// parseFCPDuration parses FCP duration format and returns frame-aligned values in 1001/24000s units
 func parseFCPDuration(duration string) int {
 	if duration == "0s" {
 		return 0
 	}
 
-	// Parse format like "12345/24000s"
-	if strings.HasSuffix(duration, "/24000s") {
-		framesStr := strings.TrimSuffix(duration, "/24000s")
-		if frames, err := strconv.Atoi(framesStr); err == nil {
-			return frames
+	// Parse rational duration formats like "12345/24000s", "547547/60000s", etc.
+	if strings.HasSuffix(duration, "s") && strings.Contains(duration, "/") {
+		// Remove the "s" suffix
+		durationNoS := strings.TrimSuffix(duration, "s")
+		
+		// Split by "/"
+		parts := strings.Split(durationNoS, "/")
+		if len(parts) == 2 {
+			numerator, err1 := strconv.Atoi(parts[0])
+			denominator, err2 := strconv.Atoi(parts[1])
+			
+			if err1 == nil && err2 == nil && denominator != 0 {
+				// 🚨 CLAUDE.md CRITICAL: Frame Boundary Alignment
+				// FCP uses 1001/24000s frame duration (≈ 23.976 fps)
+				// All durations MUST be frame-aligned: (frames × 1001)/24000s
+				
+				// Convert to exact frame count using FCP's frame duration
+				// frames = (numerator/denominator) / (1001/24000) = (numerator * 24000) / (denominator * 1001)
+				framesFloat := float64(numerator * 24000) / float64(denominator * 1001)
+				frames := int(framesFloat + 0.5) // Round to nearest frame
+				
+				// Return frame-aligned value: frames * 1001
+				return frames * 1001
+			}
 		}
 	}
 

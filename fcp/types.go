@@ -61,8 +61,8 @@ type Asset struct {
 	Name          string   `xml:"name,attr"`
 	UID           string   `xml:"uid,attr"`
 	Start         string   `xml:"start,attr"`
-	HasVideo      string   `xml:"hasVideo,attr"`
-	Format        string   `xml:"format,attr"`
+	HasVideo      string   `xml:"hasVideo,attr,omitempty"`
+	Format        string   `xml:"format,attr,omitempty"`
 	VideoSources  string   `xml:"videoSources,attr,omitempty"`
 	HasAudio      string   `xml:"hasAudio,attr,omitempty"`
 	AudioSources  string   `xml:"audioSources,attr,omitempty"`
@@ -205,17 +205,36 @@ func (s Spine) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
-// parseFCPDurationForSort parses FCP duration for sorting (similar to existing function)
+// parseFCPDurationForSort parses FCP duration for sorting with frame-aligned values
 func parseFCPDurationForSort(duration string) int {
 	if duration == "0s" {
 		return 0
 	}
 	
-	// Parse format like "12345/24000s"
-	if strings.HasSuffix(duration, "/24000s") {
-		framesStr := strings.TrimSuffix(duration, "/24000s")
-		if frames, err := strconv.Atoi(framesStr); err == nil {
-			return frames
+	// Parse rational duration formats like "12345/24000s", "547547/60000s", etc.
+	if strings.HasSuffix(duration, "s") && strings.Contains(duration, "/") {
+		// Remove the "s" suffix
+		durationNoS := strings.TrimSuffix(duration, "s")
+		
+		// Split by "/"
+		parts := strings.Split(durationNoS, "/")
+		if len(parts) == 2 {
+			numerator, err1 := strconv.Atoi(parts[0])
+			denominator, err2 := strconv.Atoi(parts[1])
+			
+			if err1 == nil && err2 == nil && denominator != 0 {
+				// 🚨 CLAUDE.md CRITICAL: Frame Boundary Alignment
+				// FCP uses 1001/24000s frame duration (≈ 23.976 fps)
+				// All durations MUST be frame-aligned: (frames × 1001)/24000s
+				
+				// Convert to exact frame count using FCP's frame duration
+				// frames = (numerator/denominator) / (1001/24000) = (numerator * 24000) / (denominator * 1001)
+				framesFloat := float64(numerator * 24000) / float64(denominator * 1001)
+				frames := int(framesFloat + 0.5) // Round to nearest frame
+				
+				// Return frame-aligned value: frames * 1001
+				return frames * 1001
+			}
 		}
 	}
 	
@@ -230,8 +249,8 @@ type AssetClip struct {
 	Name            string           `xml:"name,attr"`
 	Start           string           `xml:"start,attr,omitempty"`
 	Duration        string           `xml:"duration,attr"`
-	Format          string           `xml:"format,attr"`
-	TCFormat        string           `xml:"tcFormat,attr"`
+	Format          string           `xml:"format,attr,omitempty"`
+	TCFormat        string           `xml:"tcFormat,attr,omitempty"`
 	AudioRole       string           `xml:"audioRole,attr,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
 	Titles          []Title          `xml:"title,omitempty"`
