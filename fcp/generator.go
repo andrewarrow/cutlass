@@ -1514,8 +1514,9 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 			return fmt.Errorf("failed to create PIP video format: %v", err)
 		}
 
-		// Create asset using transaction
-		asset, err := tx.CreateAsset(assetID, absPath, videoName, frameDuration, formatID)
+		// Create video-only asset using transaction (no audio properties for PIP)
+		// This matches samples/pip.fcpxml pattern where PIP video has no audio properties
+		asset, err := tx.CreateVideoOnlyAsset(assetID, absPath, videoName, frameDuration, formatID)
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to create PIP asset: %v", err)

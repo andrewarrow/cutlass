@@ -98,6 +98,45 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 	return asset, nil
 }
 
+// CreateVideoOnlyAsset creates an asset with only video properties (no audio) for PIP videos
+// This matches the pattern in samples/pip.fcpxml where PIP video has no audio properties
+func (tx *ResourceTransaction) CreateVideoOnlyAsset(id, filePath, baseName, duration string, formatID string) (*Asset, error) {
+	if tx.rolled {
+		return nil, fmt.Errorf("transaction has been rolled back")
+	}
+
+	// Get absolute path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %v", err)
+	}
+
+	// Generate consistent UID
+	uid := tx.registry.GenerateConsistentUID(filepath.Base(filePath))
+
+	// Create asset with ONLY video properties (no audio properties)
+	// This matches samples/pip.fcpxml pattern: hasVideo="1" format="r5" videoSources="1" (no audio)
+	asset := &Asset{
+		ID:           id,
+		Name:         baseName,
+		UID:          uid,
+		Start:        "0s",
+		Duration:     duration,
+		HasVideo:     "1",
+		Format:       formatID,
+		VideoSources: "1", // Required for video assets used as PIP
+		// Note: NO audio properties - HasAudio, AudioSources, AudioChannels, AudioRate are omitted
+		MediaRep: MediaRep{
+			Kind: "original-media",
+			Sig:  uid,
+			Src:  "file://" + absPath,
+		},
+	}
+
+	tx.created = append(tx.created, &AssetWrapper{asset})
+	return asset, nil
+}
+
 // CreateFormat creates a format with transaction management
 // 🚨 CRITICAL: frameDuration should ONLY be set for sequence formats, NOT image formats
 // Image formats must NOT have frameDuration or FCP's performAudioPreflightCheckForObject crashes
