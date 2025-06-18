@@ -1599,8 +1599,13 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 	}
 
 	// Add main video transforms (position and scale) based on samples/pip.fcpxml
+	// <conform-rate scaleEnabled="0"/>
 	// <adjust-crop mode="trim"><trim-rect left="27.1921" right="27.1001" bottom="12.6562"/></adjust-crop>
 	// <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/>
+	mainClip.ConformRate = &ConformRate{
+		ScaleEnabled: "0",
+	}
+
 	mainClip.AdjustCrop = &AdjustCrop{
 		Mode: "trim",
 		TrimRect: &TrimRect{
