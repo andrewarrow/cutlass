@@ -117,7 +117,6 @@ func (tx *ResourceTransaction) CreateVideoOnlyAsset(id, filePath, baseName, dura
 	// Modify the filename to ensure different UID even for same file used as main video
 	pipPath := filepath.Dir(absPath) + "/pip_" + filepath.Base(absPath)
 	uid := GenerateUID(pipPath)
-	fmt.Printf("DEBUG: Generated PIP UID %s for modified path: %s\n", uid, pipPath)
 
 	// Create asset with ONLY video properties (no audio properties)
 	// This matches samples/pip.fcpxml pattern: hasVideo="1" format="r5" videoSources="1" (no audio)
