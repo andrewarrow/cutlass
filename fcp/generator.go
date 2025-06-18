@@ -1597,6 +1597,51 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 			ScaleEnabled: "0",
 			SrcFrameRate: "60", // Based on samples/pip.fcpxml pattern
 		},
+		// Add Shape Mask filter to PIP video for rounded corners
+		FilterVideos: []FilterVideo{
+			{
+				Ref:  shapeMaskEffectID,
+				Name: "Shape Mask",
+				Params: []Param{
+					{
+						Name:  "Radius",
+						Key:   "160",
+						Value: "305 190.625",
+					},
+					{
+						Name:  "Curvature", 
+						Key:   "159",
+						Value: "0.3695",
+					},
+					{
+						Name:  "Feather",
+						Key:   "102", 
+						Value: "100",
+					},
+					{
+						Name:  "Falloff",
+						Key:   "158",
+						Value: "-100",
+					},
+					{
+						Name:  "Input Size",
+						Key:   "205",
+						Value: "1920 1080",
+					},
+					{
+						Name: "Transforms",
+						Key:  "200",
+						NestedParams: []Param{
+							{
+								Name:  "Scale",
+								Key:   "203", 
+								Value: "1.3449 1.9525",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	// Add main video transforms (position and scale) based on samples/pip.fcpxml
@@ -1625,52 +1670,8 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 		Scale:    "0.28572 0.28572",   // Scale down main video
 	}
 
-	// Add Shape Mask filter to main video with PIP-specific parameters
-	// Based on samples/pip.fcpxml pattern with comprehensive parameters
-	mainClip.FilterVideos = []FilterVideo{
-		{
-			Ref:  shapeMaskEffectID,
-			Name: "Shape Mask",
-			Params: []Param{
-				{
-					Name:  "Radius",
-					Key:   "160",
-					Value: "305 190.625",
-				},
-				{
-					Name:  "Curvature", 
-					Key:   "159",
-					Value: "0.3695",
-				},
-				{
-					Name:  "Feather",
-					Key:   "102", 
-					Value: "100",
-				},
-				{
-					Name:  "Falloff",
-					Key:   "158",
-					Value: "-100",
-				},
-				{
-					Name:  "Input Size",
-					Key:   "205",
-					Value: "1920 1080",
-				},
-				{
-					Name: "Transforms",
-					Key:  "200",
-					NestedParams: []Param{
-						{
-							Name:  "Scale",
-							Key:   "203", 
-							Value: "1.3449 1.9525",
-						},
-					},
-				},
-			},
-		},
-	}
+	// Shape Mask filter is now applied to the PIP video (pipClip) for rounded corners
+	// This creates the rounded effect visible in box2.png
 
 	// Add PIP video as nested asset-clip inside the main video
 	mainClip.NestedAssetClips = append(mainClip.NestedAssetClips, pipClip)
