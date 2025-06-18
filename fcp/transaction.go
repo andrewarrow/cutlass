@@ -88,8 +88,10 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		// Note: Duration remains as provided by caller (audio duration)
 	} else {
 		// Video files have both audio and video properties
+		// Match samples/pip.fcpxml pattern: hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="48000"
+		asset.VideoSources = "1" // Required for video assets
 		asset.HasAudio = "1"
-		asset.AudioSources = "1"
+		asset.AudioSources = "1"  // Required for video assets with audio
 		asset.AudioChannels = "2"
 		asset.AudioRate = "48000"
 	}
@@ -111,8 +113,11 @@ func (tx *ResourceTransaction) CreateVideoOnlyAsset(id, filePath, baseName, dura
 		return nil, fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
-	// Generate consistent UID
-	uid := tx.registry.GenerateConsistentUID(filepath.Base(filePath))
+	// Generate unique UID for PIP videos to avoid collisions with main video
+	// Modify the filename to ensure different UID even for same file used as main video
+	pipPath := filepath.Dir(absPath) + "/pip_" + filepath.Base(absPath)
+	uid := GenerateUID(pipPath)
+	fmt.Printf("DEBUG: Generated PIP UID %s for modified path: %s\n", uid, pipPath)
 
 	// Create asset with ONLY video properties (no audio properties)
 	// This matches samples/pip.fcpxml pattern: hasVideo="1" format="r5" videoSources="1" (no audio)
