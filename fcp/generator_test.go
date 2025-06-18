@@ -121,7 +121,7 @@ var movxmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
 
 <fcpxml version="1.13">
     <resources>
-        <asset id="r2" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
+        <asset id="r2" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" videoSources="1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
@@ -208,7 +208,7 @@ var appendmovtopngxmlTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
         </asset>
-        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
+        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" videoSources="1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
@@ -298,7 +298,7 @@ var appendMovToExistingTemplate = `<?xml version="1.0" encoding="UTF-8"?>
         <asset id="r2" name="cs.pitt.edu" uid="%s" start="0s" hasVideo="1" format="r3" videoSources="1" duration="0s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/cs.pitt.edu.png"></media-rep>
         </asset>
-        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
+        <asset id="r4" name="speech1" uid="%s" start="0s" hasVideo="1" format="r1" videoSources="1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
             <media-rep kind="original-media" sig="%s" src="file:///Users/aa/cs/cutlass/assets/speech1.mov"></media-rep>
         </asset>
         <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
@@ -796,6 +796,248 @@ func TestFrameBoundaryAlignment(t *testing.T) {
 		err = WriteToFile(fcpxml, testFile)
 		if err != nil {
 			t.Fatalf("WriteToFile failed: %v", err)
+		}
+	})
+}
+
+// TestAddPipVideo tests the picture-in-picture video functionality
+func TestAddPipVideo(t *testing.T) {
+	// Create a temporary FCPXML file with a base video
+	baseFile := "test_base_video.fcpxml"
+	pipFile := "test_pip_video.fcpxml"
+	
+	// Cleanup function
+	defer func() {
+		for _, file := range []string{baseFile, pipFile} {
+			if err := os.Remove(file); err != nil && !os.IsNotExist(err) {
+				t.Errorf("Failed to clean up test file %s: %v", file, err)
+			}
+		}
+	}()
+
+	// Step 1: Generate base FCPXML with one video
+	t.Run("CreateBaseVideo", func(t *testing.T) {
+		// Create a temporary video file for testing
+		testMainVideo := "test_main.mov"
+		defer os.Remove(testMainVideo)
+		
+		// Create empty file to simulate video
+		if err := os.WriteFile(testMainVideo, []byte("test video content"), 0644); err != nil {
+			t.Fatalf("Failed to create test video file: %v", err)
+		}
+
+		// Generate empty FCPXML first
+		fcpxml, err := GenerateEmpty(baseFile)
+		if err != nil {
+			t.Fatalf("Failed to generate empty FCPXML: %v", err)
+		}
+
+		// Add a video to create base
+		err = AddVideo(fcpxml, testMainVideo)
+		if err != nil {
+			t.Fatalf("Failed to add base video: %v", err)
+		}
+
+		// Save base FCPXML
+		err = WriteToFile(fcpxml, baseFile)
+		if err != nil {
+			t.Fatalf("Failed to save base FCPXML: %v", err)
+		}
+	})
+
+	// Step 2: Load base FCPXML and add PIP video
+	t.Run("AddPipVideo", func(t *testing.T) {
+		// Create a temporary PIP video file for testing
+		testPipVideo := "test_pip.mov"
+		defer os.Remove(testPipVideo)
+		
+		// Create empty file to simulate PIP video
+		if err := os.WriteFile(testPipVideo, []byte("test pip video content"), 0644); err != nil {
+			t.Fatalf("Failed to create test PIP video file: %v", err)
+		}
+
+		// Load existing FCPXML
+		fcpxml, err := ReadFromFile(baseFile)
+		if err != nil {
+			t.Fatalf("Failed to load base FCPXML: %v", err)
+		}
+
+		// Add PIP video
+		err = AddPipVideo(fcpxml, testPipVideo, 0.0)
+		if err != nil {
+			t.Fatalf("AddPipVideo failed: %v", err)
+		}
+
+		// Save modified FCPXML
+		err = WriteToFile(fcpxml, pipFile)
+		if err != nil {
+			t.Fatalf("Failed to save PIP FCPXML: %v", err)
+		}
+	})
+
+	// Step 3: Validate structure and requirements
+	t.Run("ValidatePipStructure", func(t *testing.T) {
+		// Load the PIP FCPXML for validation
+		fcpxml, err := ReadFromFile(pipFile)
+		if err != nil {
+			t.Fatalf("Failed to load PIP FCPXML for validation: %v", err)
+		}
+
+		// Validate format requirements
+		if len(fcpxml.Resources.Formats) < 3 {
+			t.Errorf("Expected at least 3 formats (sequence, main, pip), got %d", len(fcpxml.Resources.Formats))
+		}
+
+		// Validate asset requirements
+		if len(fcpxml.Resources.Assets) < 2 {
+			t.Errorf("Expected at least 2 assets (main, pip), got %d", len(fcpxml.Resources.Assets))
+		}
+
+		// Validate Shape Mask effect
+		shapeMaskFound := false
+		for _, effect := range fcpxml.Resources.Effects {
+			if effect.UID == "FFSuperEllipseMask" {
+				shapeMaskFound = true
+				break
+			}
+		}
+		if !shapeMaskFound {
+			t.Error("Shape Mask effect not found in resources")
+		}
+
+		// Validate spine structure
+		if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+			t.Fatal("No sequence found in generated FCPXML")
+		}
+
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		if len(sequence.Spine.AssetClips) == 0 {
+			t.Fatal("No asset clips found in spine")
+		}
+
+		mainClip := sequence.Spine.AssetClips[0]
+
+		// Validate main clip has required PIP elements
+		if mainClip.ConformRate == nil {
+			t.Error("Main clip missing conform-rate")
+		} else if mainClip.ConformRate.ScaleEnabled != "0" {
+			t.Errorf("Main clip conform-rate scaleEnabled should be '0', got '%s'", mainClip.ConformRate.ScaleEnabled)
+		}
+
+		if mainClip.AdjustCrop == nil {
+			t.Error("Main clip missing adjust-crop")
+		}
+
+		if mainClip.AdjustTransform == nil {
+			t.Error("Main clip missing adjust-transform")
+		} else {
+			// Verify transform values match PIP pattern
+			expectedPos := "60.3234 -35.9353"
+			expectedScale := "0.28572 0.28572"
+			if mainClip.AdjustTransform.Position != expectedPos {
+				t.Errorf("Main clip position should be '%s', got '%s'", expectedPos, mainClip.AdjustTransform.Position)
+			}
+			if mainClip.AdjustTransform.Scale != expectedScale {
+				t.Errorf("Main clip scale should be '%s', got '%s'", expectedScale, mainClip.AdjustTransform.Scale)
+			}
+		}
+
+		// Validate nested PIP clip
+		if len(mainClip.NestedAssetClips) == 0 {
+			t.Error("Main clip missing nested PIP asset-clip")
+		} else {
+			pipClip := mainClip.NestedAssetClips[0]
+			if pipClip.Lane != "-1" {
+				t.Errorf("PIP clip lane should be '-1', got '%s'", pipClip.Lane)
+			}
+			if pipClip.ConformRate == nil {
+				t.Error("PIP clip missing conform-rate")
+			} else if pipClip.ConformRate.SrcFrameRate != "60" {
+				t.Errorf("PIP clip srcFrameRate should be '60', got '%s'", pipClip.ConformRate.SrcFrameRate)
+			}
+		}
+
+		// Validate Shape Mask filter on main clip
+		if len(mainClip.FilterVideos) == 0 {
+			t.Error("Main clip missing Shape Mask filter")
+		} else {
+			filter := mainClip.FilterVideos[0]
+			if filter.Name != "Shape Mask" {
+				t.Errorf("Filter name should be 'Shape Mask', got '%s'", filter.Name)
+			}
+
+			// Validate key Shape Mask parameters
+			expectedParams := map[string]string{
+				"Radius":     "305 190.625",
+				"Curvature":  "0.3695",
+				"Feather":    "100",
+				"Falloff":    "-100",
+				"Input Size": "1920 1080",
+			}
+
+			paramMap := make(map[string]string)
+			for _, param := range filter.Params {
+				paramMap[param.Name] = param.Value
+			}
+
+			for name, expectedValue := range expectedParams {
+				if actualValue, exists := paramMap[name]; !exists {
+					t.Errorf("Shape Mask missing parameter '%s'", name)
+				} else if actualValue != expectedValue {
+					t.Errorf("Shape Mask parameter '%s' should be '%s', got '%s'", name, expectedValue, actualValue)
+				}
+			}
+		}
+
+		// Validate format compatibility (main and pip formats differ from sequence)
+		sequenceFormat := sequence.Format
+		mainFormat := mainClip.Format
+		if len(mainClip.NestedAssetClips) > 0 {
+			pipFormat := mainClip.NestedAssetClips[0].Format
+			
+			if mainFormat == sequenceFormat {
+				t.Error("Main clip format should differ from sequence format to enable conform-rate")
+			}
+			if pipFormat == sequenceFormat {
+				t.Error("PIP clip format should differ from sequence format to enable conform-rate")
+			}
+			if mainFormat == pipFormat {
+				t.Error("Main and PIP formats should be different")
+			}
+		}
+	})
+
+	// Step 4: Validate CLAUDE.md compliance
+	t.Run("ValidateClaudeCompliance", func(t *testing.T) {
+		// Read generated file content
+		content, err := os.ReadFile(pipFile)
+		if err != nil {
+			t.Fatalf("Failed to read generated file: %v", err)
+		}
+
+		contentStr := string(content)
+
+		// Verify proper XML structure exists
+		requiredElements := []string{
+			"<conform-rate scaleEnabled=\"0\"",
+			"<adjust-crop mode=\"trim\"",
+			"<adjust-transform position=",
+			"lane=\"-1\"",
+			"<filter-video",
+			"name=\"Shape Mask\"",
+		}
+
+		for _, element := range requiredElements {
+			found := false
+			for i := 0; i <= len(contentStr)-len(element); i++ {
+				if contentStr[i:i+len(element)] == element {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("Generated XML missing required element: %s", element)
+			}
 		}
 	})
 }

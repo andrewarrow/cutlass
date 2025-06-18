@@ -238,6 +238,74 @@ FCPXML requires ALL IDs to be unique within the document. Common violations incl
 
 When adding any new FCPXML elements with IDs, always ensure uniqueness across the entire document.
 
+## 🚨 CRITICAL: Picture-in-Picture (PIP) Video Requirements 🚨
+
+**PIP video generation has specific format and layering requirements that MUST be followed to prevent FCP import errors.**
+
+### ❌ BROKEN PIP PATTERNS THAT CAUSE CRASHES:
+
+**ConformRate on main video with same format as sequence (BROKEN):**
+```xml
+<!-- SEQUENCE FORMAT: r1 -->
+<asset-clip ref="r2" format="r1"> <!-- SAME FORMAT AS SEQUENCE -->
+    <conform-rate scaleEnabled="0"/> <!-- CAUSES "Encountered an unexpected value" ERROR -->
+</asset-clip>
+```
+
+**Problem**: When asset format matches sequence format exactly, `conform-rate` elements cause FCP import errors.
+
+### ✅ CORRECT PIP PATTERN (matches samples/pip.fcpxml):
+
+**Format Strategy:**
+- **Sequence format**: r1 (e.g., frameDuration="1001/24000s")
+- **Main video format**: r5 (e.g., frameDuration="13335/400000s") - **DIFFERENT from sequence**
+- **PIP video format**: r4 (e.g., frameDuration="100/6000s") - **DIFFERENT from sequence**
+
+**Structure Requirements:**
+```xml
+<asset-clip ref="r2" format="r5"> <!-- Main video: different format allows conform-rate -->
+    <conform-rate scaleEnabled="0"/> <!-- ALLOWED: format differs from sequence -->
+    <adjust-crop mode="trim">...</adjust-crop>
+    <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/> <!-- Makes main video small -->
+    <asset-clip ref="r3" lane="-1" format="r4"> <!-- PIP video: background layer -->
+        <conform-rate scaleEnabled="0" srcFrameRate="60"/> <!-- ALLOWED: format differs from sequence -->
+    </asset-clip>
+    <filter-video ref="r6" name="Shape Mask"> <!-- Shape Mask on main video (becomes corner video) -->
+        <!-- Parameters for rounded corners -->
+    </filter-video>
+</asset-clip>
+```
+
+### 📋 MANDATORY PIP IMPLEMENTATION CHECKLIST:
+
+**Format Creation (AddPipVideo function):**
+1. **Create 3 formats**: sequence (existing), main video (new), PIP video (new)
+2. **Ensure format differences**: All video formats must have different frameDuration from sequence
+3. **Update main clip format**: Assign new main format to existing main video clip
+
+**Layering Rules:**
+1. **Main video**: Gets scaled down via `adjust-transform`, becomes corner video
+2. **PIP video**: Uses `lane="-1"` to render as background, stays full size
+3. **Shape Mask**: Applied to main video (which becomes small corner) for rounded edges
+
+**ConformRate Rules:**
+1. **ONLY add when**: Asset format differs from sequence format
+2. **Main video**: `<conform-rate scaleEnabled="0"/>` (no srcFrameRate)
+3. **PIP video**: `<conform-rate scaleEnabled="0" srcFrameRate="60"/>` (includes srcFrameRate)
+
+**Critical Code Pattern:**
+```go
+// Create separate formats for main and PIP videos (different from sequence)
+mainFormat := tx.CreateFormatWithFrameDuration(mainFormatID, "13335/400000s", "1920", "1080", "1-1-1 (Rec. 709)")
+pipFormat := tx.CreateFormatWithFrameDuration(pipFormatID, "100/6000s", "2336", "1510", "1-1-1 (Rec. 709)")
+
+// Update main clip to use new format (enables conform-rate)
+mainClip.Format = mainFormatID
+mainClip.ConformRate = &ConformRate{ScaleEnabled: "0"}
+```
+
+**The complexity exists because FCP has strict format compatibility requirements for conform-rate elements.**
+
 ## CRITICAL: Frame Boundary Alignment
 FCPXML durations MUST be aligned to frame boundaries to avoid "not on an edit frame boundary" errors in Final Cut Pro.
 

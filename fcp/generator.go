@@ -1454,18 +1454,33 @@ func addAudioAssetClipToSpine(fcpxml *FCPXML, asset *Asset) error {
 
 // AddPipVideo adds a video as picture-in-picture (PIP) to an existing FCPXML file.
 //
-// 🚨 CLAUDE.md Rules Applied Here:
-// - Uses ResourceRegistry/Transaction system for crash-safe resource management
-// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets/Effects, modify existing spine elements
-// - Atomic ID reservation prevents race conditions and ID collisions
-// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
-// - Maintains UID consistency → generateUID() function for deterministic UIDs
-// - PIP-specific pattern → Main video gets transforms, PIP video nested with lane="-1" and Shape Mask filter
+// 🚨 CRITICAL PIP Requirements (see CLAUDE.md for details):
+// 1. **Format Compatibility**: Creates separate formats for main and PIP videos (different from sequence)
+//    to allow conform-rate elements without causing "Encountered an unexpected value" FCP errors
+// 2. **Layering Strategy**: PIP video uses lane="-1" (background), main video becomes corner overlay
+// 3. **Shape Mask Application**: Applied to main video for rounded corners on the small corner video
 //
-// Pattern based on samples/pip.fcpxml:
-// - Main video (first asset-clip) gets position/scale transforms + adjust-crop + Shape Mask filter
-// - PIP video added as nested asset-clip with lane="-1" and calculated offset
-// - Shape Mask effect with specific parameters for rounded corners
+// Structure Generated (matches samples/pip.fcpxml):
+// ```
+// <asset-clip ref="main" format="r5"> <!-- Main: new format enables conform-rate -->
+//     <conform-rate scaleEnabled="0"/>
+//     <adjust-crop mode="trim">...</adjust-crop>
+//     <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/> <!-- Corner -->
+//     <asset-clip ref="pip" lane="-1" format="r4"> <!-- PIP: background full-size -->
+//         <conform-rate scaleEnabled="0" srcFrameRate="60"/>
+//     </asset-clip>
+//     <filter-video name="Shape Mask">...</filter-video> <!-- Rounded corners -->
+// </asset-clip>
+// ```
+//
+// Visual Result: Small rounded corner video (main) overlaid on full-size background (PIP).
+//
+// 🚨 CLAUDE.md Rules Applied:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → proper XML marshaling via struct fields
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Frame-aligned durations → ConvertSecondsToFCPDuration() function
+// - UID consistency → GenerateUID() for deterministic unique identifiers
 //
 // ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
 // ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
@@ -1521,7 +1536,8 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 		}
 
 		// Create separate format for main video (to match samples/pip.fcpxml pattern)
-		// This ensures main video has different format than sequence, allowing conform-rate
+		// 🚨 CRITICAL: Main video MUST have different format than sequence to enable conform-rate
+		// Without this, FCP throws "Encountered an unexpected value" errors on conform-rate elements
 		_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "13335/400000s", "1920", "1080", "1-1-1 (Rec. 709)")
 		if err != nil {
 			tx.Rollback()
