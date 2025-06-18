@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p30" frameDuration="100/3000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="test1" uid="6B2C7AA944EDD8B34E17A2E8DE9F6C83" start="0s" duration="14122857/100000s" hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="48000">
+            <media-rep kind="original-media" sig="6B2C7AA944EDD8B34E17A2E8DE9F6C83" src="file:///Users/aa/Documents/test1.mov">
+                <bookmark>Ym9va/QCAAAAAAQQMAAAAM/7jWFWa+IFkmN7+8Gv+Z1MrFid0uW9XHsnGPq+iYfdzAEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAAAkAAAABAQAAdGVzdDEubW92AAAAEAAAAAEGAAAQAAAAIAAAACwAAABAAAAACAAAAAQDAAAdQgAAAAAAAAgAAAAEAwAAx1IEAAAAAAAIAAAABAMAAP1SBAAAAAAACAAAAAQDAABFAJ0EAAAAABAAAAABBgAAbAAAAHwAAACMAAAAnAAAAAgAAAAABAAAQccBkzTdq50YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAACAAAACAAAAAQDAAACAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAFQAAAAAAAAABRAAAKwAAAAAAAAAEBAAANQAAAAAAAAAQBAAAMQAAAAAAAAAVBAAAPwAAAAAAAAAVRAAAAgBAAAAAAAAVhAAAPQAAAAAAAAAAiAAAMABAAAAAAAABSAAADABAAAAAAAAECAAAEABAAAAAAAAESAAAHQBAAAAAAAAEiAAAFQBAAAAAAAAEyAAAGQBAAAAAAAAICAAAKABAAAAAAAAMCAAAPQAAAAAAAAAAcAAABQBAAAAAAAAEcAAACAAAAAAAAAAEsAAACQBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemCodecs">
+                    <array>
+                        <string>Apple ProRes 422</string>
+                        <string>Linear PCM</string>
+                    </array>
+                </md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-18 09:57:38 -0700"/>
+            </metadata>
+        </asset>
+        <format id="r3" frameDuration="13335/400000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r4" name="test1" uid="B4A18AAD8DD005CEA707533767A1AA70" start="0s" duration="875000/6000s" hasVideo="1" format="r5" videoSources="1">
+            <media-rep kind="original-media" sig="B4A18AAD8DD005CEA707533767A1AA70" src="file:///Users/aa/Desktop/test1.mov">
+                <bookmark>Ym9va/ACAAAAAAQQMAAAAHzDHIvYsVTbBLr3EiPTNWxrn5c8ZTKMh/KITJMTzD20yAEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAHAAAAAQEAAERlc2t0b3AACQAAAAEBAAB0ZXN0MS5tb3YAAAAQAAAAAQYAABAAAAAgAAAALAAAADwAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAAz1IEAAAAAAAIAAAABAMAAO/+nAQAAAAAEAAAAAEGAABoAAAAeAAAAIgAAACYAAAACAAAAAAEAABBxwGS5+YRiBgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAIAAAAIAAAABAMAAAIAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAUAAAAAAAAAAFEAAAqAAAAAAAAAAQEAAA0AAAAAAAAABAEAAAwAAAAAAAAABUEAAA+AAAAAAAAABVEAAABAEAAAAAAABWEAAA8AAAAAAAAAACIAAAvAEAAAAAAAAFIAAALAEAAAAAAAAQIAAAPAEAAAAAAAARIAAAcAEAAAAAAAASIAAAUAEAAAAAAAATIAAAYAEAAAAAAAAgIAAAnAEAAAAAAAAwIAAA8AAAAAAAAAABwAAAEAEAAAAAAAARwAAAIAAAAAAAAAASwAAAIAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemCodecs">
+                    <array>
+                        <string>H.264</string>
+                    </array>
+                </md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-18 09:57:53 -0700"/>
+            </metadata>
+        </asset>
+        <format id="r5" frameDuration="100/6000s" width="2336" height="1510" colorSpace="1-1-1 (Rec. 709)"/>
+        <effect id="r6" name="Shape Mask" uid="FFSuperEllipseMask"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-18-25" uid="23B715EB-76F8-45BD-BA69-E7DC2498B1DD">
+            <project name="test1" uid="5F6B63DD-B028-4BD4-8037-B2D30796E49C" modDate="2025-06-18 10:13:45 -0700">
+                <sequence format="r1" duration="373400/3000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="test1" start="27200/3000s" duration="373400/3000s" format="r3" tcFormat="NDF" audioRole="dialogue">
+                            <conform-rate scaleEnabled="0"/>
+                            <adjust-crop mode="trim">
+                                <trim-rect left="27.1921" right="27.1001" bottom="12.6562"/>
+                            </adjust-crop>
+                            <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/>
+                            <asset-clip ref="r4" lane="-1" offset="35900/3000s" name="test1" start="67300/3000s" duration="364700/3000s" format="r5" tcFormat="NDF">
+                                <conform-rate scaleEnabled="0" srcFrameRate="60"/>
+                            </asset-clip>
+                            <filter-video ref="r6" name="Shape Mask">
+                                <param name="Radius" key="160" value="305 190.625"/>
+                                <param name="Curvature" key="159" value="0.3695"/>
+                                <param name="Feather" key="102" value="100"/>
+                                <param name="Falloff" key="158" value="-100"/>
+                                <param name="Input Size" key="205" value="1920 1080"/>
+                                <param name="Transforms" key="200">
+                                    <param name="Scale" key="203" value="1.3449 1.9525"/>
+                                </param>
+                            </filter-video>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>

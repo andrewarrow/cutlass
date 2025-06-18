@@ -27,7 +27,7 @@ image = pipeline(
     prompt=prompt,  # Text description of desired output
     image=input_image,  # Input image to transform
     negative_prompt=negative_prompt,  # What to avoid in the output
-    num_inference_steps=60,  # Number of denoising steps (1-1000, higher = better quality but slower)
+    num_inference_steps=90,  # Number of denoising steps (1-1000, higher = better quality but slower)
     guidance_scale=8.0,  # How closely to follow prompt (1.0-20.0, higher = more adherence to prompt)
     strength=0.65,  # How much to change input image (0.0-1.0, higher = more transformation)
     max_sequence_length=256,  # Maximum token length for prompt processing (77-512)
