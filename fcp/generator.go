@@ -1473,10 +1473,15 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
+	// Variable to store main video format ID for PIP mode
+	var mainVideoFormatID string
+
 	// Check if asset already exists for this file
 	var pipAsset *Asset
 	if asset, exists := registry.GetOrCreateAsset(pipVideoPath); exists {
 		pipAsset = asset
+		// If asset already existed, no new format was created for main video
+		mainVideoFormatID = ""
 	} else {
 		// Create transaction for atomic resource creation
 		tx := NewTransaction(registry)
@@ -1494,10 +1499,11 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 			return fmt.Errorf("PIP video file does not exist: %s", absPath)
 		}
 
-		// Reserve IDs atomically to prevent collisions (need 2: asset + format)
-		ids := tx.ReserveIDs(2)
+		// Reserve IDs atomically to prevent collisions (need 3: pip asset + pip format + main format)
+		ids := tx.ReserveIDs(3)
 		assetID := ids[0]
 		formatID := ids[1]
+		mainFormatID := ids[2]
 
 		// Generate unique asset name
 		videoName := strings.TrimSuffix(filepath.Base(pipVideoPath), filepath.Ext(pipVideoPath))
@@ -1512,6 +1518,14 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 		if err != nil {
 			tx.Rollback()
 			return fmt.Errorf("failed to create PIP video format: %v", err)
+		}
+
+		// Create separate format for main video (to match samples/pip.fcpxml pattern)
+		// This ensures main video has different format than sequence, allowing conform-rate
+		_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "13335/400000s", "1920", "1080", "1-1-1 (Rec. 709)")
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create main video format for PIP: %v", err)
 		}
 
 		// Create video-only asset using transaction (no audio properties for PIP)
@@ -1529,7 +1543,11 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 		}
 
 		pipAsset = asset
+
+		// Store the main format ID that was created in the transaction
+		mainVideoFormatID = mainFormatID
 	}
+
 
 	// Find the first asset-clip in the spine to add PIP and transforms to
 	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
@@ -1544,6 +1562,11 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 	}
 
 	mainClip := &sequence.Spine.AssetClips[0]
+
+	// Update main clip format if we created a new one for PIP
+	if mainVideoFormatID != "" {
+		mainClip.Format = mainVideoFormatID
+	}
 
 	// Add Shape Mask effect if not already exists
 	shapeMaskEffectID := ""
@@ -1597,63 +1620,17 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 			ScaleEnabled: "0",
 			SrcFrameRate: "60", // Based on samples/pip.fcpxml pattern
 		},
-		// Add Shape Mask filter to PIP video for rounded corners
-		FilterVideos: []FilterVideo{
-			{
-				Ref:  shapeMaskEffectID,
-				Name: "Shape Mask",
-				Params: []Param{
-					{
-						Name:  "Radius",
-						Key:   "160",
-						Value: "305 190.625",
-					},
-					{
-						Name:  "Curvature", 
-						Key:   "159",
-						Value: "0.3695",
-					},
-					{
-						Name:  "Feather",
-						Key:   "102", 
-						Value: "100",
-					},
-					{
-						Name:  "Falloff",
-						Key:   "158",
-						Value: "-100",
-					},
-					{
-						Name:  "Input Size",
-						Key:   "205",
-						Value: "1920 1080",
-					},
-					{
-						Name: "Transforms",
-						Key:  "200",
-						NestedParams: []Param{
-							{
-								Name:  "Scale",
-								Key:   "203", 
-								Value: "1.3449 1.9525",
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	// Add main video transforms (position and scale) based on samples/pip.fcpxml
 	// <adjust-crop mode="trim"><trim-rect left="27.1921" right="27.1001" bottom="12.6562"/></adjust-crop>
 	// <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/>
 	
-	// Only add ConformRate if asset format differs from sequence format
-	// 🚨 CRITICAL: ConformRate causes FCP errors when asset format matches sequence format
-	if mainClip.Format != sequence.Format {
-		mainClip.ConformRate = &ConformRate{
-			ScaleEnabled: "0",
-		}
+	// For PIP effects, the main video should always have conform-rate scaleEnabled="0"
+	// This matches the pattern in samples/pip.fcpxml where main asset has different format than sequence
+	// and needs conform-rate for proper scaling behavior with transforms
+	mainClip.ConformRate = &ConformRate{
+		ScaleEnabled: "0",
 	}
 
 	mainClip.AdjustCrop = &AdjustCrop{
@@ -1670,8 +1647,52 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 		Scale:    "0.28572 0.28572",   // Scale down main video
 	}
 
-	// Shape Mask filter is now applied to the PIP video (pipClip) for rounded corners
-	// This creates the rounded effect visible in box2.png
+	// Add Shape Mask filter to main video (which becomes the small corner video due to transforms)
+	// The main video gets scaled down and positioned in corner, so it needs rounded corners
+	mainClip.FilterVideos = []FilterVideo{
+		{
+			Ref:  shapeMaskEffectID,
+			Name: "Shape Mask",
+			Params: []Param{
+				{
+					Name:  "Radius",
+					Key:   "160",
+					Value: "305 190.625",
+				},
+				{
+					Name:  "Curvature", 
+					Key:   "159",
+					Value: "0.3695",
+				},
+				{
+					Name:  "Feather",
+					Key:   "102", 
+					Value: "100",
+				},
+				{
+					Name:  "Falloff",
+					Key:   "158",
+					Value: "-100",
+				},
+				{
+					Name:  "Input Size",
+					Key:   "205",
+					Value: "1920 1080",
+				},
+				{
+					Name: "Transforms",
+					Key:  "200",
+					NestedParams: []Param{
+						{
+							Name:  "Scale",
+							Key:   "203", 
+							Value: "1.3449 1.9525",
+						},
+					},
+				},
+			},
+		},
+	}
 
 	// Add PIP video as nested asset-clip inside the main video
 	mainClip.NestedAssetClips = append(mainClip.NestedAssetClips, pipClip)
