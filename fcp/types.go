@@ -252,7 +252,11 @@ type AssetClip struct {
 	Format          string           `xml:"format,attr,omitempty"`
 	TCFormat        string           `xml:"tcFormat,attr,omitempty"`
 	AudioRole       string           `xml:"audioRole,attr,omitempty"`
+	ConformRate     *ConformRate     `xml:"conform-rate,omitempty"`
+	AdjustCrop      *AdjustCrop      `xml:"adjust-crop,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
+	NestedAssetClips []AssetClip     `xml:"asset-clip,omitempty"`
+	FilterVideos    []FilterVideo    `xml:"filter-video,omitempty"`
 	Titles          []Title          `xml:"title,omitempty"`
 	Videos          []Video          `xml:"video,omitempty"`
 }
@@ -317,6 +321,29 @@ func (v Video) GetEndOffset() string {
 	// This would require parsing offset and duration to calculate end time
 	// For now, return offset (implementation can be added later if needed)
 	return v.Offset
+}
+
+type ConformRate struct {
+	ScaleEnabled string `xml:"scaleEnabled,attr,omitempty"`
+	SrcFrameRate string `xml:"srcFrameRate,attr,omitempty"`
+}
+
+type AdjustCrop struct {
+	Mode     string    `xml:"mode,attr"`
+	TrimRect *TrimRect `xml:"trim-rect,omitempty"`
+}
+
+type TrimRect struct {
+	Left   string `xml:"left,attr,omitempty"`
+	Right  string `xml:"right,attr,omitempty"`
+	Top    string `xml:"top,attr,omitempty"`
+	Bottom string `xml:"bottom,attr,omitempty"`
+}
+
+type FilterVideo struct {
+	Ref    string  `xml:"ref,attr"`
+	Name   string  `xml:"name,attr"`
+	Params []Param `xml:"param,omitempty"`
 }
 
 type AdjustTransform struct {

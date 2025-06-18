@@ -120,6 +120,27 @@ func (tx *ResourceTransaction) CreateFormat(id, name, width, height, colorSpace 
 	return format, nil
 }
 
+// CreateFormatWithFrameDuration creates a format with frameDuration for video formats (NOT image formats)
+// 🚨 CRITICAL: frameDuration should ONLY be set for video/sequence formats, NOT image formats
+// Image formats must NOT have frameDuration or FCP's performAudioPreflightCheckForObject crashes
+func (tx *ResourceTransaction) CreateFormatWithFrameDuration(id, frameDuration, width, height, colorSpace string) (*Format, error) {
+	if tx.rolled {
+		return nil, fmt.Errorf("transaction has been rolled back")
+	}
+
+	format := &Format{
+		ID:            id,
+		Name:          "", // Will be set to appropriate name based on format
+		FrameDuration: frameDuration,
+		Width:         width,
+		Height:        height,
+		ColorSpace:    colorSpace,
+	}
+
+	tx.created = append(tx.created, &FormatWrapper{format})
+	return format, nil
+}
+
 // CreateEffect creates an effect with transaction management
 func (tx *ResourceTransaction) CreateEffect(id, name, uid string) (*Effect, error) {
 	if tx.rolled {

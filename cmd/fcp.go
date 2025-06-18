@@ -400,6 +400,73 @@ Otherwise, a new FCPXML file is created.`,
 	},
 }
 
+var addPipVideoCmd = &cobra.Command{
+	Use:   "add-pip-video [pip-video-file]",
+	Short: "Add a picture-in-picture video to an existing FCPXML file",
+	Long: `Add a video as picture-in-picture (PIP) to an existing FCPXML file.
+The PIP video will be added as a nested asset-clip inside the first video element with:
+- Proper positioning and scaling transforms
+- Shape mask filter for rounded corners
+- Lane "-1" for proper layering
+- Optional offset timing
+
+Requires an existing FCPXML file with at least one video element to nest the PIP inside.`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		pipVideoFile := args[0]
+		
+		// Get offset from flag (default 0 seconds)
+		offsetStr, _ := cmd.Flags().GetString("offset")
+		offset, err := strconv.ParseFloat(offsetStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing offset '%s': %v\n", offsetStr, err)
+			return
+		}
+		
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
+		output, _ := cmd.Flags().GetString("output")
+		
+		if input == "" {
+			fmt.Printf("Error: --input is required for add-pip-video command\n")
+			return
+		}
+		
+		var filename string
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
+		}
+		
+		// Load existing FCPXML
+		fcpxml, err := fcp.ReadFromFile(input)
+		if err != nil {
+			fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+			return
+		}
+		fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		
+		// Add PIP video to the structure
+		err = fcp.AddPipVideo(fcpxml, pipVideoFile, offset)
+		if err != nil {
+			fmt.Printf("Error adding PIP video: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Added PIP video to existing FCPXML and saved to: %s (offset: %.1fs)\n", filename, offset)
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -428,10 +495,16 @@ func init() {
 	addAudioCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
 	addAudioCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	
+	// Add flags to add-pip-video subcommand
+	addPipVideoCmd.Flags().StringP("input", "i", "", "Input FCPXML file to read from (required)")
+	addPipVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	addPipVideoCmd.Flags().StringP("offset", "t", "0", "Start offset in seconds for PIP video (default 0)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
 	fcpCmd.AddCommand(addTextCmd)
 	fcpCmd.AddCommand(addSlideCmd)
 	fcpCmd.AddCommand(addAudioCmd)
+	fcpCmd.AddCommand(addPipVideoCmd)
 }

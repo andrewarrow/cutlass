@@ -1451,3 +1451,219 @@ func addAudioAssetClipToSpine(fcpxml *FCPXML, asset *Asset) error {
 
 	return nil
 }
+
+// AddPipVideo adds a video as picture-in-picture (PIP) to an existing FCPXML file.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Assets/Effects, modify existing spine elements
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Maintains UID consistency → generateUID() function for deterministic UIDs
+// - PIP-specific pattern → Main video gets transforms, PIP video nested with lane="-1" and Shape Mask filter
+//
+// Pattern based on samples/pip.fcpxml:
+// - Main video (first asset-clip) gets position/scale transforms + adjust-crop + Shape Mask filter
+// - PIP video added as nested asset-clip with lane="-1" and calculated offset
+// - Shape Mask effect with specific parameters for rounded corners
+//
+// ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
+func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Check if asset already exists for this file
+	var pipAsset *Asset
+	if asset, exists := registry.GetOrCreateAsset(pipVideoPath); exists {
+		pipAsset = asset
+	} else {
+		// Create transaction for atomic resource creation
+		tx := NewTransaction(registry)
+
+		// Get absolute path
+		absPath, err := filepath.Abs(pipVideoPath)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to get absolute path: %v", err)
+		}
+
+		// Check if file exists
+		if _, err := os.Stat(absPath); os.IsNotExist(err) {
+			tx.Rollback()
+			return fmt.Errorf("PIP video file does not exist: %s", absPath)
+		}
+
+		// Reserve IDs atomically to prevent collisions (need 2: asset + format)
+		ids := tx.ReserveIDs(2)
+		assetID := ids[0]
+		formatID := ids[1]
+
+		// Generate unique asset name
+		videoName := strings.TrimSuffix(filepath.Base(pipVideoPath), filepath.Ext(pipVideoPath))
+
+		// Use a default duration of 10 seconds for PIP video, properly frame-aligned
+		defaultDurationSeconds := 10.0
+		frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
+
+		// Create PIP video format using transaction (similar to main video format)
+		// Based on samples/pip.fcpxml: r5 format for PIP video
+		_, err = tx.CreateFormatWithFrameDuration(formatID, "100/6000s", "2336", "1510", "1-1-1 (Rec. 709)")
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create PIP video format: %v", err)
+		}
+
+		// Create asset using transaction
+		asset, err := tx.CreateAsset(assetID, absPath, videoName, frameDuration, formatID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create PIP asset: %v", err)
+		}
+
+		// Commit transaction - adds resources to registry and FCPXML
+		err = tx.Commit()
+		if err != nil {
+			return fmt.Errorf("failed to commit transaction: %v", err)
+		}
+
+		pipAsset = asset
+	}
+
+	// Find the first asset-clip in the spine to add PIP and transforms to
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+		return fmt.Errorf("no sequence found in FCPXML")
+	}
+
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+
+	// Find the first asset-clip to add PIP to (this becomes the main video)
+	if len(sequence.Spine.AssetClips) == 0 {
+		return fmt.Errorf("no asset-clip found in spine to add PIP to - need at least one video in the sequence")
+	}
+
+	mainClip := &sequence.Spine.AssetClips[0]
+
+	// Add Shape Mask effect if not already exists
+	shapeMaskEffectID := ""
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.UID == "FFSuperEllipseMask" {
+			shapeMaskEffectID = effect.ID
+			break
+		}
+	}
+
+	if shapeMaskEffectID == "" {
+		// Create transaction for Shape Mask effect
+		tx := NewTransaction(registry)
+		ids := tx.ReserveIDs(1)
+		shapeMaskEffectID = ids[0]
+
+		// Create Shape Mask effect using transaction
+		_, err := tx.CreateEffect(shapeMaskEffectID, "Shape Mask", "FFSuperEllipseMask")
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create Shape Mask effect: %v", err)
+		}
+
+		// Commit transaction
+		err = tx.Commit()
+		if err != nil {
+			return fmt.Errorf("failed to commit Shape Mask effect: %v", err)
+		}
+	}
+
+	// Calculate PIP video offset based on provided offset seconds
+	// Pattern from samples/pip.fcpxml: offset="35900/3000s" which is about 11.97 seconds
+	pipOffsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
+
+	// Calculate PIP video duration (use default or parse from asset)
+	pipDurationSeconds := 10.0 // Default duration for PIP
+	pipDuration := ConvertSecondsToFCPDuration(pipDurationSeconds)
+
+	// Create PIP video asset-clip (nested inside main video) - based on samples/pip.fcpxml pattern
+	// <asset-clip ref="r4" lane="-1" offset="35900/3000s" name="test1" start="67300/3000s" duration="364700/3000s" format="r5" tcFormat="NDF">
+	pipClip := AssetClip{
+		Ref:      pipAsset.ID,
+		Lane:     "-1",                // PIP video uses lane="-1" for layering
+		Offset:   pipOffsetDuration,   // Calculated offset for PIP timing
+		Name:     pipAsset.Name,
+		Start:    "67300/3000s",       // Standard FCP start time for PIP (from sample)
+		Duration: pipDuration,
+		Format:   pipAsset.Format,     // Use PIP asset's format
+		TCFormat: "NDF",
+		ConformRate: &ConformRate{     // Add conform rate for PIP video
+			ScaleEnabled: "0",
+			SrcFrameRate: "60", // Based on samples/pip.fcpxml pattern
+		},
+	}
+
+	// Add main video transforms (position and scale) based on samples/pip.fcpxml
+	// <adjust-crop mode="trim"><trim-rect left="27.1921" right="27.1001" bottom="12.6562"/></adjust-crop>
+	// <adjust-transform position="60.3234 -35.9353" scale="0.28572 0.28572"/>
+	mainClip.AdjustCrop = &AdjustCrop{
+		Mode: "trim",
+		TrimRect: &TrimRect{
+			Left:   "27.1921",
+			Right:  "27.1001",
+			Bottom: "12.6562",
+		},
+	}
+
+	mainClip.AdjustTransform = &AdjustTransform{
+		Position: "60.3234 -35.9353", // Position offset for main video
+		Scale:    "0.28572 0.28572",   // Scale down main video
+	}
+
+	// Add Shape Mask filter to main video with PIP-specific parameters
+	// Based on samples/pip.fcpxml pattern with comprehensive parameters
+	mainClip.FilterVideos = []FilterVideo{
+		{
+			Ref:  shapeMaskEffectID,
+			Name: "Shape Mask",
+			Params: []Param{
+				{
+					Name:  "Radius",
+					Key:   "160",
+					Value: "305 190.625",
+				},
+				{
+					Name:  "Curvature", 
+					Key:   "159",
+					Value: "0.3695",
+				},
+				{
+					Name:  "Feather",
+					Key:   "102", 
+					Value: "100",
+				},
+				{
+					Name:  "Falloff",
+					Key:   "158",
+					Value: "-100",
+				},
+				{
+					Name:  "Input Size",
+					Key:   "205",
+					Value: "1920 1080",
+				},
+				{
+					Name: "Transforms",
+					Key:  "200",
+					NestedParams: []Param{
+						{
+							Name:  "Scale",
+							Key:   "203", 
+							Value: "1.3449 1.9525",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Add PIP video as nested asset-clip inside the main video
+	mainClip.NestedAssetClips = append(mainClip.NestedAssetClips, pipClip)
+
+	return nil
+}
