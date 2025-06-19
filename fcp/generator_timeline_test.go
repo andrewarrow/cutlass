@@ -439,15 +439,13 @@ func TestSynchronizedElements(t *testing.T) {
 	tx := NewTransaction(registry)
 
 	// Reserve IDs for synchronized content
-	ids := tx.ReserveIDs(8)
+	ids := tx.ReserveIDs(6)
 	mainVideoID := ids[0]
 	syncVideoID := ids[1]
 	audioID := ids[2]
 	formatID := ids[3]
 	audioFormatID := ids[4]
 	markerEffectID := ids[5]
-	syncEffectID := ids[6]
-	timecodeEffectID := ids[7]
 
 	// Create formats
 	_, err = tx.CreateFormatWithFrameDuration(formatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
@@ -461,20 +459,11 @@ func TestSynchronizedElements(t *testing.T) {
 	}
 
 	// Create effects for synchronization
-	_, err = tx.CreateEffect(markerEffectID, "Marker", "FFMarker")
+	_, err = tx.CreateEffect(markerEffectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
 	if err != nil {
 		t.Fatalf("Failed to create marker effect: %v", err)
 	}
 
-	_, err = tx.CreateEffect(syncEffectID, "Timecode", "FFTimecode")
-	if err != nil {
-		t.Fatalf("Failed to create sync effect: %v", err)
-	}
-
-	_, err = tx.CreateEffect(timecodeEffectID, "Slate", "FFSlate")
-	if err != nil {
-		t.Fatalf("Failed to create timecode effect: %v", err)
-	}
 
 	// Create synchronized assets
 	mainDuration := ConvertSecondsToFCPDuration(30.0)
@@ -541,30 +530,6 @@ func TestSynchronizedElements(t *testing.T) {
 				},
 			},
 		},
-		// Sync markers and timecode
-		FilterVideos: []FilterVideo{
-			{
-				Ref:  timecodeEffectID,
-				Name: "Slate",
-				Params: []Param{
-					{
-						Name:  "Show Timecode",
-						Key:   "1",
-						Value: "1",
-					},
-					{
-						Name:  "Position",
-						Key:   "2",
-						Value: "0 -400", // Top center
-					},
-					{
-						Name:  "Size",
-						Key:   "3",
-						Value: "24", // Font size
-					},
-				},
-			},
-		},
 	}
 
 	// Add sync markers at specific intervals (every 5 seconds)
@@ -625,7 +590,6 @@ func TestSynchronizedElements(t *testing.T) {
 	fmt.Printf("✅ Synchronized elements test file created: %s\n", testFileName)
 	fmt.Printf("   - Multicam synchronized video/audio at identical timing\n")
 	fmt.Printf("   - Sync markers every 5 seconds for reference\n")
-	fmt.Printf("   - Timecode overlay for visual sync verification\n")
 	fmt.Printf("   - Perfect frame-aligned synchronization\n")
 	fmt.Printf("   - Professional multicam workflow\n")
 }

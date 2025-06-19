@@ -256,9 +256,9 @@ type AssetClip struct {
 	AdjustCrop      *AdjustCrop      `xml:"adjust-crop,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
 	NestedAssetClips []AssetClip     `xml:"asset-clip,omitempty"`
-	FilterVideos    []FilterVideo    `xml:"filter-video,omitempty"`
 	Titles          []Title          `xml:"title,omitempty"`
 	Videos          []Video          `xml:"video,omitempty"`
+	FilterVideos    []FilterVideo    `xml:"filter-video,omitempty"`
 }
 
 // GetOffset implements TimelineElement interface

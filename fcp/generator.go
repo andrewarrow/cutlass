@@ -253,7 +253,20 @@ func WriteToFile(fcpxml *FCPXML, filename string) error {
 <!DOCTYPE fcpxml>
 
 `
-	fullXML := xmlHeader + string(output)
+	
+	// Fix empty elements to be self-closing for DTD compliance
+	xmlContent := string(output)
+	xmlContent = strings.ReplaceAll(xmlContent, "></media-rep>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></format>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></effect>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></param>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></adjust-transform>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></asset-clip>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></match-clip>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></match-media>", "/>")
+	xmlContent = strings.ReplaceAll(xmlContent, "></match-ratings>", "/>")
+	
+	fullXML := xmlHeader + xmlContent
 
 	// Write to file
 	err = os.WriteFile(filename, []byte(fullXML), 0644)
@@ -1311,7 +1324,7 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 // - Duration is determined by actual audio file duration
 func isAudioFile(filePath string) bool {
 	ext := strings.ToLower(filepath.Ext(filePath))
-	return ext == ".wav" || ext == ".mp3" || ext == ".m4a" || ext == ".aac" || ext == ".flac"
+	return ext == ".wav" || ext == ".mp3" || ext == ".m4a" || ext == ".aac" || ext == ".flac" || ext == ".caf"
 }
 
 // AddAudio adds an audio asset and asset-clip to the FCPXML structure as the main audio track starting at 00:00.

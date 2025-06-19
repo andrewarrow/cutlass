@@ -1,5 +1,8 @@
 # Project Context for AI Assistance
 
+## 🚨 ABSOLUTELY CRITICAL: CHANGE CODE NOT XML 🚨
+**NEVER EVER only change problem xml in an xml file, always change the code that generates it too**
+
 ## 🚨 ABSOLUTELY CRITICAL: NO XML STRING TEMPLATES 🚨
 
 **NEVER EVER generate XML from hardcoded string templates with %s placeholders, use structs**
