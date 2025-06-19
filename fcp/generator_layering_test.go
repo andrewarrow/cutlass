@@ -35,7 +35,9 @@ func TestAdvancedLayering(t *testing.T) {
 	blendEffectID := ids[6]
 
 	// Create different formats for each video to enable different properties
-	_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
+	// 🚨 CRITICAL FIX: Main format must be DIFFERENT from sequence format (r1: "1001/24000s")
+	// to enable conform-rate elements without causing "Encountered an unexpected value" errors
+	_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "13335/400000s", "1920", "1080", "1-1-1 (Rec. 709)")
 	if err != nil {
 		t.Fatalf("Failed to create main format: %v", err)
 	}
