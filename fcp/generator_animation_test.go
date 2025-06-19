@@ -103,32 +103,38 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  "0s",
 				Value: "-1000 -500", // Start off-screen top-left
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(3.0),
 				Value: "0 0", // Move to center
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(8.0),
 				Value: "300 -200", // Move to upper right
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(12.0),
 				Value: "-400 300", // Move to lower left
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(18.0),
 				Value: "500 200", // Move to lower right
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "0 0", // Return to center
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
@@ -147,42 +153,50 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(2.0),
 				Value: "1.5 1.5", // Scale up big
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(4.0),
 				Value: "1.0 1.0", // Normal size
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(6.0),
 				Value: "1.2 1.2", // Breathe larger
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(8.0),
 				Value: "0.8 0.8", // Breathe smaller
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "1.1 1.1", // Breathe larger
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(12.0),
 				Value: "0.9 0.9", // Breathe smaller
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "2.0 2.0", // Final scale up
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "0.05 0.05", // Scale down to vanish
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 		},
 	}
@@ -197,27 +211,32 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(5.0),
 				Value: "90", // Slow rotation to 90 degrees
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "360", // Full rotation
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
 				Value: "720", // Double rotation
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "1440", // Quadruple rotation (fast spinning)
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "1800", // Slow down
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
@@ -236,27 +255,32 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(1.0),
 				Value: "100", // Fade in
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(5.0),
 				Value: "80", // Slight fade
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(7.0),
 				Value: "100", // Back to full opacity
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
 				Value: "60", // Partial transparency
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "100", // Full opacity
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(28.0),
@@ -265,7 +289,8 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "0", // Fade out
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 		},
 	}
@@ -280,7 +305,8 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(3.0),
 				Value: "0", // Sharpen to focus
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
@@ -289,17 +315,20 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(18.0),
 				Value: "20", // Motion blur effect
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(22.0),
 				Value: "0", // Back to sharp
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "100", // End very blurry
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 		},
 	}
@@ -314,37 +343,44 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(2.0),
 				Value: "80", // Strong glow
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(6.0),
 				Value: "30", // Moderate glow
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "60", // Pulsing glow
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(14.0),
 				Value: "20", // Low glow
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(18.0),
 				Value: "100", // Maximum glow
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "50", // Medium glow
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "0", // Fade glow out
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 		},
 	}
@@ -359,32 +395,38 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(5.0),
 				Value: "60", // Yellow
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "120", // Green
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
 				Value: "180", // Cyan
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "240", // Blue
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "300", // Magenta
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "360", // Back to red
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 		},
 	}
@@ -399,22 +441,26 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(3.0),
 				Value: "50", // Build wave
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "100", // Maximum wave
-				Curve: "easeInOut",
+				Interp: "ease",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "25", // Reduce wave
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "0", // Remove wave
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 		},
 	}
@@ -429,17 +475,20 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(5.0),
 				Value: "1", // Slow turbulence
-				Curve: "easeIn",
+				Interp: "easeIn",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
 				Value: "5", // Fast turbulence
-				Curve: "linear",
+				Interp: "linear",
+				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "2", // Slow down
-				Curve: "easeOut",
+				Interp: "easeOut",
+				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
@@ -567,7 +616,8 @@ func TestKeyframeAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(30.0),
 									Value: "720", // Two full phase cycles
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 							},
 						},
@@ -611,7 +661,8 @@ func TestKeyframeAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(30.0),
 									Value: "1000 500", // Move turbulence pattern
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 							},
 						},
@@ -643,7 +694,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(4.0),
 								Value: "-300 -300", // Slide into frame
-								Curve: "easeOut",
+								Interp: "easeOut",
+				Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(24.0),
@@ -652,7 +704,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "600 400", // Exit off-screen
-								Curve: "easeIn",
+								Interp: "easeIn",
+				Curve:  "smooth",
 							},
 						},
 					},
@@ -668,7 +721,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(5.0),
 								Value: "0.4 0.4", // Scale up
-								Curve: "easeOut",
+								Interp: "easeOut",
+				Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(22.0),
@@ -677,7 +731,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "0.1 0.1", // Scale down for exit
-								Curve: "easeIn",
+								Interp: "easeIn",
+				Curve:  "smooth",
 							},
 						},
 					},
@@ -693,7 +748,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(6.0),
 								Value: "0", // Straighten out
-								Curve: "easeOut",
+								Interp: "easeOut",
+				Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(20.0),
@@ -702,7 +758,8 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "180", // Spin for exit
-								Curve: "easeIn",
+								Interp: "easeIn",
+				Curve:  "smooth",
 							},
 						},
 					},
@@ -733,7 +790,8 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(8.0),
 							Value: "0 0", // Move to center
-							Curve: "easeOut",
+							Interp: "easeOut",
+				Curve:  "smooth",
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(20.0),
@@ -742,7 +800,8 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(25.0),
 							Value: "0 -400", // Exit top
-							Curve: "easeIn",
+							Interp: "easeIn",
+				Curve:  "smooth",
 						},
 					},
 				},
@@ -759,12 +818,14 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(7.0),
 							Value: "1.2 1.2", // Overshoot
-							Curve: "easeOut",
+							Interp: "easeOut",
+				Curve:  "smooth",
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(9.0),
 							Value: "1.0 1.0", // Settle
-							Curve: "easeInOut",
+							Interp: "ease",
+				Curve:  "smooth",
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(22.0),
@@ -838,7 +899,7 @@ func TestKeyframeAnimation(t *testing.T) {
 		{"Rotation keyframes", `<param name="rotation"`},
 		{"Keyframe animation elements", `<keyframeAnimation>`},
 		{"Keyframe time values", `<keyframe time="`},
-		{"Keyframe curve types", `curve="easeOut"`},
+		{"Keyframe interpolation types", `interp="easeOut"`},
 		{"Multiple keyframes", `<keyframe time="72072/24000s"`}, // 3 seconds
 		{"Blur animation", `name="Gaussian Blur"`},
 		{"Glow animation", `name="Glow"`},
@@ -852,7 +913,7 @@ func TestKeyframeAnimation(t *testing.T) {
 		{"Transform parameters", `<adjust-transform>`},
 		{"Filter effects", `<filter-video ref="`},
 		{"Complex parameter values", `value="-1000 -500"`},
-		{"Easing curves", `curve="easeInOut"`},
+		{"Easing interpolation", `interp="ease"`},
 	}
 
 	for _, tc := range testCases {
@@ -969,22 +1030,26 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(2.0),
 									Value: "100", // Burst of particles
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(8.0),
 									Value: "50", // Steady rate
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(15.0),
 									Value: "200", // Final burst
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "0", // Stop emission
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 							},
 						},
@@ -1011,12 +1076,14 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(10.0),
 									Value: "360", // Full rotation
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "720", // Two rotations
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 							},
 						},
@@ -1038,17 +1105,20 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(5.0),
 									Value: "200", // Speed up
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(15.0),
 									Value: "100", // Slow down
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "300", // Final burst speed
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 							},
 						},
@@ -1077,17 +1147,20 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(3.0),
 									Value: "100", // Normal gravity
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(12.0),
 									Value: "-50", // Reverse gravity
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(18.0),
 									Value: "200", // Strong gravity
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
@@ -1120,22 +1193,26 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(4.0),
 									Value: "80", // Strong wind from left
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(8.0),
 									Value: "-60", // Wind from right
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(12.0),
 									Value: "100", // Strong wind from left again
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(16.0),
 									Value: "0", // Calm
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
@@ -1156,12 +1233,14 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(10.0),
 									Value: "180", // From right
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "360", // Back to left
-									Curve: "linear",
+									Interp: "linear",
+				Curve:  "linear",
 								},
 							},
 						},
@@ -1190,17 +1269,20 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(6.0),
 									Value: "150", // Strong attraction
-									Curve: "easeIn",
+									Interp: "easeIn",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(14.0),
 									Value: "-100", // Repulsion
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "0", // Neutral
-									Curve: "easeOut",
+									Interp: "easeOut",
+				Curve:  "smooth",
 								},
 							},
 						},
@@ -1217,22 +1299,26 @@ func TestParticleSystemAnimation(t *testing.T) {
 								{
 									Time:  ConvertSecondsToFCPDuration(5.0),
 									Value: "300 -200", // Upper right
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(10.0),
 									Value: "-400 300", // Lower left
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(15.0),
 									Value: "200 200", // Lower right
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 								{
 									Time:  ConvertSecondsToFCPDuration(20.0),
 									Value: "0 0", // Back to center
-									Curve: "easeInOut",
+									Interp: "ease",
+				Curve:  "smooth",
 								},
 							},
 						},

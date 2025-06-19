@@ -763,7 +763,7 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 															Name: "anchor",
 															KeyframeAnimation: &KeyframeAnimation{
 																Keyframes: []Keyframe{
-																	{Time: "24024/24000s", Value: "0 0", Curve: "linear"},
+																	{Time: "24024/24000s", Value: "0 0", Interp: "linear", Curve: "linear"},
 																},
 															},
 														},
@@ -780,7 +780,7 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 															Name: "rotation",
 															KeyframeAnimation: &KeyframeAnimation{
 																Keyframes: []Keyframe{
-																	{Time: "24024/24000s", Value: "0", Curve: "linear"},
+																	{Time: "24024/24000s", Value: "0", Interp: "linear", Curve: "linear"},
 																},
 															},
 														},
@@ -788,7 +788,7 @@ func TestAddTextFromFilePreservesSlideAnimation(t *testing.T) {
 															Name: "scale",
 															KeyframeAnimation: &KeyframeAnimation{
 																Keyframes: []Keyframe{
-																	{Time: "24024/24000s", Value: "1 1", Curve: "linear"},
+																	{Time: "24024/24000s", Value: "1 1", Interp: "linear", Curve: "linear"},
 																},
 															},
 														},

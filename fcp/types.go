@@ -376,9 +376,10 @@ type KeyframeAnimation struct {
 }
 
 type Keyframe struct {
-	Time  string `xml:"time,attr"`
-	Value string `xml:"value,attr"`
-	Curve string `xml:"curve,attr,omitempty"`
+	Time   string `xml:"time,attr"`
+	Value  string `xml:"value,attr"`
+	Interp string `xml:"interp,attr,omitempty"` // linear | ease | easeIn | easeOut (default: linear)
+	Curve  string `xml:"curve,attr,omitempty"`  // linear | smooth (default: smooth)
 }
 
 type TitleText struct {

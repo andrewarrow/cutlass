@@ -787,7 +787,8 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "0 0",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
@@ -814,7 +815,8 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "0",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
@@ -826,7 +828,8 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "1 1",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
@@ -1256,7 +1259,8 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "0 0",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
@@ -1283,7 +1287,8 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "0",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
@@ -1295,7 +1300,8 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "1 1",
-							Curve: "linear",
+							Interp: "linear",
+							Curve:  "linear",
 						},
 					},
 				},
