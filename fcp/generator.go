@@ -254,19 +254,7 @@ func WriteToFile(fcpxml *FCPXML, filename string) error {
 
 `
 	
-	// Fix empty elements to be self-closing for DTD compliance
-	xmlContent := string(output)
-	xmlContent = strings.ReplaceAll(xmlContent, "></media-rep>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></format>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></effect>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></param>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></adjust-transform>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></asset-clip>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></match-clip>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></match-media>", "/>")
-	xmlContent = strings.ReplaceAll(xmlContent, "></match-ratings>", "/>")
-	
-	fullXML := xmlHeader + xmlContent
+	fullXML := xmlHeader + string(output)
 
 	// Write to file
 	err = os.WriteFile(filename, []byte(fullXML), 0644)
