@@ -472,6 +472,150 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 	}
 
+	// 🚨 CLAUDE.md Rule: Effect UID Reality Check
+	// Check that all effects use valid FCP effect UIDs, not fictional ones
+	fictionalEffectUIDs := map[string]bool{
+		"FFParticleSystem": true,
+		"FFReplicator":     true,
+		"FFGravity":        true,
+		"FFWind":           true,
+		"FFEmitter":        true,
+		"FFAttractor":      true,
+		"FFMotion":         true,
+		"FFTransform":      true,
+		"FFColorize":       true,
+		"FFTurbulence":     true,
+		"FFWave":           true,
+		"FFSpiral":         true,
+		"FFAnimatedText":   true,
+		"FFDistortion":     true,
+	}
+
+	for _, effect := range fcpxml.Resources.Effects {
+		if fictionalEffectUIDs[effect.UID] {
+			violations = append(violations, fmt.Sprintf("Fictional effect UID '%s' detected in effect '%s' - use built-in adjust-* elements instead", effect.UID, effect.Name))
+		}
+	}
+
+	// 🚨 CLAUDE.md Rule: Keyframe Attribute Validation
+	// Check for keyframe structure compliance with DTD requirements
+	validateKeyframes := func(keyframes []Keyframe, location string) {
+		for i, keyframe := range keyframes {
+			// Check for valid interpolation values
+			if keyframe.Interp != "" {
+				validInterps := map[string]bool{"linear": true, "ease": true, "easeIn": true, "easeOut": true}
+				if !validInterps[keyframe.Interp] {
+					violations = append(violations, fmt.Sprintf("Invalid keyframe interp '%s' at %s[%d] - must be: linear, ease, easeIn, easeOut", keyframe.Interp, location, i))
+				}
+			}
+			
+			// Check for valid curve values
+			if keyframe.Curve != "" {
+				validCurves := map[string]bool{"linear": true, "smooth": true}
+				if !validCurves[keyframe.Curve] {
+					violations = append(violations, fmt.Sprintf("Invalid keyframe curve '%s' at %s[%d] - must be: linear, smooth", keyframe.Curve, location, i))
+				}
+			}
+		}
+	}
+
+	// Check keyframes in all possible locations
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				// Check asset-clips
+				for _, clip := range sequence.Spine.AssetClips {
+					// Check adjust-transform keyframes
+					if clip.AdjustTransform != nil {
+						for _, param := range clip.AdjustTransform.Params {
+							if param.KeyframeAnimation != nil {
+								validateKeyframes(param.KeyframeAnimation.Keyframes, fmt.Sprintf("AssetClip '%s' AdjustTransform param '%s'", clip.Name, param.Name))
+							}
+						}
+					}
+					
+					// Check filter-video keyframes
+					for _, filter := range clip.FilterVideos {
+						for _, param := range filter.Params {
+							if param.KeyframeAnimation != nil {
+								validateKeyframes(param.KeyframeAnimation.Keyframes, fmt.Sprintf("AssetClip '%s' FilterVideo '%s' param '%s'", clip.Name, filter.Name, param.Name))
+							}
+						}
+					}
+				}
+				
+				// Check video keyframes
+				for _, video := range sequence.Spine.Videos {
+					if video.AdjustTransform != nil {
+						for _, param := range video.AdjustTransform.Params {
+							if param.KeyframeAnimation != nil {
+								validateKeyframes(param.KeyframeAnimation.Keyframes, fmt.Sprintf("Video '%s' AdjustTransform param '%s'", video.Name, param.Name))
+							}
+						}
+					}
+				}
+				
+				// Check title keyframes
+				for _, title := range sequence.Spine.Titles {
+					for _, param := range title.Params {
+						if param.KeyframeAnimation != nil {
+							validateKeyframes(param.KeyframeAnimation.Keyframes, fmt.Sprintf("Title '%s' param '%s'", title.Name, param.Name))
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 🚨 CLAUDE.md Rule: Resource Reference Validation
+	// Check that all refs in spine elements have corresponding resource definitions
+	resourceIDs := make(map[string]bool)
+	for _, asset := range fcpxml.Resources.Assets {
+		resourceIDs[asset.ID] = true
+	}
+	for _, format := range fcpxml.Resources.Formats {
+		resourceIDs[format.ID] = true
+	}
+	for _, effect := range fcpxml.Resources.Effects {
+		resourceIDs[effect.ID] = true
+	}
+	for _, media := range fcpxml.Resources.Media {
+		resourceIDs[media.ID] = true
+	}
+
+	// Check spine element references
+	checkRef := func(ref, elementType string) {
+		if ref != "" && !resourceIDs[ref] {
+			violations = append(violations, fmt.Sprintf("Undefined reference '%s' in %s - missing resource definition", ref, elementType))
+		}
+	}
+
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				// Check asset-clips
+				for _, clip := range sequence.Spine.AssetClips {
+					checkRef(clip.Ref, fmt.Sprintf("AssetClip '%s'", clip.Name))
+					
+					// Check filter-video refs
+					for _, filter := range clip.FilterVideos {
+						checkRef(filter.Ref, fmt.Sprintf("FilterVideo '%s' in AssetClip '%s'", filter.Name, clip.Name))
+					}
+				}
+				
+				// Check videos
+				for _, video := range sequence.Spine.Videos {
+					checkRef(video.Ref, fmt.Sprintf("Video '%s'", video.Name))
+				}
+				
+				// Check titles
+				for _, title := range sequence.Spine.Titles {
+					checkRef(title.Ref, fmt.Sprintf("Title '%s'", title.Name))
+				}
+			}
+		}
+	}
+
 	return violations
 }
 
