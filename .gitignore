@@ -2,3 +2,4 @@ cutlass
 data
 assets
 scripts/token.pickle
+fcp/test_*
