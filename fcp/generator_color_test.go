@@ -389,7 +389,7 @@ func TestColorCorrection(t *testing.T) {
 	}
 
 	// Write test file for manual FCP validation
-	testFileName := "/tmp/test_color_correction.fcpxml"
+	testFileName := "test_color_correction.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -768,7 +768,7 @@ func TestHSLColorGrading(t *testing.T) {
 	}
 
 	// Write test file
-	testFileName := "/tmp/test_hsl_color_grading.fcpxml"
+	testFileName := "test_hsl_color_grading.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)

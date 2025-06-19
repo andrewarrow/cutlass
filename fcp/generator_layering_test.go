@@ -212,7 +212,7 @@ func TestAdvancedLayering(t *testing.T) {
 	}
 
 	// Write test file for manual FCP validation
-	testFileName := "/tmp/test_advanced_layering.fcpxml"
+	testFileName := "test_advanced_layering.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -527,7 +527,7 @@ func TestComplexCompositing(t *testing.T) {
 	}
 
 	// Write test file
-	testFileName := "/tmp/test_complex_compositing.fcpxml"
+	testFileName := "test_complex_compositing.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)

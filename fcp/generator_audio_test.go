@@ -765,7 +765,7 @@ func TestAudioMixing(t *testing.T) {
 	}
 
 	// Write test file for manual FCP validation
-	testFileName := "/tmp/test_audio_mixing.fcpxml"
+	testFileName := "test_audio_mixing.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -1152,7 +1152,7 @@ func TestSurroundSoundMixing(t *testing.T) {
 	}
 
 	// Write test file
-	testFileName := "/tmp/test_surround_sound_mixing.fcpxml"
+	testFileName := "test_surround_sound_mixing.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)

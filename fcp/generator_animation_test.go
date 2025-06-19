@@ -862,7 +862,7 @@ func TestKeyframeAnimation(t *testing.T) {
 	}
 
 	// Write test file for manual FCP validation
-	testFileName := "/tmp/test_keyframe_animation.fcpxml"
+	testFileName := "test_keyframe_animation.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -1260,7 +1260,7 @@ func TestParticleSystemAnimation(t *testing.T) {
 	}
 
 	// Write test file
-	testFileName := "/tmp/test_particle_animation.fcpxml"
+	testFileName := "test_particle_animation.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)

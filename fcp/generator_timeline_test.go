@@ -408,7 +408,7 @@ func TestComplexTimeline(t *testing.T) {
 	}
 
 	// Write test file for manual FCP validation
-	testFileName := "/tmp/test_complex_timeline.fcpxml"
+	testFileName := "test_complex_timeline.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
@@ -616,7 +616,7 @@ func TestSynchronizedElements(t *testing.T) {
 	}
 
 	// Write test file
-	testFileName := "/tmp/test_synchronized_elements.fcpxml"
+	testFileName := "test_synchronized_elements.fcpxml"
 	err = WriteToFile(fcpxml, testFileName)
 	if err != nil {
 		t.Fatalf("Failed to write test file: %v", err)
