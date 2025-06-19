@@ -413,10 +413,17 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		if strings.Contains(duration, "/600s") && !strings.Contains(duration, "1001") {
 			violations = append(violations, fmt.Sprintf("Potentially non-frame-aligned duration '%s' at %s - use ConvertSecondsToFCPDuration()", duration, location))
 		}
-		if strings.Contains(duration, "/24000s") {
-			// Check if it follows (frames*1001)/24000s pattern
-			if !strings.Contains(duration, "1001") {
-				violations = append(violations, fmt.Sprintf("Non-frame-aligned duration '%s' at %s - must be (frames*1001)/24000s", duration, location))
+		if strings.Contains(duration, "/24000s") && duration != "0s" {
+			// Check if it follows (frames*1001)/24000s pattern by checking if numerator is divisible by 1001
+			durationNoS := strings.TrimSuffix(duration, "s")
+			parts := strings.Split(durationNoS, "/")
+			if len(parts) == 2 {
+				if numerator, err := strconv.Atoi(parts[0]); err == nil {
+					// Check if numerator is divisible by 1001 (frame-aligned)
+					if numerator%1001 != 0 {
+						violations = append(violations, fmt.Sprintf("Non-frame-aligned duration '%s' at %s - must be (frames*1001)/24000s", duration, location))
+					}
+				}
 			}
 		}
 	}

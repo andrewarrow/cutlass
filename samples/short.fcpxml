@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" frameDuration="100/3000s" width="1080" height="1920" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="1080x1920" uid="BEBADC29549A80431DCEA6FE9E9C06CB" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="BEBADC29549A80431DCEA6FE9E9C06CB" src="file:///Users/aa/Documents/1080x1920.png">
+                <bookmark>Ym9va/gCAAAAAAQQMAAAAFqjqnniL1NxJsSE4XE3Up/WE2TKiniC5sc7jHuo8Feo0AEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAAA0AAAABAQAAMTA4MHgxOTIwLnBuZwAAABAAAAABBgAAEAAAACAAAAAsAAAAQAAAAAgAAAAEAwAAHUIAAAAAAAAIAAAABAMAAMdSBAAAAAAACAAAAAQDAAD9UgQAAAAAAAgAAAAEAwAAZRGeBAAAAAAQAAAAAQYAAHAAAACAAAAAkAAAAKAAAAAIAAAAAAQAAEHHAb6aua+uGAAAAAECAAABAAAAAAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAQUAAAQAAAADAwAACAAAAAQAAAADAwAAAgAAAAgAAAAEAwAAAgAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxmPHqoAAACQAAAABAQAANUUzOUUyNTMtNjBBOC00RDkyLTkzQ0ItREYxREZEMjAxQ0JEGAAAAAECAACBAAAAAQAAAO8TAAABAAAAAAAAAAAAAAABAAAAAQEAAC8AAADwAAAA/v///wEAAAAAAAAAEwAAAAQQAABYAAAAAAAAAAUQAACwAAAAAAAAABAQAADYAAAAAAAAAEAQAADIAAAAAAAAAFQQAAAAAQAAAAAAAFUQAAAMAQAAAAAAAFYQAAD4AAAAAAAAAAIgAADEAQAAAAAAAAUgAAA0AQAAAAAAABAgAABEAQAAAAAAABEgAAB4AQAAAAAAABIgAABYAQAAAAAAABMgAABoAQAAAAAAACAgAACkAQAAAAAAADAgAAD4AAAAAAAAAAHAAAAYAQAAAAAAABHAAAAgAAAAAAAAABLAAAAoAQAAAAAAABDQAAAEAAAAAAAAAA==</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HDTV"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-18 16:03:32 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="1"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="1080" height="1920" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r4" name="vibe" uid="0D53C0BF4774E74E6DBF4CCF4C34B664" start="0s" duration="2783662/100000s" hasVideo="1" format="r5" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="48000">
+            <media-rep kind="original-media" sig="0D53C0BF4774E74E6DBF4CCF4C34B664" src="file:///Users/aa/Documents/vibe.mov">
+                <bookmark>Ym9va/ACAAAAAAQQMAAAAMNWGV8t0ltytKA6VxDUd3CPchyoPYq4BQJeToNpGwqQyAEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAAAgAAAABAQAAdmliZS5tb3YQAAAAAQYAABAAAAAgAAAALAAAAEAAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAA/VIEAAAAAAAIAAAABAMAAKeInQQAAAAAEAAAAAEGAABoAAAAeAAAAIgAAACYAAAACAAAAAAEAABBxwGm42n8PBgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAIAAAAIAAAABAMAAAIAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAUAAAAAAAAAAFEAAAqAAAAAAAAAAQEAAA0AAAAAAAAABAEAAAwAAAAAAAAABUEAAA+AAAAAAAAABVEAAABAEAAAAAAABWEAAA8AAAAAAAAAACIAAAvAEAAAAAAAAFIAAALAEAAAAAAAAQIAAAPAEAAAAAAAARIAAAcAEAAAAAAAASIAAAUAEAAAAAAAATIAAAYAEAAAAAAAAgIAAAnAEAAAAAAAAwIAAA8AAAAAAAAAABwAAAEAEAAAAAAAARwAAAIAAAAAAAAAASwAAAIAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="HD (1-1-1)"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.spotlight.kMDItemCodecs">
+                    <array>
+                        <string>Apple ProRes 422</string>
+                        <string>Linear PCM</string>
+                    </array>
+                </md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-18 12:41:52 -0700"/>
+            </metadata>
+        </asset>
+        <format id="r5" frameDuration="13335/400000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="40146683-7D4B-4991-ABFF-A76A272F4A1D">
+            <project name="vibeshort" uid="B2D9C24A-141A-4F3D-A5EB-5E05DF2DF3CF" modDate="2025-06-18 16:05:36 -0700">
+                <sequence format="r1" duration="153200/6000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="1080x1920" start="3600s" duration="153200/6000s">
+                            <asset-clip ref="r4" lane="1" offset="3600s" name="vibe" start="6800/3000s" duration="76600/3000s" format="r5" tcFormat="NDF" audioRole="dialogue">
+                                <conform-rate scaleEnabled="0"/>
+                                <adjust-crop mode="trim">
+                                    <trim-rect left="58.6936" top="6.71007" right="61.3455"/>
+                                </adjust-crop>
+                            </asset-clip>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
