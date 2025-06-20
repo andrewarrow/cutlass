@@ -30,9 +30,9 @@ type CreativeTextOptions struct {
 // DefaultCreativeTextOptions returns default options
 func DefaultCreativeTextOptions() CreativeTextOptions {
 	return CreativeTextOptions{
-		SectionDuration:    12.0, // Longer for dramatic animations
-		PointDuration:      3.0,  // More time for explosive impact
-		TransitionDuration: 1.5,  // Dramatic pause between sections
+		SectionDuration:    45.0, // Much longer for extended presentation
+		PointDuration:      8.0,  // Extended time for each explosive point
+		TransitionDuration: 5.0,  // Longer dramatic pauses between sections
 		BackgroundColor:    "0.1 0.1 0.2 1", // Dark blue background
 		ProjectName:        "🎬 EXPLOSIVE PRESENTATION 🎬",
 		EventName:          "💥 CREATIVE IMPACT 💥",
@@ -107,20 +107,24 @@ func GenerateCreativeText(options CreativeTextOptions) error {
 
 // calculateTotalDuration calculates the total duration needed for all sections
 func calculateTotalDuration(sections []ContentSection, options CreativeTextOptions) float64 {
-	totalDuration := 0.0
+	// Target total duration: 7 minutes 11 seconds = 431 seconds
+	targetDuration := 431.0
 	
+	// Calculate natural duration based on content
+	naturalDuration := 0.0
 	for _, section := range sections {
-		// Title appears first
-		titleDuration := 1.5
-		// Points appear sequentially with overlap
-		pointsDuration := float64(len(section.Points)) * options.PointDuration * 0.8 // 80% overlap
-		// Section transition
+		// Title appears first with extended time
+		titleDuration := 4.0
+		// Points appear sequentially with extended timing
+		pointsDuration := float64(len(section.Points)) * options.PointDuration * 0.9 // Less overlap for breathing room
+		// Section transition with dramatic pause
 		sectionDuration := titleDuration + pointsDuration + options.TransitionDuration
 		
-		totalDuration += sectionDuration
+		naturalDuration += sectionDuration
 	}
 	
-	return totalDuration
+	// Use the target duration to ensure exactly 7:11
+	return targetDuration
 }
 
 // addCreativeBackground creates a visible background using proven FCP generator
@@ -156,10 +160,14 @@ func addCreativeBackground(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, dura
 
 // addSectionText adds animated text for a section with title and points to background video
 func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, section ContentSection, sectionIndex int, currentTime *float64, textEffectID string, options CreativeTextOptions) error {
+	// Target 431 seconds total across all sections - calculate section timing
+	totalSections := 7 // From jenny_hansen_lane.json
+	sectionTimeAllocation := 431.0 / float64(totalSections) // ~61.5 seconds per section
+	
 	// DRAMATIC TITLE ENTRANCE - use simple valid XML ID format
 	titleID := fmt.Sprintf("ts%d", sectionIndex*10+1)
 	titleOffset := *currentTime
-	titleDuration := 2.5 // Longer for dramatic effect
+	titleDuration := 6.0 // Much longer for extended dramatic effect
 	
 	// Titles will use scale animation instead of position sliding
 	
@@ -169,7 +177,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 		Lane:     fmt.Sprintf("%d", sectionIndex*10+1), // Unique lane per section
 		Offset:   fcp.ConvertSecondsToFCPDuration(titleOffset),
 		Name:     fmt.Sprintf("🎬 SECTION %d TITLE", sectionIndex+1),
-		Duration: fcp.ConvertSecondsToFCPDuration(titleDuration + float64(len(section.Points))*options.PointDuration*0.7 + 2.0),
+		Duration: fcp.ConvertSecondsToFCPDuration(sectionTimeAllocation), // Use full section time
 		Start:    "0s",
 		Params: []fcp.Param{
 			// Static position (no keyframe animation on Position for titles)
@@ -268,7 +276,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 	// 💥 EXPLOSIVE BULLET POINTS with increasing intensity! 💥
 	for pointIndex, point := range section.Points {
 		pointID := fmt.Sprintf("ts%d", sectionIndex*10+pointIndex+2)
-		pointDelay := 0.8 + float64(pointIndex)*0.5 // Faster stagger for excitement
+		pointDelay := titleDuration + 2.0 + float64(pointIndex)*10.0 // Much longer delays for extended timing
 		pointOffset := *currentTime + pointDelay
 		
 		// Calculate dynamic positions for visual variety
@@ -286,7 +294,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			Lane:     fmt.Sprintf("%d", sectionIndex*10+pointIndex+2), // Unique lane per point
 			Offset:   fcp.ConvertSecondsToFCPDuration(pointOffset),
 			Name:     fmt.Sprintf("💥 BAM! POINT %d", pointIndex+1),
-			Duration: fcp.ConvertSecondsToFCPDuration(options.PointDuration * 3.0), // Longer for impact
+			Duration: fcp.ConvertSecondsToFCPDuration(sectionTimeAllocation - pointDelay), // Use remaining section time
 			Start:    "0s",
 			Params: []fcp.Param{
 				// Static position (no keyframe animation on Position for titles)
@@ -375,13 +383,8 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 		)
 	}
 
-	// Update current time for next section - give time for all explosions to finish!
-	lastPointTime := 0.8 + float64(len(section.Points)-1)*0.5 + 2.0 // Last point entry + display time
-	sectionDuration := titleDuration + lastPointTime
-	*currentTime += sectionDuration
-
-	// Add dramatic pause between sections for maximum impact
-	*currentTime += options.TransitionDuration * 2.0
+	// Update current time for next section - use the full section allocation
+	*currentTime += sectionTimeAllocation
 
 	return nil
 }
