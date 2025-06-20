@@ -636,10 +636,38 @@ func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 	// Create consistent mapping by processing characters in order of appearance
 	for _, entry := range dialogue {
 		if _, exists := characterVoices[entry.Character]; !exists {
-			// Use MD5 hash of character name to ensure consistency across runs
-			hash := md5.Sum([]byte(entry.Character))
-			voiceIndex := int(hash[0]) % len(voices)
-			characterVoices[entry.Character] = voices[voiceIndex]
+			var assignedVoice string
+			
+			// Check if character name ends with .wav
+			if strings.HasSuffix(entry.Character, ".wav") {
+				// Extract the part before the .wav extension
+				voiceName := strings.TrimSuffix(entry.Character, ".wav")
+				
+				// Check if this voice exists in our available voices
+				voiceExists := false
+				for _, voice := range voices {
+					if voice == voiceName {
+						voiceExists = true
+						break
+					}
+				}
+				
+				if voiceExists {
+					assignedVoice = voiceName
+				} else {
+					// Voice doesn't exist, fall back to random assignment
+					hash := md5.Sum([]byte(entry.Character))
+					voiceIndex := int(hash[0]) % len(voices)
+					assignedVoice = voices[voiceIndex]
+				}
+			} else {
+				// Character name doesn't end with .wav, use random assignment
+				hash := md5.Sum([]byte(entry.Character))
+				voiceIndex := int(hash[0]) % len(voices)
+				assignedVoice = voices[voiceIndex]
+			}
+			
+			characterVoices[entry.Character] = assignedVoice
 		}
 	}
 
