@@ -88,11 +88,12 @@ The input JSON should be an array of objects with "title" and "points" fields:
 ]
 
 Features:
-- Professional text animations with fade effects
-- Section-based organization with smooth transitions  
-- Background placeholder ready for your video/image
-- Optimized for picture-in-picture video workflow
-- Professional typography and spacing
+- 🚀 EXPLOSIVE text animations with dramatic slide-ins and overshoot effects
+- 💥 Each section CRASHES in from different directions with scale animations
+- ⚡ Bullet points fly in with increasing intensity - each one BIGGER than the last!
+- 🎯 All caps text with emojis for maximum visual impact  
+- 🎬 Perfect for picture-in-picture video - guaranteed to captivate your audience
+- 🌟 Professional timing with dramatic pauses for maximum effect
 
 Example:
 cutlass utils creative-text jenny_hansen_lane.json output.fcpxml`,

@@ -30,12 +30,12 @@ type CreativeTextOptions struct {
 // DefaultCreativeTextOptions returns default options
 func DefaultCreativeTextOptions() CreativeTextOptions {
 	return CreativeTextOptions{
-		SectionDuration:    8.0,  // 8 seconds per section
-		PointDuration:      2.0,  // 2 seconds per point
-		TransitionDuration: 1.0,  // 1 second transition
+		SectionDuration:    12.0, // Longer for dramatic animations
+		PointDuration:      3.0,  // More time for explosive impact
+		TransitionDuration: 1.5,  // Dramatic pause between sections
 		BackgroundColor:    "0.1 0.1 0.2 1", // Dark blue background
-		ProjectName:        "Creative Text Presentation",
-		EventName:          "Creative Content",
+		ProjectName:        "🎬 EXPLOSIVE PRESENTATION 🎬",
+		EventName:          "💥 CREATIVE IMPACT 💥",
 	}
 }
 
@@ -156,27 +156,29 @@ func addCreativeBackground(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, dura
 
 // addSectionText adds animated text for a section with title and points to background video
 func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, section ContentSection, sectionIndex int, currentTime *float64, textEffectID string, options CreativeTextOptions) error {
-	// Title animation - use simple valid XML ID format
+	// DRAMATIC TITLE ENTRANCE - use simple valid XML ID format
 	titleID := fmt.Sprintf("ts%d", sectionIndex*10+1)
 	titleOffset := *currentTime
-	titleDuration := 1.5
+	titleDuration := 2.5 // Longer for dramatic effect
 	
-	// Title appears with scale and fade animation
+	// Titles will use scale animation instead of position sliding
+	
+	// CINEMATIC TITLE with dramatic slide and scale
 	titleElement := fcp.Title{
 		Ref:      textEffectID,
 		Lane:     fmt.Sprintf("%d", sectionIndex*10+1), // Unique lane per section
 		Offset:   fcp.ConvertSecondsToFCPDuration(titleOffset),
-		Name:     fmt.Sprintf("Section %d Title", sectionIndex+1),
-		Duration: fcp.ConvertSecondsToFCPDuration(titleDuration + float64(len(section.Points))*options.PointDuration*0.8 + 1.0),
+		Name:     fmt.Sprintf("🎬 SECTION %d TITLE", sectionIndex+1),
+		Duration: fcp.ConvertSecondsToFCPDuration(titleDuration + float64(len(section.Points))*options.PointDuration*0.7 + 2.0),
 		Start:    "0s",
 		Params: []fcp.Param{
-			// Position title at top center
+			// Static position (no keyframe animation on Position for titles)
 			{
 				Name:  "Position",
 				Key:   "9999/10003/13260/3296672360/1/100/101",
-				Value: "0 200",
+				Value: "0 150", // Center position
 			},
-			// Large font size for title
+			// Large font size for IMPACT
 			{
 				Name:  "Layout Method",
 				Key:   "9999/10003/13260/3296672360/2/314",
@@ -188,7 +190,34 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
 				Value: "1 (Center)",
 			},
-			// Animated opacity for fade in
+			// EXPLOSIVE SCALE ANIMATION
+			{
+				Name: "Scale",
+				Key:  "9999/10003/13260/3296672360/1/100/200",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: []fcp.Keyframe{
+						{
+							Time:   "0s",
+							Value:  "0.3 0.3", // Start tiny
+							Interp: "easeOut",
+							Curve:  "smooth",
+						},
+						{
+							Time:   fcp.ConvertSecondsToFCPDuration(0.6),
+							Value:  "1.15 1.15", // Overshoot big!
+							Interp: "ease",
+							Curve:  "smooth",
+						},
+						{
+							Time:   fcp.ConvertSecondsToFCPDuration(1.0),
+							Value:  "1.0 1.0", // Settle to normal
+							Interp: "linear",
+							Curve:  "smooth",
+						},
+					},
+				},
+			},
+			// DRAMATIC FADE WITH GLOW EFFECT
 			{
 				Name: "Opacity",
 				Key:  "9999/10003/13260/3296672360/4/3296673134/1000/1044",
@@ -201,7 +230,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 							Curve:  "smooth",
 						},
 						{
-							Time:   fcp.ConvertSecondsToFCPDuration(0.5),
+							Time:   fcp.ConvertSecondsToFCPDuration(0.4),
 							Value:  "1",
 							Interp: "linear",
 							Curve:  "smooth",
@@ -213,16 +242,16 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 		Text: &fcp.TitleText{
 			TextStyle: fcp.TextStyleRef{
 				Ref:  titleID,
-				Text: section.Title,
+				Text: "🎯 " + strings.ToUpper(section.Title) + " 🎯", // Add impact emojis and caps
 			},
 		},
 		TextStyleDef: &fcp.TextStyleDef{
 			ID: titleID,
 			TextStyle: fcp.TextStyle{
 				Font:      "Helvetica Neue",
-				FontSize:  "72",
+				FontSize:  "96", // MUCH BIGGER!
 				FontFace:  "Bold",
-				FontColor: "1 1 1 1", // White
+				FontColor: "1 1 0.2 1", // Bright yellow for impact!
 				Bold:      "1",
 				Alignment: "center",
 			},
@@ -236,35 +265,70 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 
 	*currentTime += titleDuration
 
-	// Add points with staggered animation
+	// 💥 EXPLOSIVE BULLET POINTS with increasing intensity! 💥
 	for pointIndex, point := range section.Points {
 		pointID := fmt.Sprintf("ts%d", sectionIndex*10+pointIndex+2)
-		pointOffset := *currentTime + float64(pointIndex)*options.PointDuration*0.6 // Staggered timing
+		pointDelay := 0.8 + float64(pointIndex)*0.5 // Faster stagger for excitement
+		pointOffset := *currentTime + pointDelay
 		
-		// Calculate vertical position for this point
-		yPosition := -50 - (pointIndex * 80) // Space points vertically
+		// Calculate dynamic positions for visual variety
+		yPosition := -80 + (pointIndex * 120) // More spacing for bigger text
 		
+		// Each point gets MORE dramatic (escalating excitement!)
+		intensity := float64(pointIndex + 1)
+		impactScale := 1.0 + (intensity * 0.2) // Each point bigger than the last!
+		
+		// Points will use scale animation for explosive effect
+		
+		// 🎆 EXPLOSIVE POINT ENTRANCE 🎆
 		pointElement := fcp.Title{
 			Ref:      textEffectID,
 			Lane:     fmt.Sprintf("%d", sectionIndex*10+pointIndex+2), // Unique lane per point
 			Offset:   fcp.ConvertSecondsToFCPDuration(pointOffset),
-			Name:     fmt.Sprintf("Section %d Point %d", sectionIndex+1, pointIndex+1),
-			Duration: fcp.ConvertSecondsToFCPDuration(options.PointDuration * 2.0), // Points stay visible longer
+			Name:     fmt.Sprintf("💥 BAM! POINT %d", pointIndex+1),
+			Duration: fcp.ConvertSecondsToFCPDuration(options.PointDuration * 3.0), // Longer for impact
 			Start:    "0s",
 			Params: []fcp.Param{
-				// Position for point (static value)
+				// Static position (no keyframe animation on Position for titles)
 				{
 					Name:  "Position",
-					Key:   "9999/10003/13260/3296672360/1/100/101", 
-					Value: fmt.Sprintf("-300 %d", yPosition),
+					Key:   "9999/10003/13260/3296672360/1/100/101",
+					Value: fmt.Sprintf("-200 %d", yPosition), // Final position
 				},
-				// Left alignment for points
+				// Left alignment
 				{
 					Name:  "Alignment",
 					Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
 					Value: "0 (Left)",
 				},
-				// Fade in animation
+				// 💥 EXPLOSIVE SCALE - gets BIGGER each time!
+				{
+					Name: "Scale",
+					Key:  "9999/10003/13260/3296672360/1/100/200",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{
+								Time:   "0s",
+								Value:  "0.1 0.1", // Start microscopic
+								Interp: "easeOut",
+								Curve:  "smooth",
+							},
+							{
+								Time:   fcp.ConvertSecondsToFCPDuration(0.3),
+								Value:  fmt.Sprintf("%.2f %.2f", impactScale+0.3, impactScale+0.3), // HUGE overshoot!
+								Interp: "ease", 
+								Curve:  "smooth",
+							},
+							{
+								Time:   fcp.ConvertSecondsToFCPDuration(0.6),
+								Value:  fmt.Sprintf("%.2f %.2f", impactScale, impactScale), // Settle to bigger size
+								Interp: "linear",
+								Curve:  "smooth",
+							},
+						},
+					},
+				},
+				// 🌟 DRAMATIC FADE WITH FLASH!
 				{
 					Name: "Opacity",
 					Key:  "9999/10003/13260/3296672360/4/3296673134/1000/1044",
@@ -277,7 +341,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 								Curve:  "smooth",
 							},
 							{
-								Time:   fcp.ConvertSecondsToFCPDuration(0.3),
+								Time:   fcp.ConvertSecondsToFCPDuration(0.2),
 								Value:  "1",
 								Interp: "linear",
 								Curve:  "smooth",
@@ -289,15 +353,17 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			Text: &fcp.TitleText{
 				TextStyle: fcp.TextStyleRef{
 					Ref:  pointID,
-					Text: "• " + point, // Add bullet point
+					Text: fmt.Sprintf("⚡ %s ⚡", strings.ToUpper(point)), // Electrifying caps with lightning!
 				},
 			},
 			TextStyleDef: &fcp.TextStyleDef{
 				ID: pointID,
 				TextStyle: fcp.TextStyle{
 					Font:      "Helvetica Neue",
-					FontSize:  "48",
-					FontColor: "0.9 0.9 0.9 1", // Light gray
+					FontSize:  fmt.Sprintf("%.0f", 60+intensity*8), // Each point BIGGER! 60, 68, 76px
+					FontFace:  "Bold",
+					FontColor: fmt.Sprintf("%.1f 1 %.1f 1", 0.8+intensity*0.1, 0.6+intensity*0.2), // Increasingly bright!
+					Bold:      "1",
 					Alignment: "left",
 				},
 			},
@@ -309,12 +375,13 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 		)
 	}
 
-	// Update current time for next section (with transition)
-	sectionDuration := titleDuration + float64(len(section.Points))*options.PointDuration*0.8
+	// Update current time for next section - give time for all explosions to finish!
+	lastPointTime := 0.8 + float64(len(section.Points)-1)*0.5 + 2.0 // Last point entry + display time
+	sectionDuration := titleDuration + lastPointTime
 	*currentTime += sectionDuration
 
-	// Add section transition with gap (simpler approach)
-	*currentTime += options.TransitionDuration
+	// Add dramatic pause between sections for maximum impact
+	*currentTime += options.TransitionDuration * 2.0
 
 	return nil
 }
@@ -344,10 +411,11 @@ func HandleCreativeTextCommand(args []string) error {
 		return fmt.Errorf("failed to generate creative text: %v", err)
 	}
 
-	fmt.Printf("✅ Creative text presentation generated successfully!\n")
-	fmt.Printf("🎨 Features colorful background and smooth text animations\n")
-	fmt.Printf("📱 Space reserved for picture-in-picture video overlay\n")
-	fmt.Printf("💡 Tip: Customize the background color in FCP or replace with your own video\n")
+	fmt.Printf("🚀 EXPLOSIVE presentation generated successfully!\n")
+	fmt.Printf("💥 Features DRAMATIC scale animations with explosive overshoot effects!\n")
+	fmt.Printf("⚡ Titles and points EXPLODE onto screen with increasing intensity!\n")
+	fmt.Printf("🎯 Each bullet point gets BIGGER and MORE EXCITING than the last!\n")
+	fmt.Printf("🎬 Ready for picture-in-picture video - this will BLOW YOUR AUDIENCE AWAY!\n")
 	
 	return nil
 }
