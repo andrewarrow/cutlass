@@ -184,7 +184,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			{
 				Name:  "Position",
 				Key:   "9999/10003/13260/3296672360/1/100/101",
-				Value: "0 150", // Center position
+				Value: "0 300", // Upper position similar to Info.fcpxml title
 			},
 			// Large font size for IMPACT
 			{
@@ -279,8 +279,9 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 		pointDelay := titleDuration + 2.0 + float64(pointIndex)*10.0 // Much longer delays for extended timing
 		pointOffset := *currentTime + pointDelay
 		
-		// Calculate dynamic positions for visual variety
-		yPosition := -80 + (pointIndex * 120) // More spacing for bigger text
+		// Calculate positions matching Info.fcpxml pattern - 200 pixel spacing
+		baseY := 150 // Starting Y position for first bullet point
+		yPosition := baseY - (pointIndex * 200) // 200 pixel spacing between points, going upward
 		
 		// Each point gets MORE dramatic (escalating excitement!)
 		intensity := float64(pointIndex + 1)
@@ -301,7 +302,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				{
 					Name:  "Position",
 					Key:   "9999/10003/13260/3296672360/1/100/101",
-					Value: fmt.Sprintf("-200 %d", yPosition), // Final position
+					Value: fmt.Sprintf("80 %d", yPosition), // Left-center position matching Info.fcpxml (~80 pixels)
 				},
 				// Left alignment
 				{
@@ -368,7 +369,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				ID: pointID,
 				TextStyle: fcp.TextStyle{
 					Font:      "Helvetica Neue",
-					FontSize:  fmt.Sprintf("%.0f", 60+intensity*8), // Each point BIGGER! 60, 68, 76px
+					FontSize:  "80", // Consistent 80px font size matching Info.fcpxml
 					FontFace:  "Bold",
 					FontColor: fmt.Sprintf("%.1f 1 %.1f 1", 0.8+intensity*0.1, 0.6+intensity*0.2), // Increasingly bright!
 					Bold:      "1",
