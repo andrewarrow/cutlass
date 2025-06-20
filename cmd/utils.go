@@ -88,10 +88,10 @@ The input JSON should be an array of objects with "title" and "points" fields:
 ]
 
 Features:
-- Dynamic gradient background animation
-- Smooth text transitions with staggered timing
-- Section-based organization with transitions
-- Space reserved for picture-in-picture video overlay
+- Professional text animations with fade effects
+- Section-based organization with smooth transitions  
+- Background placeholder ready for your video/image
+- Optimized for picture-in-picture video workflow
 - Professional typography and spacing
 
 Example:

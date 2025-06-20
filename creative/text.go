@@ -121,13 +121,12 @@ func calculateTotalDuration(sections []ContentSection, options CreativeTextOptio
 	return totalDuration
 }
 
-// addCreativeBackground adds a simple solid background using built-in FCP elements
+// addCreativeBackground creates a placeholder background that user can replace
 func addCreativeBackground(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, duration float64, options CreativeTextOptions) error {
-	// Use a gap element with solid color (built-in FCP approach)
-	// This avoids fictional generator UIDs and uses standard FCP elements
-	
+	// Create a simple gap that provides timeline structure
+	// Users can easily replace this with their own background video/image
 	backgroundGap := fcp.Gap{
-		Name:     "Background",
+		Name:     "Background Placeholder - Replace with your own video/image",
 		Offset:   "0s",
 		Duration: fcp.ConvertSecondsToFCPDuration(duration),
 	}
@@ -331,8 +330,9 @@ func HandleCreativeTextCommand(args []string) error {
 	}
 
 	fmt.Printf("✅ Creative text presentation generated successfully!\n")
-	fmt.Printf("📱 Space reserved for picture-in-picture video overlay\n")
-	fmt.Printf("🎨 Features dynamic background and smooth text animations\n")
+	fmt.Printf("📱 Text overlay ready - add your background video/image to the gap in FCP\n")
+	fmt.Printf("🎨 Features smooth text animations with fade effects\n")
+	fmt.Printf("💡 Tip: Replace the background placeholder gap with your own video or solid color generator\n")
 	
 	return nil
 }

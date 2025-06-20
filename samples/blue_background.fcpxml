@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"/>
+        <effect id="r2" name="Vivid" uid=".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn"/>
+        <effect id="r3" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="40146683-7D4B-4991-ABFF-A76A272F4A1D">
+            <project name="jenny_hansen_lane" uid="B09B0997-110A-4456-B651-687A7CC23A5F" modDate="2025-06-19 18:39:13 -0700">
+                <sequence format="r1" duration="1330329/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="Vivid" start="86399313/24000s" duration="1330329/24000s">
+                            <title ref="r3" lane="1" offset="86399313/24000s" name="Text" start="85845760/24000s" duration="411411/24000s">
+                                <text>
+                                    <text-style ref="ts1">Headline Text</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Helvetica Neue" fontSize="196" fontColor="1 1 1 1" bold="1" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
