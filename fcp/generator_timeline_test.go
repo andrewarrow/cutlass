@@ -252,19 +252,23 @@ func TestComplexTimeline(t *testing.T) {
 							},
 						},
 						Text: &TitleText{
-							TextStyle: TextStyleRef{
-								Ref:  GenerateTextStyleID("Professional Timeline Test", "main_title"),
-								Text: "Professional Timeline Test",
+							TextStyles: []TextStyleRef{
+								{
+									Ref:  GenerateTextStyleID("Professional Timeline Test", "main_title"),
+									Text: "Professional Timeline Test",
+								},
 							},
 						},
-						TextStyleDef: &TextStyleDef{
-							ID: GenerateTextStyleID("Professional Timeline Test", "main_title"),
-							TextStyle: TextStyle{
-								Font:      "Helvetica Neue",
-								FontSize:  "72",
-								FontColor: "1 1 1 1",
-								Bold:      "1",
-								Alignment: "center",
+						TextStyleDefs: []TextStyleDef{
+							{
+								ID: GenerateTextStyleID("Professional Timeline Test", "main_title"),
+								TextStyle: TextStyle{
+									Font:      "Helvetica Neue",
+									FontSize:  "72",
+									FontColor: "1 1 1 1",
+									Bold:      "1",
+									Alignment: "center",
+								},
 							},
 						},
 					},

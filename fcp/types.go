@@ -284,15 +284,15 @@ type Gap struct {
 
 type Title struct {
 	XMLName xml.Name `xml:"title"`
-	Ref          string        `xml:"ref,attr"`
-	Lane         string        `xml:"lane,attr,omitempty"`
-	Offset       string        `xml:"offset,attr"`
-	Name         string        `xml:"name,attr"`
-	Duration     string        `xml:"duration,attr"`
-	Start        string        `xml:"start,attr,omitempty"`
-	Params       []Param       `xml:"param,omitempty"`
-	Text         *TitleText    `xml:"text,omitempty"`      // Pointer so it can be nil
-	TextStyleDef *TextStyleDef `xml:"text-style-def,omitempty"` // Pointer so it can be nil
+	Ref          string         `xml:"ref,attr"`
+	Lane         string         `xml:"lane,attr,omitempty"`
+	Offset       string         `xml:"offset,attr"`
+	Name         string         `xml:"name,attr"`
+	Duration     string         `xml:"duration,attr"`
+	Start        string         `xml:"start,attr,omitempty"`
+	Params       []Param        `xml:"param,omitempty"`
+	Text         *TitleText     `xml:"text,omitempty"`         // Pointer so it can be nil
+	TextStyleDefs []TextStyleDef `xml:"text-style-def,omitempty"` // Support multiple text style definitions
 }
 
 // Video represents a video element (shapes, colors, etc.)
@@ -383,7 +383,7 @@ type Keyframe struct {
 }
 
 type TitleText struct {
-	TextStyle TextStyleRef `xml:"text-style"`
+	TextStyles []TextStyleRef `xml:"text-style"`
 }
 
 type TextStyleRef struct {
@@ -397,13 +397,21 @@ type TextStyleDef struct {
 }
 
 type TextStyle struct {
-	Font        string `xml:"font,attr"`
-	FontSize    string `xml:"fontSize,attr"`
-	FontFace    string `xml:"fontFace,attr,omitempty"`
-	FontColor   string `xml:"fontColor,attr"`
-	Bold        string `xml:"bold,attr,omitempty"`
-	Alignment   string `xml:"alignment,attr,omitempty"`
-	LineSpacing string `xml:"lineSpacing,attr,omitempty"`
+	Font            string  `xml:"font,attr"`
+	FontSize        string  `xml:"fontSize,attr"`
+	FontFace        string  `xml:"fontFace,attr,omitempty"`
+	FontColor       string  `xml:"fontColor,attr"`
+	Bold            string  `xml:"bold,attr,omitempty"`
+	Italic          string  `xml:"italic,attr,omitempty"`
+	StrokeColor     string  `xml:"strokeColor,attr,omitempty"`
+	StrokeWidth     string  `xml:"strokeWidth,attr,omitempty"`
+	ShadowColor     string  `xml:"shadowColor,attr,omitempty"`
+	ShadowOffset    string  `xml:"shadowOffset,attr,omitempty"`
+	ShadowBlurRadius string `xml:"shadowBlurRadius,attr,omitempty"`
+	Kerning         string  `xml:"kerning,attr,omitempty"`
+	Alignment       string  `xml:"alignment,attr,omitempty"`
+	LineSpacing     string  `xml:"lineSpacing,attr,omitempty"`
+	Params          []Param `xml:"param,omitempty"`
 }
 
 type SmartCollection struct {

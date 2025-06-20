@@ -1226,19 +1226,23 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64,
 					},
 				},
 				Text: &TitleText{
-					TextStyle: TextStyleRef{
-						Ref:  textStyleID,
-						Text: textLine,
+					TextStyles: []TextStyleRef{
+						{
+							Ref:  textStyleID,
+							Text: textLine,
+						},
 					},
 				},
-				TextStyleDef: &TextStyleDef{
-					ID: textStyleID,
-					TextStyle: TextStyle{
-						Font:        "Helvetica Neue",
-						FontSize:    "134",
-						FontColor:   "1 1 1 1",
-						Bold:        "1",
-						LineSpacing: "-19",
+				TextStyleDefs: []TextStyleDef{
+					{
+						ID: textStyleID,
+						TextStyle: TextStyle{
+							Font:        "Helvetica Neue",
+							FontSize:    "134",
+							FontColor:   "1 1 1 1",
+							Bold:        "1",
+							LineSpacing: "-19",
+						},
 					},
 				},
 			}

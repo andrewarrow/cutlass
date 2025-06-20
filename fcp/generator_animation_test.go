@@ -850,19 +850,23 @@ func TestKeyframeAnimation(t *testing.T) {
 			},
 		},
 		Text: &TitleText{
-			TextStyle: TextStyleRef{
-				Ref:  GenerateTextStyleID("MOTION GRAPHICS TEST", "animated_title"),
-				Text: "MOTION GRAPHICS TEST",
+			TextStyles: []TextStyleRef{
+				{
+					Ref:  GenerateTextStyleID("MOTION GRAPHICS TEST", "animated_title"),
+					Text: "MOTION GRAPHICS TEST",
+				},
 			},
 		},
-		TextStyleDef: &TextStyleDef{
-			ID: GenerateTextStyleID("MOTION GRAPHICS TEST", "animated_title"),
-			TextStyle: TextStyle{
-				Font:      "Impact",
-				FontSize:  "96",
-				FontColor: "1 1 1 1",
-				Bold:      "1",
-				Alignment: "center",
+		TextStyleDefs: []TextStyleDef{
+			{
+				ID: GenerateTextStyleID("MOTION GRAPHICS TEST", "animated_title"),
+				TextStyle: TextStyle{
+					Font:      "Impact",
+					FontSize:  "96",
+					FontColor: "1 1 1 1",
+					Bold:      "1",
+					Alignment: "center",
+				},
 			},
 		},
 	}

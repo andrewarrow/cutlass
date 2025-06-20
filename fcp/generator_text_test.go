@@ -121,7 +121,7 @@ Third Text Line`
 	// Test 2: Verify text content matches input
 	expectedTexts := []string{"First Text Line", "Second Text Line", "Third Text Line"}
 	for i, title := range video.NestedTitles {
-		if title.Text == nil || title.Text.TextStyle.Text != expectedTexts[i] {
+		if title.Text == nil || len(title.Text.TextStyles) == 0 || title.Text.TextStyles[0].Text != expectedTexts[i] {
 			t.Errorf("Expected text '%s' at index %d, got '%s'", expectedTexts[i], i, getTextContent(title))
 		}
 	}
@@ -200,11 +200,11 @@ Third Text Line`
 	// Test 9: Verify unique text-style-def IDs
 	styleIDs := make(map[string]bool)
 	for _, title := range video.NestedTitles {
-		if title.TextStyleDef != nil {
-			if styleIDs[title.TextStyleDef.ID] {
-				t.Errorf("Duplicate text-style-def ID found: %s", title.TextStyleDef.ID)
+		if len(title.TextStyleDefs) > 0 {
+			if styleIDs[title.TextStyleDefs[0].ID] {
+				t.Errorf("Duplicate text-style-def ID found: %s", title.TextStyleDefs[0].ID)
 			}
-			styleIDs[title.TextStyleDef.ID] = true
+			styleIDs[title.TextStyleDefs[0].ID] = true
 		}
 	}
 
@@ -506,7 +506,7 @@ Costs $200k`
 	// Test 1: Verify video targeting logic selected the correct video
 	expectedTexts := []string{"Paused All of LA", "Anti-ICE protests", "Jaguar I-PACE", "Costs $200k"}
 	for i, title := range secondVideo.NestedTitles {
-		if title.Text == nil || title.Text.TextStyle.Text != expectedTexts[i] {
+		if title.Text == nil || len(title.Text.TextStyles) == 0 || title.Text.TextStyles[0].Text != expectedTexts[i] {
 			t.Errorf("Expected text '%s' at index %d, got '%s'", expectedTexts[i], i, getTextContent(title))
 		}
 	}
@@ -543,8 +543,8 @@ Costs $200k`
 	// Test 5: Verify text style IDs are unique (hash-based, not hardcoded)
 	textStyleIDs := make(map[string]bool)
 	for _, title := range secondVideo.NestedTitles {
-		if title.TextStyleDef != nil {
-			styleID := title.TextStyleDef.ID
+		if len(title.TextStyleDefs) > 0 {
+			styleID := title.TextStyleDefs[0].ID
 			if textStyleIDs[styleID] {
 				t.Errorf("Duplicate text style ID found: %s", styleID)
 			}
@@ -1061,8 +1061,8 @@ func TestAddTextFromFilePreservesAudio(t *testing.T) {
 
 // Helper functions
 func getTextContent(title Title) string {
-	if title.Text != nil {
-		return title.Text.TextStyle.Text
+	if title.Text != nil && len(title.Text.TextStyles) > 0 {
+		return title.Text.TextStyles[0].Text
 	}
 	return ""
 }

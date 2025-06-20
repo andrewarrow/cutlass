@@ -248,20 +248,24 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			},
 		},
 		Text: &fcp.TitleText{
-			TextStyle: fcp.TextStyleRef{
-				Ref:  titleID,
-				Text: "🎯 " + strings.ToUpper(section.Title) + " 🎯", // Add impact emojis and caps
+			TextStyles: []fcp.TextStyleRef{
+				{
+					Ref:  titleID,
+					Text: "🎯 " + strings.ToUpper(section.Title) + " 🎯", // Add impact emojis and caps
+				},
 			},
 		},
-		TextStyleDef: &fcp.TextStyleDef{
-			ID: titleID,
-			TextStyle: fcp.TextStyle{
-				Font:      "Helvetica Neue",
-				FontSize:  "96", // MUCH BIGGER!
-				FontFace:  "Bold",
-				FontColor: "1 1 0.2 1", // Bright yellow for impact!
-				Bold:      "1",
-				Alignment: "left",
+		TextStyleDefs: []fcp.TextStyleDef{
+			{
+				ID: titleID,
+				TextStyle: fcp.TextStyle{
+					Font:      "Helvetica Neue",
+					FontSize:  "96", // MUCH BIGGER!
+					FontFace:  "Bold",
+					FontColor: "1 1 0.2 1", // Bright yellow for impact!
+					Bold:      "1",
+					Alignment: "left",
+				},
 			},
 		},
 	}
@@ -360,20 +364,24 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				},
 			},
 			Text: &fcp.TitleText{
-				TextStyle: fcp.TextStyleRef{
-					Ref:  pointID,
-					Text: fmt.Sprintf("⚡ %s ⚡", strings.ToUpper(point)), // Electrifying caps with lightning!
+				TextStyles: []fcp.TextStyleRef{
+					{
+						Ref:  pointID,
+						Text: fmt.Sprintf("⚡ %s ⚡", strings.ToUpper(point)), // Electrifying caps with lightning!
+					},
 				},
 			},
-			TextStyleDef: &fcp.TextStyleDef{
-				ID: pointID,
-				TextStyle: fcp.TextStyle{
-					Font:      "Helvetica Neue",
-					FontSize:  "80", // Consistent 80px font size matching Info.fcpxml
-					FontFace:  "Bold",
-					FontColor: fmt.Sprintf("%.1f 1 %.1f 1", 0.8+intensity*0.1, 0.6+intensity*0.2), // Increasingly bright!
-					Bold:      "1",
-					Alignment: "left",
+			TextStyleDefs: []fcp.TextStyleDef{
+				{
+					ID: pointID,
+					TextStyle: fcp.TextStyle{
+						Font:      "Helvetica Neue",
+						FontSize:  "80", // Consistent 80px font size matching Info.fcpxml
+						FontFace:  "Bold",
+						FontColor: fmt.Sprintf("%.1f 1 %.1f 1", 0.8+intensity*0.1, 0.6+intensity*0.2), // Increasingly bright!
+						Bold:      "1",
+						Alignment: "left",
+					},
 				},
 			},
 		}

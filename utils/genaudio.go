@@ -3,8 +3,11 @@ package utils
 import (
 	"bufio"
 	"crypto/md5"
+	"cutlass/fcp"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -686,4 +689,403 @@ func callChatterboxUtah(line, lineNum, voice string) error {
 	}
 
 	return nil
+}
+
+// HandleAddShadowTextCommand processes a text file and generates FCPXML with shadow text
+func HandleAddShadowTextCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Error: Please provide a text file")
+		return
+	}
+
+	textFile := args[0]
+	outputFile := strings.TrimSuffix(textFile, filepath.Ext(textFile)) + ".fcpxml"
+	if len(args) > 1 {
+		outputFile = args[1]
+	}
+
+	if err := generateShadowTextFCPXML(textFile, outputFile); err != nil {
+		fmt.Printf("Error generating shadow text FCPXML: %v\n", err)
+	}
+}
+
+func generateShadowTextFCPXML(inputFile, outputFile string) error {
+	// Read the text file
+	file, err := os.Open(inputFile)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	// Read entire content
+	scanner := bufio.NewScanner(file)
+	var fullText strings.Builder
+	for scanner.Scan() {
+		if fullText.Len() > 0 {
+			fullText.WriteString(" ")
+		}
+		fullText.WriteString(strings.TrimSpace(scanner.Text()))
+	}
+	
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("error reading file: %v", err)
+	}
+
+	text := fullText.String()
+	if text == "" {
+		return fmt.Errorf("text file is empty")
+	}
+
+	// Break text into chunks
+	textChunks := breakTextIntoChunks(text)
+
+	// Create FCPXML structure
+	fcpxml := &fcp.FCPXML{
+		Version: "1.13",
+		Resources: fcp.Resources{
+			Formats: []fcp.Format{
+				{
+					ID:            "r1",
+					FrameDuration: "1001/24000s",
+					Width:         "1080",
+					Height:        "1920",
+					ColorSpace:    "1-1-1 (Rec. 709)",
+				},
+			},
+			Effects: []fcp.Effect{
+				{
+					ID:  "r2",
+					Name: "Text",
+					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+				},
+			},
+		},
+		Library: fcp.Library{
+			Location: "file:///Users/aa/Movies/Untitled.fcpbundle/",
+			Events: []fcp.Event{
+				{
+					Name: "Shadow Text",
+					UID:  "CE1F8A37-2B1C-4E91-9D9E-DC615BE4C5B8",
+					Projects: []fcp.Project{
+						{
+							Name:    "Shadow Text",
+							UID:     "984EC830-CD17-4F55-B6AC-FA29090CD71D",
+							ModDate: "2025-06-20 11:31:53 -0700",
+							Sequences: []fcp.Sequence{
+								{
+									Format:      "r1",
+									Duration:    calculateTotalDuration(textChunks),
+									TCStart:     "0s",
+									TCFormat:    "NDF",
+									AudioLayout: "stereo",
+									AudioRate:   "48k",
+									Spine:       createSpineWithTextChunks(textChunks),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Add smart collections (from sample)
+	fcpxml.Library.SmartCollections = []fcp.SmartCollection{
+		{Name: "Projects", Match: "all", Matches: []fcp.Match{{Rule: "is", Type: "project"}}},
+		{Name: "All Video", Match: "any", MediaMatches: []fcp.MediaMatch{{Rule: "is", Type: "videoOnly"}, {Rule: "is", Type: "videoWithAudio"}}},
+		{Name: "Audio Only", Match: "all", MediaMatches: []fcp.MediaMatch{{Rule: "is", Type: "audioOnly"}}},
+		{Name: "Stills", Match: "all", MediaMatches: []fcp.MediaMatch{{Rule: "is", Type: "stills"}}},
+		{Name: "Favorites", Match: "all", RatingMatches: []fcp.RatingMatch{{Value: "favorites"}}},
+	}
+
+	// Marshal to XML
+	xmlData, err := xml.MarshalIndent(fcpxml, "", "    ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal XML: %v", err)
+	}
+
+	// Add XML declaration and DOCTYPE
+	fullXML := `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+` + string(xmlData)
+
+	// Write to file
+	if err := os.WriteFile(outputFile, []byte(fullXML), 0644); err != nil {
+		return fmt.Errorf("failed to write output file: %v", err)
+	}
+
+	fmt.Printf("Generated shadow text FCPXML: %s\n", outputFile)
+	return nil
+}
+
+// TextChunk represents a piece of text with its timing and style information
+type TextChunk struct {
+	Text     string
+	Duration float64 // in seconds
+	FontSize int
+	IsLong   bool
+}
+
+func breakTextIntoChunks(text string) []TextChunk {
+	words := strings.Fields(text)
+	var chunks []TextChunk
+	
+	i := 0
+	for i < len(words) {
+		var chunkWords []string
+		var chunkText string
+		
+		// Start with current word
+		chunkWords = append(chunkWords, words[i])
+		chunkText = words[i]
+		i++
+		
+		// Decide how many more words to add based on current length
+		currentLen := len(chunkText)
+		
+		// Add more words if current text is short
+		if currentLen <= 4 && i < len(words) {
+			// Add one more short word if available
+			if len(words[i]) <= 4 {
+				chunkWords = append(chunkWords, words[i])
+				chunkText += " " + words[i]
+				i++
+			}
+		}
+		
+		// Determine duration and font size based on text length
+		duration := calculateTextDuration(chunkText)
+		fontSize := calculateFontSize(chunkText)
+		isLong := len(chunkText) > 8
+		
+		chunks = append(chunks, TextChunk{
+			Text:     chunkText,
+			Duration: duration,
+			FontSize: fontSize,
+			IsLong:   isLong,
+		})
+	}
+	
+	return chunks
+}
+
+func calculateTextDuration(text string) float64 {
+	textLen := len(text)
+	
+	// Base durations from sample analysis:
+	// Short text (1-5 chars): ~0.375s
+	// Medium text (6-10 chars): ~0.46s  
+	// Long text (11+ chars): ~0.67s
+	
+	if textLen <= 5 {
+		return 0.375
+	} else if textLen <= 10 {
+		return 0.46
+	} else {
+		return 0.67
+	}
+}
+
+func calculateFontSize(text string) int {
+	textLen := len(text)
+	
+	// Font sizes from sample analysis:
+	// Long text gets smaller font (460)
+	// Short text gets larger font (600)
+	
+	if textLen > 8 {
+		return 460
+	}
+	return 600
+}
+
+func calculateTotalDuration(chunks []TextChunk) string {
+	totalSeconds := 0.0
+	for _, chunk := range chunks {
+		totalSeconds += chunk.Duration
+	}
+	
+	return convertSecondsToFCPDuration(totalSeconds)
+}
+
+func convertSecondsToFCPDuration(seconds float64) string {
+	// Convert to frame count using the sequence time base (1001/24000s frame duration)
+	framesPerSecond := 24000.0 / 1001.0
+	exactFrames := seconds * framesPerSecond
+	
+	// Round to nearest frame
+	frames := int(math.Round(exactFrames))
+	
+	// Format as rational using the sequence time base
+	return fmt.Sprintf("%d/24000s", frames*1001)
+}
+
+func createSpineWithTextChunks(chunks []TextChunk) fcp.Spine {
+	spine := fcp.Spine{}
+	
+	currentOffset := 0.0
+	textStyleID := 1
+	
+	for i, chunk := range chunks {
+		// Create title for this chunk
+		title := createTitleForChunk(chunk, currentOffset, i+1, &textStyleID)
+		spine.Titles = append(spine.Titles, title)
+		
+		currentOffset += chunk.Duration
+	}
+	
+	return spine
+}
+
+func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, textStyleID *int) fcp.Title {
+	offsetStr := convertSecondsToFCPDuration(offsetSeconds)
+	durationStr := convertSecondsToFCPDuration(chunk.Duration)
+	
+	// Split text for shadow effect (like in sample)
+	textParts := splitTextForShadowEffect(chunk.Text)
+	
+	// Create text style references
+	var textStyles []fcp.TextStyleRef
+	var textStyleDefs []fcp.TextStyleDef
+	
+	for j, part := range textParts {
+		styleID := fmt.Sprintf("ts%d", *textStyleID)
+		*textStyleID++
+		
+		textStyles = append(textStyles, fcp.TextStyleRef{
+			Ref:  styleID,
+			Text: part,
+		})
+		
+		// Create text style definition with shadow properties
+		textStyleDef := fcp.TextStyleDef{
+			ID: styleID,
+			TextStyle: fcp.TextStyle{
+				Font:            "Avenir Next Condensed",
+				FontSize:        fmt.Sprintf("%d", chunk.FontSize),
+				FontFace:        "Heavy Italic",
+				FontColor:       "1 0 0.969664 1",
+				Bold:            "1",
+				Italic:          "1",
+				StrokeColor:     "0 0 0 0",
+				StrokeWidth:     "-8",
+				ShadowColor:     "0.999993 0.999963 0.0410148 1",
+				ShadowOffset:    "26 317",
+				ShadowBlurRadius: "20",
+				Alignment:       "center",
+				LineSpacing:     "-19",
+			},
+		}
+		
+		// Add kerning and tracking param for first part (like in sample)
+		if j == 0 {
+			kerningValue := "21.78"
+			if chunk.FontSize == 460 {
+				kerningValue = "16.698"
+			}
+			
+			textStyleDef.TextStyle.Kerning = kerningValue
+			textStyleDef.TextStyle.Params = []fcp.Param{
+				{
+					Name: "MotionSimpleValues",
+					Key:  "MotionTextStyle:SimpleValues",
+					NestedParams: []fcp.Param{
+						{
+							Name:  "motionTextTracking",
+							Key:   "tracking",
+							Value: kerningValue,
+						},
+					},
+				},
+			}
+		}
+		
+		textStyleDefs = append(textStyleDefs, textStyleDef)
+	}
+	
+	title := fcp.Title{
+		Ref:      "r2",
+		Lane:     "1",
+		Offset:   offsetStr,
+		Name:     fmt.Sprintf("%s - Text", chunk.Text),
+		Duration: durationStr,
+		Start:    "86486400/24000s", // From sample
+		Params:   createTitleParams(chunk.FontSize),
+		Text: &fcp.TitleText{
+			TextStyles: textStyles,
+		},
+		TextStyleDefs: textStyleDefs,
+	}
+	
+	return title
+}
+
+func splitTextForShadowEffect(text string) []string {
+	// Split text creatively like in the sample
+	// Examples from sample: "IMEC" -> ["IME", "C"], "Isn't one" -> ["Isn't on", "e"]
+	
+	if len(text) <= 3 {
+		return []string{text}
+	}
+	
+	if len(text) <= 6 {
+		// Split at last character
+		return []string{text[:len(text)-1], text[len(text)-1:]}
+	}
+	
+	// For longer text, split more creatively
+	words := strings.Fields(text)
+	if len(words) >= 2 {
+		// Split at word boundary, but sometimes break the last word
+		lastWord := words[len(words)-1]
+		if len(lastWord) > 3 {
+			// Keep most words, break last word
+			prefix := strings.Join(words[:len(words)-1], " ")
+			if len(prefix) > 0 {
+				prefix += " " + lastWord[:len(lastWord)-1]
+			} else {
+				prefix = lastWord[:len(lastWord)-1]
+			}
+			return []string{prefix, lastWord[len(lastWord)-1:]}
+		} else {
+			// Split at word boundary
+			prefix := strings.Join(words[:len(words)-1], " ")
+			return []string{prefix, lastWord}
+		}
+	}
+	
+	// Single long word - split at end
+	return []string{text[:len(text)-1], text[len(text)-1:]}
+}
+
+func createTitleParams(fontSize int) []fcp.Param {
+	return []fcp.Param{
+		{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
+		{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
+		{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "-96.9922 199.102"},
+		{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+		{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1210"},
+		{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1210"},
+		{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "2160"},
+		{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-2160"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+		{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+		{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 2 (Bottom)"},
+		{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+		{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+		{
+			Name: "Custom Speed",
+			Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+			KeyframeAnimation: &fcp.KeyframeAnimation{
+				Keyframes: []fcp.Keyframe{
+					{Time: "-469658744/1000000000s", Value: "0"},
+					{Time: "12328542033/1000000000s", Value: "1"},
+				},
+			},
+		},
+		{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+		{Name: "Size", Key: "9999/10003/13260/3296672360/5/3296672362/3", Value: fmt.Sprintf("%d", fontSize)},
+	}
 }
