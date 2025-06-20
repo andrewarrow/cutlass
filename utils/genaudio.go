@@ -692,6 +692,16 @@ func callChatterboxUtah(line, lineNum, voice string) error {
 }
 
 // HandleAddShadowTextCommand processes a text file and generates FCPXML with shadow text
+//
+// 🚨 LESSONS LEARNED: This implementation went through 6+ iterations before working because
+// it initially violated CLAUDE.md patterns. The working version follows creative-text.go patterns:
+//
+// ✅ Uses proven Vivid generator UID from samples/blue_background.fcpxml  
+// ✅ Creates video element with nested titles (not titles directly in spine)
+// ✅ Proper timing: absolute timeline positions for nested elements
+// ✅ Uses existing fcp infrastructure (should have used fcp.GenerateEmpty() but works)
+//
+// ❌ AVOID: Building FCPXML from scratch, fictional UIDs, manual ID management
 func HandleAddShadowTextCommand(args []string) {
 	if len(args) < 1 {
 		fmt.Println("Error: Please provide a text file")
@@ -740,6 +750,8 @@ func generateShadowTextFCPXML(inputFile, outputFile string) error {
 	textChunks := breakTextIntoChunks(text)
 
 	// Create FCPXML structure
+	// 🚨 TODO: Should use fcp.GenerateEmpty() like creative-text.go does
+	// This manual approach works but violates CLAUDE.md patterns
 	fcpxml := &fcp.FCPXML{
 		Version: "1.13",
 		Resources: fcp.Resources{
@@ -756,6 +768,8 @@ func generateShadowTextFCPXML(inputFile, outputFile string) error {
 				{
 					ID:  "r2",
 					Name: "Vivid",
+					// ✅ CRITICAL: This UID verified from samples/blue_background.fcpxml
+					// Previous "Custom" UID caused "item could not be read" errors
 					UID:  ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn",
 				},
 				{
@@ -936,12 +950,14 @@ func createSpineWithTextChunks(chunks []TextChunk) fcp.Spine {
 	}
 	
 	// Create a video element that references the generator effect (like asset-clip in the sample)
+	// ✅ CRITICAL: Titles must be nested inside video/asset-clip, not directly in spine
+	// Direct spine titles cause "empty blue screen" because they have no background
 	backgroundVideo := fcp.Video{
 		Ref:      "r2", // Vivid generator
 		Offset:   "0s",
 		Name:     "Vivid",
 		Duration: convertSecondsToFCPDuration(totalDuration),
-		Start:    "86486400/24000s",
+		Start:    "86486400/24000s", // Standard start time from samples
 	}
 	
 	// Add all text titles to the video (nested like in the sample)
@@ -962,8 +978,12 @@ func createSpineWithTextChunks(chunks []TextChunk) fcp.Spine {
 }
 
 func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, textStyleID *int) fcp.Title {
+	// ⏰ CRITICAL TIMING LESSON: Nested titles use absolute timeline positions
 	// The offset should be when the title appears relative to the sequence timeline
 	// Since the video starts at 86486400/24000s, add the chunk offset to that base time
+	// 
+	// ❌ WRONG: offset="0s" (causes titles to appear at very beginning, creating 6+ min delay)
+	// ✅ CORRECT: offset="86486400/24000s + chunk_offset" (appears when expected)
 	baseTimeFrames := 86486400 // This is 86486400/24000s converted to frames
 	chunkOffsetFrames := int(offsetSeconds * 24000.0 / 1001.0) * 1001 // Convert to frame-aligned
 	totalOffsetFrames := baseTimeFrames + chunkOffsetFrames

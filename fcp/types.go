@@ -292,7 +292,7 @@ type Title struct {
 	Start        string         `xml:"start,attr,omitempty"`
 	Params       []Param        `xml:"param,omitempty"`
 	Text         *TitleText     `xml:"text,omitempty"`         // Pointer so it can be nil
-	TextStyleDefs []TextStyleDef `xml:"text-style-def,omitempty"` // Support multiple text style definitions
+	TextStyleDefs []TextStyleDef `xml:"text-style-def,omitempty"` // 🚨 BREAKING CHANGE: Was single TextStyleDef, now slice for shadow text
 }
 
 // Video represents a video element (shapes, colors, etc.)
@@ -382,6 +382,10 @@ type Keyframe struct {
 	Curve  string `xml:"curve,attr,omitempty"`  // linear | smooth (default: smooth)
 }
 
+// TitleText represents the text content within a title element
+// 🚨 BREAKING CHANGE: Changed from single TextStyle to TextStyles slice
+// This was needed to support shadow text with multiple text-style elements
+// like: <text><text-style ref="ts1">Main</text-style><text-style ref="ts2">Split</text-style></text>
 type TitleText struct {
 	TextStyles []TextStyleRef `xml:"text-style"`
 }

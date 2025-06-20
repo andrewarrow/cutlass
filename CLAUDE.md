@@ -60,18 +60,36 @@ AdjustCrop: &AdjustCrop{...}            // ✅ Built-in
 AdjustColorCorrection: &AdjustColorCorrection{...} // ✅ Built-in
 ```
 
+### 🎯 PROVEN WORKING EFFECT UID REGISTRY
+
+**ONLY use these verified UIDs from samples/ directory:**
+
+#### Generators (Background):
+- **Vivid**: `.../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn` ✅
+- **Custom**: `.../Generators.localized/Solids.localized/Custom.localized/Custom.moti` ❌ (BROKEN - causes UID errors)
+
+#### Text Effects:
+- **Text**: `.../Titles.localized/Basic Text.localized/Text.localized/Text.moti` ✅
+
+#### 🚨 CRITICAL: Effect UID Extension Rules
+- **Generators**: Use `.motn` extension
+- **Titles**: Use `.moti` extension
+- **Wrong extensions cause FCP import failures**
+
 ### 📋 MANDATORY EFFECT VALIDATION RULES:
 
 1. **NEVER create effects without research** - Look up real FCP effect UIDs first
 2. **Prefer built-in elements** - Use adjust-transform, adjust-crop instead of custom effects
 3. **Test imports** - Every custom effect must be tested in actual FCP
 4. **Reference samples** - Only use effect patterns seen in working samples/*.fcpxml files
+5. **🚨 NEW: Always start with existing patterns** - Use creative-text.go as template
 
 ### 🔍 VALIDATION CHECKLIST:
 - [ ] Do all effect UIDs exist in real FCP? 
 - [ ] Can I achieve this with built-in adjust-* elements instead?
 - [ ] Have I tested import in actual Final Cut Pro?
 - [ ] Do my effect UIDs match working sample files?
+- [ ] Am I following existing code patterns (like creative-text)?
 
 **The samples/*.fcpxml files show the correct pattern: use built-in elements, not custom effects.**
 
@@ -232,6 +250,123 @@ assetID := fmt.Sprintf("r%d", resourceCount+1)  // RACE CONDITIONS!
 5. **Test each change with actual FCP import** to verify crash resolution
 
 **The complexity in the old code exists because FCPXML generation is inherently complex and FCP's requirements are strict.**
+
+## 🏗️ FCPXML Architecture Patterns (MANDATORY)
+
+**🚨 CRITICAL: Always follow existing patterns. NEVER build FCPXML from scratch.**
+
+### ✅ REQUIRED INFRASTRUCTURE PATTERN:
+```go
+// ALWAYS start new FCPXML features this way
+func GenerateMyFeature(inputFile, outputFile string) error {
+    // 1. Use existing infrastructure
+    fcpxml, err := fcp.GenerateEmpty("")
+    if err != nil {
+        return fmt.Errorf("failed to create base FCPXML: %v", err)
+    }
+    
+    // 2. Initialize proper resource management
+    registry := fcp.NewResourceRegistry(fcpxml)
+    tx := fcp.NewTransaction(registry)
+    defer tx.Rollback()
+    
+    // 3. Add background using proven pattern
+    if err := addBackground(fcpxml, tx, duration); err != nil {
+        return fmt.Errorf("failed to add background: %v", err)
+    }
+    
+    // 4. Add content to existing structure
+    backgroundVideo := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos[0]
+    
+    // 5. Commit transaction
+    if err := tx.Commit(); err != nil {
+        return fmt.Errorf("failed to commit: %v", err)
+    }
+    
+    return fcp.WriteToFile(fcpxml, outputFile)
+}
+```
+
+### ❌ FORBIDDEN PATTERNS (Cause bugs and crashes):
+```go
+// WRONG: Building FCPXML from scratch
+fcpxml := &fcp.FCPXML{
+    Version: "1.13",
+    Resources: fcp.Resources{...}, // Manual structure creation
+    Library: fcp.Library{...},    // Manual structure creation
+}
+
+// WRONG: Manual ID management
+assetID := fmt.Sprintf("r%d", count+1) // Race conditions, collisions
+
+// WRONG: Hardcoded UIDs without verification
+UID: ".../Custom.localized/Custom.moti" // Fictional UIDs cause crashes
+```
+
+### 🎯 BACKGROUND CREATION PATTERN:
+```go
+// Use proven Vivid generator pattern (from creative-text.go)
+func addBackground(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, duration float64) error {
+    ids := tx.ReserveIDs(1)
+    generatorID := ids[0]
+    
+    // Use VERIFIED UID from samples/blue_background.fcpxml
+    fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, fcp.Effect{
+        ID:   generatorID,
+        Name: "Vivid",
+        UID:  ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn",
+    })
+    
+    backgroundVideo := fcp.Video{
+        Ref:      generatorID,
+        Offset:   "0s",
+        Name:     "Background",
+        Duration: fcp.ConvertSecondsToFCPDuration(duration),
+        Start:    "0s",
+    }
+    
+    fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos = append(
+        fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos,
+        backgroundVideo,
+    )
+    
+    return nil
+}
+```
+
+### ⏰ TIMING RULES FOR NESTED ELEMENTS:
+
+#### Titles nested in asset-clip/video:
+- **Offset**: Absolute timeline position (e.g., `86486400/24000s + chunk_offset`)
+- **Start**: Usually matches container start time  
+- **Duration**: Actual display duration
+
+#### Direct spine elements:
+- **Offset**: Relative to sequence start (`0s`, `1001/24000s`, etc.)
+
+### 🧪 MANDATORY TESTING WORKFLOW:
+
+**Before committing ANY FCPXML generation code:**
+
+1. **DTD Validation**: `xmllint --dtdvalid FCPXMLv1_13.dtd output.fcpxml --noout`
+2. **FCP Import Test**: Import into actual Final Cut Pro and verify display
+3. **UID Verification**: All effect UIDs must exist in samples/ directory
+4. **Structure Validation**: Follow existing patterns (creative-text.go, etc.)
+5. **Timing Verification**: Check that content appears at correct times
+
+### 📋 CODE REUSE REQUIREMENTS:
+
+1. **Study existing implementations** before writing new FCPXML code
+2. **Copy successful patterns** from creative-text.go, generator.go
+3. **Use same infrastructure** (GenerateEmpty, ResourceRegistry, Transaction)
+4. **Test with proven UIDs** from samples/ directory first
+5. **Never reinvent** FCPXML structure generation
+
+### 🚨 FAILURE PREVENTION:
+
+**If your FCPXML feature requires more than 1 iteration to work, you're doing it wrong.**
+
+**Follow the proven patterns and it should work on the first try.**
 
 ## 🚨 CRITICAL: Images Are Timeless - Asset Duration and Spine Element Requirements 🚨
 
