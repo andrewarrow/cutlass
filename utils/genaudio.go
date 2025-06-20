@@ -46,7 +46,7 @@ func processSimpleTextFile(filename string) error {
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip empty lines
 		if line == "" {
 			continue
@@ -54,7 +54,7 @@ func processSimpleTextFile(filename string) error {
 
 		// Generate initial audio filename without duration
 		tempFilename := filepath.Join(audioDir, fmt.Sprintf("s%03d.wav", sentenceNum))
-		
+
 		// Check if audio file already exists (with any duration)
 		if existingFile := findExistingAudioFile(audioDir, sentenceNum); existingFile != "" {
 			fmt.Printf("Skipping sentence %d (already exists: %s)\n", sentenceNum, existingFile)
@@ -154,47 +154,47 @@ func parseVttFile(filename string) error {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	
+
 	// Regular expressions for cleaning VTT content
 	timeRegex := regexp.MustCompile(`\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}.*`)
 	tagRegex := regexp.MustCompile(`<[^>]*>`)
 	timestampRegex := regexp.MustCompile(`<\d{2}:\d{2}:\d{2}\.\d{3}>`)
-	
+
 	var textLines []string
 	seenLines := make(map[string]bool)
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip empty lines
 		if line == "" {
 			continue
 		}
-		
+
 		// Skip WEBVTT header and metadata lines
 		if strings.HasPrefix(line, "WEBVTT") || strings.HasPrefix(line, "Kind:") || strings.HasPrefix(line, "Language:") {
 			continue
 		}
-		
+
 		// Skip timing lines
 		if timeRegex.MatchString(line) {
 			continue
 		}
-		
+
 		// Skip lines that contain only positioning/alignment info
 		if strings.Contains(line, "align:") && !regexp.MustCompile(`[a-zA-Z]`).MatchString(strings.ReplaceAll(line, "align:", "")) {
 			continue
 		}
-		
+
 		// Clean the text content
 		cleanLine := line
-		
+
 		// Remove HTML-like tags
 		cleanLine = tagRegex.ReplaceAllString(cleanLine, "")
-		
+
 		// Remove inline timestamps
 		cleanLine = timestampRegex.ReplaceAllString(cleanLine, "")
-		
+
 		// Remove positioning/alignment directives at the end
 		if idx := strings.Index(cleanLine, " align:"); idx != -1 {
 			cleanLine = cleanLine[:idx]
@@ -202,11 +202,11 @@ func parseVttFile(filename string) error {
 		if idx := strings.Index(cleanLine, " position:"); idx != -1 {
 			cleanLine = cleanLine[:idx]
 		}
-		
+
 		// Clean up extra whitespace
 		cleanLine = strings.TrimSpace(cleanLine)
 		cleanLine = regexp.MustCompile(`\s+`).ReplaceAllString(cleanLine, " ")
-		
+
 		// Only add non-empty, unique lines
 		if cleanLine != "" && !seenLines[cleanLine] {
 			seenLines[cleanLine] = true
@@ -287,20 +287,20 @@ func parseVttAndCutVideo(videoID string) error {
 		var combinedSegment VttSegment
 		var combinedText string
 		var seenTexts = make(map[string]bool)
-		
+
 		// Always include the first segment
 		firstSegment := validSegments[i]
 		combinedSegment.StartTime = firstSegment.StartTime
 		combinedSegment.EndTime = firstSegment.EndTime
-		
+
 		// Combine up to 4 segments
 		for j := 0; j < 4 && i+j < len(validSegments); j++ {
 			segment := validSegments[i+j]
 			segmentText := strings.TrimSpace(segment.Text)
-			
+
 			// Update end time to the last segment's end time
 			combinedSegment.EndTime = segment.EndTime
-			
+
 			// Only add unique text to avoid repetition
 			if segmentText != "" && !seenTexts[segmentText] {
 				seenTexts[segmentText] = true
@@ -311,7 +311,7 @@ func parseVttAndCutVideo(videoID string) error {
 				}
 			}
 		}
-		
+
 		combinedSegment.Text = combinedText
 
 		// Check if combined segment already exists
@@ -355,14 +355,14 @@ func parseVttForSegments(filename string) ([]VttSegment, error) {
 	scanner := bufio.NewScanner(file)
 	timeRegex := regexp.MustCompile(`(\d{2}:\d{2}:\d{2}\.\d{3}) --> (\d{2}:\d{2}:\d{2}\.\d{3}).*`)
 	tagRegex := regexp.MustCompile(`<[^>]*>`)
-	
+
 	var segments []VttSegment
 	var currentSegment *VttSegment
 	seenSegments := make(map[string]bool)
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		
+
 		// Skip empty lines and headers
 		if line == "" || strings.HasPrefix(line, "WEBVTT") || strings.HasPrefix(line, "Kind:") || strings.HasPrefix(line, "Language:") {
 			continue
@@ -378,7 +378,7 @@ func parseVttForSegments(filename string) ([]VttSegment, error) {
 					segments = append(segments, *currentSegment)
 				}
 			}
-			
+
 			// Start new segment
 			currentSegment = &VttSegment{
 				StartTime: matches[1],
@@ -389,12 +389,12 @@ func parseVttForSegments(filename string) ([]VttSegment, error) {
 			// This is text content for the current segment
 			cleanText := tagRegex.ReplaceAllString(line, "")
 			cleanText = strings.TrimSpace(cleanText)
-			
+
 			// Skip lines that are just positioning info
 			if strings.Contains(cleanText, "align:") || strings.Contains(cleanText, "position:") {
 				continue
 			}
-			
+
 			if cleanText != "" {
 				if currentSegment.Text != "" {
 					currentSegment.Text += " "
@@ -424,12 +424,12 @@ func calculateDuration(startTime, endTime string) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	
+
 	end, err := parseVttTime(endTime)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return end - start, nil
 }
 
@@ -439,23 +439,23 @@ func parseVttTime(timeStr string) (float64, error) {
 	if len(parts) != 3 {
 		return 0, fmt.Errorf("invalid time format: %s", timeStr)
 	}
-	
+
 	hours, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, err
 	}
-	
+
 	minutes, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return 0, err
 	}
-	
+
 	seconds, err := strconv.ParseFloat(parts[2], 64)
 	if err != nil {
 		return 0, err
 	}
-	
-	return float64(hours*3600 + minutes*60) + seconds, nil
+
+	return float64(hours*3600+minutes*60) + seconds, nil
 }
 
 func findExistingVideoSegment(outputDir string, segmentNum int) string {
@@ -470,21 +470,21 @@ func findExistingVideoSegment(outputDir string, segmentNum int) string {
 func sanitizeFilename(text string) string {
 	// Trim and clean the text
 	text = strings.TrimSpace(text)
-	
+
 	// Remove or replace characters that are problematic in Mac filenames first
 	// Mac filenames cannot contain: : / \ * ? " < > |
 	problematicChars := []string{":", "/", "\\", "*", "?", "\"", "<", ">", "|", "\n", "\r", "\t"}
 	for _, char := range problematicChars {
 		text = strings.ReplaceAll(text, char, "")
 	}
-	
+
 	// Remove punctuation and special characters, keeping only letters, numbers, and spaces
 	text = regexp.MustCompile(`[^\w\s]`).ReplaceAllString(text, "")
-	
+
 	// Split into words and filter out short words (1-4 letters)
 	words := strings.Fields(text)
 	var majorWords []string
-	
+
 	for _, word := range words {
 		word = strings.TrimSpace(word)
 		// Keep words longer than 4 characters
@@ -492,7 +492,7 @@ func sanitizeFilename(text string) string {
 			majorWords = append(majorWords, word)
 		}
 	}
-	
+
 	// If no major words remain, keep words longer than 3 characters
 	if len(majorWords) == 0 {
 		for _, word := range words {
@@ -502,7 +502,7 @@ func sanitizeFilename(text string) string {
 			}
 		}
 	}
-	
+
 	// If still no words, keep all non-empty words
 	if len(majorWords) == 0 {
 		for _, word := range words {
@@ -512,10 +512,10 @@ func sanitizeFilename(text string) string {
 			}
 		}
 	}
-	
+
 	// Join with underscores
 	text = strings.Join(majorWords, "_")
-	
+
 	// Limit length to reasonable filename size
 	if len(text) > 100 {
 		text = text[:100]
@@ -524,37 +524,37 @@ func sanitizeFilename(text string) string {
 			text = text[:lastUnderscore]
 		}
 	}
-	
+
 	// If text is empty after sanitization, use a default
 	if text == "" {
 		text = "segment"
 	}
-	
+
 	return text
 }
 
 func extractVideoSegment(inputFile, startTime, endTime, outputFile string) error {
-	cmd := exec.Command("ffmpeg", 
+	cmd := exec.Command("ffmpeg",
 		"-i", inputFile,
 		"-ss", startTime,
 		"-to", endTime,
 		"-c", "copy",
 		"-avoid_negative_ts", "make_zero",
 		outputFile)
-	
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("ffmpeg command failed: %v", err)
 	}
-	
+
 	return nil
 }
 
 // PlayData represents the structure of the play JSON file
 type PlayData struct {
-	Act      string `json:"act"`
-	Scene    string `json:"scene"`
-	Title    string `json:"title"`
-	Setting  string `json:"setting"`
+	Act      string          `json:"act"`
+	Scene    string          `json:"scene"`
+	Title    string          `json:"title"`
+	Setting  string          `json:"setting"`
 	Dialogue []DialogueEntry `json:"dialogue"`
 }
 
@@ -626,8 +626,8 @@ func processPlayFile(filename string) error {
 
 func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 	voices := []string{
-		"agucchi", "algernon", "amanda", "archibald", "australian", "deep", "doug", "drew", "dundee", "elsa",
-		"hank", "harry", "heather", "jane", "jessica", "karen", "kevin", "kosovo", "mike", "miss",
+		"agucchi", "algernon", "amanda", "archibald", "australian", "china", "deep", "doug", "drew", "dundee", "elsa",
+		"hank", "harry", "heather", "iran", "jane", "jessica", "karen", "kevin", "kosovo", "mike", "miss",
 		"mrs", "pepe", "peter", "rachel", "richie", "saltburn", "sara", "steve", "tommy", "vatra", "yoav",
 	}
 
@@ -637,12 +637,12 @@ func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 	for _, entry := range dialogue {
 		if _, exists := characterVoices[entry.Character]; !exists {
 			var assignedVoice string
-			
+
 			// Check if character name ends with .wav
 			if strings.HasSuffix(entry.Character, ".wav") {
 				// Extract the part before the .wav extension
 				voiceName := strings.TrimSuffix(entry.Character, ".wav")
-				
+
 				// Check if this voice exists in our available voices
 				voiceExists := false
 				for _, voice := range voices {
@@ -651,7 +651,7 @@ func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 						break
 					}
 				}
-				
+
 				if voiceExists {
 					assignedVoice = voiceName
 				} else {
@@ -666,7 +666,7 @@ func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 				voiceIndex := int(hash[0]) % len(voices)
 				assignedVoice = voices[voiceIndex]
 			}
-			
+
 			characterVoices[entry.Character] = assignedVoice
 		}
 	}
