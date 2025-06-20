@@ -87,10 +87,12 @@ func GenerateCreativeText(options CreativeTextOptions) error {
 		return fmt.Errorf("failed to add background: %v", err)
 	}
 
-	// Generate animated text for each section
+	// Generate animated text for each section and add to background video
 	currentTime := 0.0
+	backgroundVideo := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos[0]
+	
 	for sectionIndex, section := range sections {
-		if err := addSectionText(fcpxml, tx, section, sectionIndex, &currentTime, textEffectID, options); err != nil {
+		if err := addSectionText(backgroundVideo, tx, section, sectionIndex, &currentTime, textEffectID, options); err != nil {
 			return fmt.Errorf("failed to add section %d: %v", sectionIndex, err)
 		}
 	}
@@ -121,26 +123,39 @@ func calculateTotalDuration(sections []ContentSection, options CreativeTextOptio
 	return totalDuration
 }
 
-// addCreativeBackground creates a placeholder background that user can replace
+// addCreativeBackground creates a visible background using proven FCP generator
 func addCreativeBackground(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, duration float64, options CreativeTextOptions) error {
-	// Create a simple gap that provides timeline structure
-	// Users can easily replace this with their own background video/image
-	backgroundGap := fcp.Gap{
-		Name:     "Background Placeholder - Replace with your own video/image",
+	// Use the proven Vivid generator from blue_background.fcpxml sample
+	// This is a real FCP generator that definitely works
+	ids := tx.ReserveIDs(1)
+	generatorID := ids[0]
+	
+	// Add the Vivid generator effect (proven to work from sample)
+	fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, fcp.Effect{
+		ID:   generatorID,
+		Name: "Vivid",
+		UID:  ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn",
+	})
+
+	// Create background video element using the generator
+	backgroundVideo := fcp.Video{
+		Ref:      generatorID,
 		Offset:   "0s",
+		Name:     "Background",
 		Duration: fcp.ConvertSecondsToFCPDuration(duration),
+		Start:    "0s",
 	}
 
-	fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Gaps = append(
-		fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Gaps,
-		backgroundGap,
+	fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos = append(
+		fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos,
+		backgroundVideo,
 	)
 
 	return nil
 }
 
-// addSectionText adds animated text for a section with title and points
-func addSectionText(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, section ContentSection, sectionIndex int, currentTime *float64, textEffectID string, options CreativeTextOptions) error {
+// addSectionText adds animated text for a section with title and points to background video
+func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, section ContentSection, sectionIndex int, currentTime *float64, textEffectID string, options CreativeTextOptions) error {
 	// Title animation - use simple valid XML ID format
 	titleID := fmt.Sprintf("ts%d", sectionIndex*10+1)
 	titleOffset := *currentTime
@@ -214,8 +229,8 @@ func addSectionText(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, section Con
 		},
 	}
 
-	fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Titles = append(
-		fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Titles,
+	backgroundVideo.NestedTitles = append(
+		backgroundVideo.NestedTitles,
 		titleElement,
 	)
 
@@ -288,8 +303,8 @@ func addSectionText(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, section Con
 			},
 		}
 
-		fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Titles = append(
-			fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Titles,
+		backgroundVideo.NestedTitles = append(
+			backgroundVideo.NestedTitles,
 			pointElement,
 		)
 	}
@@ -330,9 +345,9 @@ func HandleCreativeTextCommand(args []string) error {
 	}
 
 	fmt.Printf("✅ Creative text presentation generated successfully!\n")
-	fmt.Printf("📱 Text overlay ready - add your background video/image to the gap in FCP\n")
-	fmt.Printf("🎨 Features smooth text animations with fade effects\n")
-	fmt.Printf("💡 Tip: Replace the background placeholder gap with your own video or solid color generator\n")
+	fmt.Printf("🎨 Features colorful background and smooth text animations\n")
+	fmt.Printf("📱 Space reserved for picture-in-picture video overlay\n")
+	fmt.Printf("💡 Tip: Customize the background color in FCP or replace with your own video\n")
 	
 	return nil
 }
