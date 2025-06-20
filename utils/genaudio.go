@@ -755,6 +755,11 @@ func generateShadowTextFCPXML(inputFile, outputFile string) error {
 			Effects: []fcp.Effect{
 				{
 					ID:  "r2",
+					Name: "Vivid",
+					UID:  ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn",
+				},
+				{
+					ID:  "r3",
 					Name: "Text",
 					UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
 				},
@@ -924,22 +929,46 @@ func convertSecondsToFCPDuration(seconds float64) string {
 func createSpineWithTextChunks(chunks []TextChunk) fcp.Spine {
 	spine := fcp.Spine{}
 	
+	// Calculate total duration
+	totalDuration := 0.0
+	for _, chunk := range chunks {
+		totalDuration += chunk.Duration
+	}
+	
+	// Create a video element that references the generator effect (like asset-clip in the sample)
+	backgroundVideo := fcp.Video{
+		Ref:      "r2", // Vivid generator
+		Offset:   "0s",
+		Name:     "Vivid",
+		Duration: convertSecondsToFCPDuration(totalDuration),
+		Start:    "86486400/24000s",
+	}
+	
+	// Add all text titles to the video (nested like in the sample)
 	currentOffset := 0.0
 	textStyleID := 1
 	
 	for i, chunk := range chunks {
 		// Create title for this chunk
 		title := createTitleForChunk(chunk, currentOffset, i+1, &textStyleID)
-		spine.Titles = append(spine.Titles, title)
+		backgroundVideo.NestedTitles = append(backgroundVideo.NestedTitles, title)
 		
 		currentOffset += chunk.Duration
 	}
+	
+	spine.Videos = append(spine.Videos, backgroundVideo)
 	
 	return spine
 }
 
 func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, textStyleID *int) fcp.Title {
-	offsetStr := convertSecondsToFCPDuration(offsetSeconds)
+	// The offset should be when the title appears relative to the sequence timeline
+	// Since the video starts at 86486400/24000s, add the chunk offset to that base time
+	baseTimeFrames := 86486400 // This is 86486400/24000s converted to frames
+	chunkOffsetFrames := int(offsetSeconds * 24000.0 / 1001.0) * 1001 // Convert to frame-aligned
+	totalOffsetFrames := baseTimeFrames + chunkOffsetFrames
+	offsetStr := fmt.Sprintf("%d/24000s", totalOffsetFrames)
+	
 	durationStr := convertSecondsToFCPDuration(chunk.Duration)
 	
 	// Split text for shadow effect (like in sample)
@@ -1005,7 +1034,7 @@ func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, text
 	}
 	
 	title := fcp.Title{
-		Ref:      "r2",
+		Ref:      "r3", // Text effect (r2 is the generator)
 		Lane:     "1",
 		Offset:   offsetStr,
 		Name:     fmt.Sprintf("%s - Text", chunk.Text),
