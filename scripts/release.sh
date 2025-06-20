@@ -1,1 +1,1 @@
-python3 main.py --title "stop hating on vibe coding and learn to do it well!" --description ../data/trip.txt --privacy unlisted --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --thumbnail ~/Documents/vibewell.png ~/Desktop/vibewell.mov
+python3 main.py --title "cutlass demo: remake of jenny hansen lane video $37k on KDP" --description ../data/trip.txt --privacy unlisted --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --thumbnail ~/Documents/600t.png --tags "tag1,tag2,tag3" ~/Desktop/case.mov
