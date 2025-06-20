@@ -184,7 +184,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			{
 				Name:  "Position",
 				Key:   "9999/10003/13260/3296672360/1/100/101",
-				Value: "40 300", // Aligned with points below but slightly left to show hierarchy
+				Value: "40 350", // 200 pixels above first point (150 + 200 = 350)
 			},
 			// Large font size for IMPACT
 			{
