@@ -2,6 +2,8 @@ package utils
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -544,5 +546,116 @@ func extractVideoSegment(inputFile, startTime, endTime, outputFile string) error
 		return fmt.Errorf("ffmpeg command failed: %v", err)
 	}
 	
+	return nil
+}
+
+// PlayData represents the structure of the play JSON file
+type PlayData struct {
+	Act      string `json:"act"`
+	Scene    string `json:"scene"`
+	Title    string `json:"title"`
+	Setting  string `json:"setting"`
+	Dialogue []DialogueEntry `json:"dialogue"`
+}
+
+type DialogueEntry struct {
+	Character      string `json:"character"`
+	StageDirection string `json:"stage_direction"`
+	Line           string `json:"line"`
+}
+
+func HandleGenAudioPlayCommand(args []string) {
+	if len(args) < 1 {
+		fmt.Println("Error: Please provide a play JSON file")
+		return
+	}
+
+	playFile := args[0]
+	if err := processPlayFile(playFile); err != nil {
+		fmt.Printf("Error processing play file: %v\n", err)
+	}
+}
+
+func processPlayFile(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %v", err)
+	}
+	defer file.Close()
+
+	var playData PlayData
+	if err := json.NewDecoder(file).Decode(&playData); err != nil {
+		return fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	// Extract base name from filename for output directory
+	baseName := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+	audioDir := fmt.Sprintf("./data/%s_audio", baseName)
+
+	// Create audio directory
+	if err := os.MkdirAll(audioDir, 0755); err != nil {
+		return fmt.Errorf("failed to create audio directory: %v", err)
+	}
+
+	// Create character-to-voice mapping
+	characterVoices := createCharacterVoiceMapping(playData.Dialogue)
+
+	// Process each dialogue entry
+	for i, dialogue := range playData.Dialogue {
+		lineNum := fmt.Sprintf("%03d", i+1)
+		voice := characterVoices[dialogue.Character]
+		outputFilename := filepath.Join(audioDir, fmt.Sprintf("%s.wav", lineNum))
+
+		// Check if audio file already exists
+		if _, err := os.Stat(outputFilename); err == nil {
+			fmt.Printf("Skipping line %s (already exists): %s\n", lineNum, dialogue.Character)
+			continue
+		}
+
+		// Call chatterbox utah.py to generate audio
+		if err := callChatterboxUtah(dialogue.Line, lineNum, voice); err != nil {
+			fmt.Printf("Error generating audio for line %s (%s): %v\n", lineNum, dialogue.Character, err)
+			continue
+		}
+
+		fmt.Printf("Generated audio for line %s (%s): %s\n", lineNum, dialogue.Character, voice)
+	}
+
+	return nil
+}
+
+func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
+	voices := []string{
+		"agucchi", "algernon", "amanda", "archibald", "australian", "deep", "doug", "drew", "dundee", "elsa",
+		"hank", "harry", "heather", "jane", "jessica", "karen", "kevin", "kosovo", "mike", "miss",
+		"mrs", "pepe", "peter", "rachel", "richie", "saltburn", "sara", "steve", "tommy", "vatra", "yoav",
+	}
+
+	characterVoices := make(map[string]string)
+
+	// Create consistent mapping by processing characters in order of appearance
+	for _, entry := range dialogue {
+		if _, exists := characterVoices[entry.Character]; !exists {
+			// Use MD5 hash of character name to ensure consistency across runs
+			hash := md5.Sum([]byte(entry.Character))
+			voiceIndex := int(hash[0]) % len(voices)
+			characterVoices[entry.Character] = voices[voiceIndex]
+		}
+	}
+
+	return characterVoices
+}
+
+func callChatterboxUtah(line, lineNum, voice string) error {
+	cmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python",
+		"/Users/aa/os/chatterbox/chatterbox/utah.py",
+		line,
+		lineNum+".wav",
+		voice)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("chatterbox utah.py command failed: %v", err)
+	}
+
 	return nil
 }

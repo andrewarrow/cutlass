@@ -74,6 +74,42 @@ This will:
 	},
 }
 
+var genaudioPlayCmd = &cobra.Command{
+	Use:   "genaudio-play <play.json>",
+	Short: "Generate audio files from play JSON with consistent character voices",
+	Long: `Generate audio files from a play JSON file using chatterbox TTS with consistent character voice mapping.
+
+The input JSON should follow the play format with dialogue entries:
+{
+  "act": "II",
+  "scene": "2", 
+  "title": "Scene Title",
+  "setting": "Scene description",
+  "dialogue": [
+    {
+      "character": "Character Name",
+      "stage_direction": "speaking slowly",
+      "line": "The dialogue text to speak"
+    }
+  ]
+}
+
+Features:
+- Consistent voice assignment per character using MD5 hash
+- Automatic numbering (001.wav, 002.wav, etc.)
+- Skips existing audio files to avoid regeneration
+- Uses chatterbox utah.py for high-quality TTS
+- Creates ./data/{basename}_audio/ directory structure
+
+Example:
+cutlass utils genaudio-play play.json`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.HandleGenAudioPlayCommand(args)
+		return nil
+	},
+}
+
 var creativeTextCmd = &cobra.Command{
 	Use:   "creative-text <input.json> [output.fcpxml]",
 	Short: "Generate creative animated text presentation from JSON",
@@ -105,6 +141,7 @@ cutlass utils creative-text jenny_hansen_lane.json output.fcpxml`,
 
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
+	utilsCmd.AddCommand(genaudioPlayCmd)
 	utilsCmd.AddCommand(parseVttCmd)
 	utilsCmd.AddCommand(parseVttAndCutCmd)
 	utilsCmd.AddCommand(creativeTextCmd)
