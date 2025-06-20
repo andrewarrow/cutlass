@@ -184,7 +184,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			{
 				Name:  "Position",
 				Key:   "9999/10003/13260/3296672360/1/100/101",
-				Value: "0 300", // Upper position similar to Info.fcpxml title
+				Value: "40 300", // Aligned with points below but slightly left to show hierarchy
 			},
 			// Large font size for IMPACT
 			{
@@ -192,11 +192,11 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				Key:   "9999/10003/13260/3296672360/2/314",
 				Value: "1 (Paragraph)",
 			},
-			// Center alignment
+			// Left alignment for upper left positioning
 			{
 				Name:  "Alignment",
 				Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
-				Value: "1 (Center)",
+				Value: "0 (Left)",
 			},
 			// EXPLOSIVE SCALE ANIMATION
 			{
@@ -261,7 +261,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				FontFace:  "Bold",
 				FontColor: "1 1 0.2 1", // Bright yellow for impact!
 				Bold:      "1",
-				Alignment: "center",
+				Alignment: "left",
 			},
 		},
 	}
