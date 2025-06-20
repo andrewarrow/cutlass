@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"cutlass/creative"
 	"cutlass/utils"
 
 	"github.com/spf13/cobra"
@@ -73,8 +74,37 @@ This will:
 	},
 }
 
+var creativeTextCmd = &cobra.Command{
+	Use:   "creative-text <input.json> [output.fcpxml]",
+	Short: "Generate creative animated text presentation from JSON",
+	Long: `Generate a creative animated text presentation from a JSON file containing sections and points.
+
+The input JSON should be an array of objects with "title" and "points" fields:
+[
+  {
+    "title": "Section Title",
+    "points": ["Point 1", "Point 2", "Point 3"]
+  }
+]
+
+Features:
+- Dynamic gradient background animation
+- Smooth text transitions with staggered timing
+- Section-based organization with transitions
+- Space reserved for picture-in-picture video overlay
+- Professional typography and spacing
+
+Example:
+cutlass utils creative-text jenny_hansen_lane.json output.fcpxml`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return creative.HandleCreativeTextCommand(args)
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
 	utilsCmd.AddCommand(parseVttCmd)
 	utilsCmd.AddCommand(parseVttAndCutCmd)
+	utilsCmd.AddCommand(creativeTextCmd)
 }
