@@ -251,8 +251,8 @@ func isValidEffectType(effectType string) bool {
 // Excludes potpourri and variety-pack from random selection to avoid recursion
 // Ensures good distribution across effect categories (standard, creative)
 func generateRandomEffectsForImages(numImages int) []string {
-	// Initialize random seed based on current time
-	rand.Seed(time.Now().UnixNano())
+	// Initialize random seed based on current time + process ID for better randomness
+	rand.Seed(time.Now().UnixNano() + int64(numImages)*1000)
 	
 	// Available effects for random selection (excluding special effects)
 	availableEffects := []string{
@@ -263,31 +263,36 @@ func generateRandomEffectsForImages(numImages int) []string {
 	}
 	
 	effects := make([]string, numImages)
-	usedEffects := make(map[string]bool)
 	
-	// For variety, try to avoid repeating effects until we've used most of them
+	// Simple approach: shuffle the available effects and assign them in order
+	// If we need more effects than available, we'll cycle through but with different starting points
+	shuffled := make([]string, len(availableEffects))
+	copy(shuffled, availableEffects)
+	
+	// Fisher-Yates shuffle
+	for i := len(shuffled) - 1; i > 0; i-- {
+		j := rand.Intn(i + 1)
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	}
+	
+	// Assign effects to images
 	for i := 0; i < numImages; i++ {
-		var selectedEffect string
-		attempts := 0
-		maxAttempts := 20 // Prevent infinite loop
+		effects[i] = shuffled[i%len(shuffled)]
 		
-		for attempts < maxAttempts {
-			selectedEffect = availableEffects[rand.Intn(len(availableEffects))]
-			
-			// If we haven't used this effect yet, or we've used most effects, use it
-			if !usedEffects[selectedEffect] || len(usedEffects) >= len(availableEffects)-2 {
-				break
+		// Add some extra randomness every few iterations
+		if i > 0 && i%len(shuffled) == 0 {
+			// Re-shuffle for next cycle
+			for k := len(shuffled) - 1; k > 0; k-- {
+				j := rand.Intn(k + 1)
+				shuffled[k], shuffled[j] = shuffled[j], shuffled[k]
 			}
-			attempts++
 		}
-		
-		effects[i] = selectedEffect
-		usedEffects[selectedEffect] = true
-		
-		// Reset used effects tracking when we've used most of them
-		if len(usedEffects) >= len(availableEffects)-1 {
-			usedEffects = make(map[string]bool)
-		}
+	}
+	
+	// Debug: Print individual assignments
+	fmt.Printf("🎲 Effect assignments:\n")
+	for i, effect := range effects {
+		fmt.Printf("   Image %d: %s\n", i+1, effect)
 	}
 	
 	return effects
