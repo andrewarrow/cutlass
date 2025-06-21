@@ -22,7 +22,7 @@ The input file should have one sentence per line. Empty lines are skipped.
 Uses the filename (without extension) as the video ID.
 
 Optional voice parameter: If provided, all lines will use the specified voice.
-Available voices: David, Aria, Guy, Jenny, Ryan, Nova, Lewis, Amy, Brian, Andrew, Emma, Maya, Brandon, Christopher, Cooper, Samuel, Evan, Greg, Jacob, Luna, Davis, Will, Nolan
+Available voices: agucchi, algernon, amanda, archibald, australian, china, deep, doug, drew, dundee, elsa, hank, harry, heather, iran, jane, jessica, karen, kevin, kosovo, mike, miss, mrs, pepe, peter, rachel, richie, saltburn, sara, steve, tommy, vatra, yoav
 
 Example with waymo.txt:
 - Creates ./data/waymo_audio/ directory
@@ -216,6 +216,7 @@ This command creates dramatic video movement using advanced Final Cut Pro techni
 Effect Types:
 Standard: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)
 Creative: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind
+Advanced: inner-collapse (digital mind breakdown with complex multi-layer animation)
 Special: 
   potpourri (cycles through all effects at 1-second intervals)
   variety-pack (random effect per image, perfect for multiple images)

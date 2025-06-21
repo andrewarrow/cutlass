@@ -532,9 +532,9 @@ func processPlayFile(filename string) error {
 
 func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 	voices := []string{
-		"David", "Aria", "Guy", "Jenny", "Ryan", "Nova", "Lewis", "Amy",
-		"Brian", "Andrew", "Emma", "Maya", "Brandon", "Christopher", "Cooper",
-		"Samuel", "Evan", "Greg", "Jacob", "Luna", "Davis", "Will", "Nolan",
+		"agucchi", "algernon", "amanda", "archibald", "australian", "china", "deep", "doug", "drew", "dundee", "elsa",
+		"hank", "harry", "heather", "iran", "jane", "jessica", "karen", "kevin", "kosovo", "mike", "miss",
+		"mrs", "pepe", "peter", "rachel", "richie", "saltburn", "sara", "steve", "tommy", "vatra", "yoav",
 	}
 
 	characters := make(map[string]bool)
