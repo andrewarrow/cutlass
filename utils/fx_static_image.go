@@ -21,7 +21,8 @@ import (
 func HandleFXStaticImageCommand(args []string) {
 	if len(args) < 1 {
 		fmt.Println("Usage: fx-static-image <image.png> [output.fcpxml] [effect-type]")
-		fmt.Println("Effect types: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
+		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
+		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind")
 		return
 	}
 
@@ -134,6 +135,23 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 		imageVideo.AdjustTransform = createLightRaysAnimation(durationSeconds, videoStartTime)
 	case "glow":
 		imageVideo.AdjustTransform = createGlowAnimation(durationSeconds, videoStartTime)
+	// Creative effects
+	case "parallax":
+		imageVideo.AdjustTransform = createParallaxDepthAnimation(durationSeconds, videoStartTime)
+	case "breathe":
+		imageVideo.AdjustTransform = createBreathingAnimation(durationSeconds, videoStartTime)
+	case "pendulum":
+		imageVideo.AdjustTransform = createPendulumAnimation(durationSeconds, videoStartTime)
+	case "elastic":
+		imageVideo.AdjustTransform = createElasticBounceAnimation(durationSeconds, videoStartTime)
+	case "spiral":
+		imageVideo.AdjustTransform = createSpiralVortexAnimation(durationSeconds, videoStartTime)
+	case "figure8":
+		imageVideo.AdjustTransform = createFigure8Animation(durationSeconds, videoStartTime)
+	case "heartbeat":
+		imageVideo.AdjustTransform = createHeartbeatAnimation(durationSeconds, videoStartTime)
+	case "wind":
+		imageVideo.AdjustTransform = createWindSwayAnimation(durationSeconds, videoStartTime)
 	default: // "cinematic"
 		imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
 	}
@@ -777,6 +795,531 @@ func createGlowPositionKeyframes(duration float64, videoStartTime string) []fcp.
 		{Time: videoStartTime, Value: "0 0"},
 		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 -3"},
 		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+// ============================================================================
+// CREATIVE EFFECTS - Unique movement illusions for static images
+// ============================================================================
+
+// createParallaxDepthAnimation simulates depth by layering movement at different speeds
+// 🎬 PARALLAX PATTERN: Multi-layer depth illusion with foreground/background movement
+// Position: Large slow movement simulating distant background
+// Scale: Subtle perspective changes to enhance depth
+// Rotation: Minimal tilt to add dimensionality
+func createParallaxDepthAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createParallaxPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createParallaxScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createParallaxRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createBreathingAnimation makes the image seem alive with organic breathing motion
+// 🎬 BREATHING PATTERN: Rhythmic expansion/contraction like living tissue
+// Scale: Gentle pulsing (0.95 to 1.08) with organic timing
+// Position: Subtle floating movement synchronized with breathing
+// Rotation: Minimal organic tilt variations
+func createBreathingAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createBreathingScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createBreathingPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createBreathingRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createPendulumAnimation simulates realistic pendulum physics with gravity
+// 🎬 PENDULUM PATTERN: Physics-based swinging with realistic acceleration
+// Position: Arc motion with gravity-like deceleration at peaks
+// Rotation: Synchronized tilt following the swing direction
+// Scale: Subtle perspective changes during swing
+func createPendulumAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPendulumPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPendulumRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPendulumScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createElasticBounceAnimation creates rubber-like stretching and snapping motion
+// 🎬 ELASTIC PATTERN: Stretchy deformation with snapback physics
+// Scale: Dramatic stretching (0.6 to 1.8) with elastic recovery
+// Position: Compensating movement to maintain visual center
+// Rotation: Wobble effect during elastic deformation
+func createElasticBounceAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createElasticScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createElasticPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createElasticRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createSpiralVortexAnimation creates hypnotic inward/outward spiral motion
+// 🎬 SPIRAL PATTERN: Vortex-like motion with rotation and scaling
+// Rotation: Continuous spinning with acceleration phases
+// Scale: Dramatic zoom cycles (0.3 to 2.0) synchronized with rotation
+// Position: Spiral path with increasing/decreasing radius
+func createSpiralVortexAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createSpiralRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createSpiralScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createSpiralPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createFigure8Animation creates infinity symbol motion with variable speeds
+// 🎬 FIGURE-8 PATTERN: Infinity symbol path with smooth transitions
+// Position: Complex figure-8 trajectory with varying speeds
+// Rotation: Following the curve direction with banking
+// Scale: Perspective changes during the loop
+func createFigure8Animation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFigure8PositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFigure8RotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFigure8ScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createHeartbeatAnimation creates sharp, rhythmic cardiac-like pulses
+// 🎬 HEARTBEAT PATTERN: Medical heartbeat rhythm with sharp peaks
+// Scale: Sharp pulses (1.0 → 1.2 → 1.0) with realistic cardiac timing
+// Position: Slight bump movement synchronized with beats
+// Rotation: Minimal tilt during pulse peaks
+func createHeartbeatAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createHeartbeatScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createHeartbeatPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createHeartbeatRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createWindSwayAnimation simulates organic wind effects with irregular motion
+// 🎬 WIND PATTERN: Organic, irregular swaying like a tree in wind
+// Position: Irregular swaying with gusts and calm periods
+// Rotation: Natural tilt variations following wind direction
+// Scale: Subtle breathing effect from wind pressure
+func createWindSwayAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createWindPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createWindRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createWindScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// ============================================================================
+// CREATIVE EFFECTS KEYFRAMES - Mathematical patterns for organic movement
+// ============================================================================
+
+// PARALLAX DEPTH KEYFRAMES
+func createParallaxPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "-25 10"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "-40 25"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "-30 40"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "-10 30"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createParallaxScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.3), Value: "0.9 0.9", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.7), Value: "1.1 1.1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createParallaxRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "-1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+// BREATHING KEYFRAMES
+func createBreathingScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	breathCycle := duration / 4 // 4 breath cycles
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*0.4), Value: "1.06 1.06", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle), Value: "0.96 0.96", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*1.4), Value: "1.08 1.08", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*2), Value: "0.95 0.95", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*2.4), Value: "1.07 1.07", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*3), Value: "0.97 0.97", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, breathCycle*3.4), Value: "1.05 1.05", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createBreathingPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "1 1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-1 -1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createBreathingRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+// PENDULUM KEYFRAMES
+func createPendulumPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "-50 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "50 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "-50 0"},
+	}
+}
+
+func createPendulumRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "-8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "-8", Curve: "linear"},
+	}
+}
+
+func createPendulumScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0.95 1.05", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0.95 1.05", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+// ELASTIC BOUNCE KEYFRAMES
+func createElasticScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.15), Value: "0.6 1.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.3), Value: "1.4 0.7", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.45), Value: "0.8 1.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "1.2 0.9", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0.9 1.1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.9), Value: "1.05 0.95", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createElasticPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "15 -8"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "-20 12"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "8 -5"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "-3 2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createElasticRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "6", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "-4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "-1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+// SPIRAL VORTEX KEYFRAMES
+func createSpiralRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "180", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "540", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "900", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1080", Curve: "linear"},
+	}
+}
+
+func createSpiralScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "2 2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0.8 0.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0.3 0.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0.8 0.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "2 2", Curve: "linear"},
+	}
+}
+
+func createSpiralPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.125), Value: "40 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "20 20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.375), Value: "0 15"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "-10 5"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.625), Value: "-3 -3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "2 -5"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.875), Value: "8 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+// FIGURE-8 KEYFRAMES
+func createFigure8PositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.125), Value: "30 20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "40 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.375), Value: "30 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.625), Value: "-30 20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-40 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.875), Value: "-30 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createFigure8RotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+func createFigure8ScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0.9 0.9", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+// HEARTBEAT KEYFRAMES
+func createHeartbeatScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	beatInterval := duration / 6 // 6 heartbeats in duration
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*0.1), Value: "1.15 1.15", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*0.2), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*0.35), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*0.5), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*1.1), Value: "1.15 1.15", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*1.2), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*1.35), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, beatInterval*1.5), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createHeartbeatPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.1), Value: "0 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.35), Value: "0 -3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createHeartbeatRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.1), Value: "0.5", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.35), Value: "-0.5", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+// WIND SWAY KEYFRAMES
+func createWindPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.1), Value: "-8 2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "-15 -3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "-25 1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.55), Value: "-12 4"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.7), Value: "-18 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.85), Value: "-8 3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createWindRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.15), Value: "-2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.3), Value: "-4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.45), Value: "-6", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "-3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-5", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.9), Value: "-2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+func createWindScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "1.02 0.98", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "0.98 1.03", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "1.01 0.99", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "0.99 1.02", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
 	}
 }
 
