@@ -394,29 +394,13 @@ func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, text
 }
 
 func splitTextForShadowEffect(text string) []string {
-	// Split text creatively but preserve spaces between originally separate words
-	// The chunking already grouped words appropriately, so we should only split
-	// individual words, never combine words that were originally separate
+	// Keep the chunk intact as a single text-style element to preserve spacing
+	// This matches the Info.fcpxml approach where "kind of" stays as "kind of"
+	// rather than being split into separate "kind" and "of" elements
 	
-	words := strings.Fields(text)
-	
-	// If single word, split it creatively for shadow effect
-	if len(words) == 1 {
-		word := words[0]
-		if len(word) <= 3 {
-			return []string{word}
-		}
-		if len(word) <= 6 {
-			// Split at last character
-			return []string{word[:len(word)-1], word[len(word)-1:]}
-		}
-		// For longer single words, split at last character
-		return []string{word[:len(word)-1], word[len(word)-1:]}
-	}
-	
-	// If multiple words, return each word as separate text-style
-	// This preserves the space between words that were originally separate
-	return words
+	// Return the entire chunk as one text-style element
+	// This preserves the natural spacing within the chunk
+	return []string{text}
 }
 
 func createTitleParams(fontSize int) []fcp.Param {
