@@ -306,6 +306,7 @@ type Video struct {
 	Start         string         `xml:"start,attr,omitempty"`
 	Params        []Param        `xml:"param,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
+	FilterVideos     []FilterVideo   `xml:"filter-video,omitempty"`   // Support filter-video effects
 	NestedVideos     []Video     `xml:"video,omitempty"`      // Support nested video elements with lanes
 	NestedAssetClips []AssetClip `xml:"asset-clip,omitempty"` // Support nested asset-clip elements with lanes
 	NestedTitles     []Title     `xml:"title,omitempty"`      // Support nested title elements with lanes
