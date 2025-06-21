@@ -44,12 +44,17 @@ func HandleGenAudioCommand(args []string) {
 	}
 
 	textFile := args[0]
-	if err := processSimpleTextFile(textFile); err != nil {
+	var voice string
+	if len(args) > 1 {
+		voice = args[1]
+	}
+
+	if err := processSimpleTextFile(textFile, voice); err != nil {
 		fmt.Printf("Error processing text file: %v\n", err)
 	}
 }
 
-func processSimpleTextFile(filename string) error {
+func processSimpleTextFile(filename, voice string) error {
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %v", err)
@@ -86,7 +91,7 @@ func processSimpleTextFile(filename string) error {
 			audioPath := filepath.Join(audioDir, audioFilename)
 
 			// Call chatterbox to generate audio
-			if err := callChatterbox(line, audioPath); err != nil {
+			if err := callChatterboxWithVoice(line, audioPath, voice); err != nil {
 				fmt.Printf("Error generating audio for sentence %d: %v\n", sentenceNum, err)
 				continue
 			}
@@ -136,6 +141,27 @@ func callChatterbox(sentence, audioFilename string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("chatterbox failed: %v\nOutput: %s", err, string(output))
+	}
+
+	return nil
+}
+
+func callChatterboxWithVoice(sentence, audioFilename, voice string) error {
+	if voice == "" {
+		// No voice specified, use the original callChatterbox function
+		return callChatterbox(sentence, audioFilename)
+	}
+
+	// Voice specified, use utah.py like genaudio-play does
+	cmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python",
+		"/opt/miniconda3/envs/chatterbox/utah.py",
+		sentence,
+		audioFilename,
+		voice)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("chatterbox utah failed: %v\nOutput: %s", err, string(output))
 	}
 
 	return nil
