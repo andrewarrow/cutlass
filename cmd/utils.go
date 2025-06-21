@@ -173,7 +173,7 @@ cutlass utils add-shadow-text shadow.txt custom_output.fcpxml`,
 }
 
 var fxStaticImageCmd = &cobra.Command{
-	Use:   "fx-static-image <image.png> [output.fcpxml] [effect-type]",
+	Use:   "fx-static-image <image.png|image1.png,image2.png> [output.fcpxml] [effect-type]",
 	Short: "Generate dynamic FCPXML with sophisticated multi-phase animated effects for static PNG images",
 	Long: `Generate FCPXML with sophisticated multi-phase animation effects to transform static PNG images into cinematic video content.
 
@@ -212,11 +212,15 @@ Creative: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind
 Special: potpourri (cycles through all effects at 1-second intervals)
 
 Examples:
+Single image:
 cutlass utils fx-static-image photo.png
 cutlass utils fx-static-image photo.png dynamic_video.fcpxml
 cutlass utils fx-static-image photo.png output.fcpxml heartbeat
 cutlass utils fx-static-image photo.png parallax
-cutlass utils fx-static-image photo.png potpourri`,
+
+Multiple images (10 seconds each):
+cutlass utils fx-static-image image1.png,image2.png,image3.png output.fcpxml potpourri
+cutlass utils fx-static-image photo1.png,photo2.png heartbeat`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.HandleFXStaticImageCommand(args)

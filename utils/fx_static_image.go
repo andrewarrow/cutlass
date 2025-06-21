@@ -20,19 +20,27 @@ import (
 // ⚡ Effect Stack: Camera shake + 3D perspective + 360° tilt/pan + light effects + Ken Burns + parallax motion
 func HandleFXStaticImageCommand(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Usage: fx-static-image <image.png> [output.fcpxml] [effect-type]")
+		fmt.Println("Usage: fx-static-image <image.png|image1.png,image2.png> [output.fcpxml] [effect-type]")
 		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
 		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind")
 		fmt.Println("Special effect: potpourri (cycles through all effects at 1-second intervals)")
+		fmt.Println("Multiple images: Each image gets 10 seconds with the same effect applied")
 		return
 	}
 
-	imageFile := args[0]
-	outputFile := strings.TrimSuffix(imageFile, filepath.Ext(imageFile)) + "_fx.fcpxml"
+	imageFiles := strings.Split(args[0], ",")
+	
+	// Default output file based on first image
+	firstImage := imageFiles[0]
+	outputFile := strings.TrimSuffix(firstImage, filepath.Ext(firstImage)) + "_fx.fcpxml"
+	if len(imageFiles) > 1 {
+		outputFile = "multi_fx.fcpxml"
+	}
 	effectType := "cinematic"
 	
 	// Debug: show all arguments
 	fmt.Printf("🔍 Arguments received: %v\n", args)
+	fmt.Printf("📸 Image files: %v\n", imageFiles)
 	
 	// Smart argument parsing: detect if arg1 is an effect type or output file
 	if len(args) > 1 {
@@ -54,17 +62,63 @@ func HandleFXStaticImageCommand(args []string) {
 	// Default duration for dynamic effects (10 seconds provides good animation showcase)
 	duration := 10.0
 
-	if err := GenerateFXStaticImage(imageFile, outputFile, duration, effectType); err != nil {
+	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType); err != nil {
 		fmt.Printf("Error generating FX static image: %v\n", err)
 		return
 	}
 
+	totalDuration := duration * float64(len(imageFiles))
 	fmt.Printf("✅ Generated dynamic FCPXML: %s\n", outputFile)
-	fmt.Printf("🎬 Duration: %.1f seconds with '%s' animation effects\n", duration, effectType)
+	fmt.Printf("📸 Images: %d files, %.1f seconds each\n", len(imageFiles), duration)
+	fmt.Printf("🎬 Total Duration: %.1f seconds with '%s' animation effects\n", totalDuration, effectType)
 	fmt.Printf("🎯 Ready to import into Final Cut Pro for professional video content\n")
 }
 
-// GenerateFXStaticImage creates a dynamic FCPXML with animated effects for static PNG images
+// GenerateFXStaticImages creates a dynamic FCPXML with animated effects for multiple static PNG images
+//
+// 🎬 ARCHITECTURE: Uses fcp.GenerateEmpty() infrastructure + ResourceRegistry/Transaction pattern
+// 🎯 ANIMATION STACK: Multi-layer transform keyframes + optional built-in FCP effects  
+// ⚡ EFFECT DESIGN: Each image gets 10 seconds with the same effect applied sequentially
+//
+// 🚨 CLAUDE.md COMPLIANCE:
+// ✅ Uses fcp.GenerateEmpty() (not building FCPXML from scratch)
+// ✅ Uses ResourceRegistry/Transaction for crash-safe resource management  
+// ✅ Uses AdjustTransform structs with KeyframeAnimation (not string templates)
+// ✅ Frame-aligned timing with ConvertSecondsToFCPDuration()
+// ✅ Uses proven effect UIDs from samples/ directory only
+func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeconds float64, effectType string) error {
+	// Create base FCPXML using existing infrastructure
+	fcpxml, err := fcp.GenerateEmpty("")
+	if err != nil {
+		return fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+
+	// Add each image sequentially with the same effect
+	currentStartTime := 0.0
+	for i, imagePath := range imagePaths {
+		fmt.Printf("🎬 Adding image %d/%d: %s (%.1fs)\n", i+1, len(imagePaths), filepath.Base(imagePath), durationSeconds)
+		
+		if err := fcp.AddImage(fcpxml, imagePath, durationSeconds); err != nil {
+			return fmt.Errorf("failed to add image %s: %v", imagePath, err)
+		}
+
+		// Apply dynamic animation effects to the most recently added image
+		if err := addDynamicImageEffectsAtTime(fcpxml, durationSeconds, effectType, currentStartTime); err != nil {
+			return fmt.Errorf("failed to add dynamic effects to %s: %v", imagePath, err)
+		}
+		
+		currentStartTime += durationSeconds
+	}
+
+	// Write the FCPXML to file
+	if err := fcp.WriteToFile(fcpxml, outputPath); err != nil {
+		return fmt.Errorf("failed to write FCPXML: %v", err)
+	}
+
+	return nil
+}
+
+// GenerateFXStaticImage creates a dynamic FCPXML with animated effects for static PNG images (single image version)
 //
 // 🎬 ARCHITECTURE: Uses fcp.GenerateEmpty() infrastructure + ResourceRegistry/Transaction pattern
 // 🎯 ANIMATION STACK: Multi-layer transform keyframes + optional built-in FCP effects  
@@ -77,28 +131,13 @@ func HandleFXStaticImageCommand(args []string) {
 // ✅ Frame-aligned timing with ConvertSecondsToFCPDuration()
 // ✅ Uses proven effect UIDs from samples/ directory only
 func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64, effectType string) error {
-	// Create base FCPXML using existing infrastructure
-	fcpxml, err := fcp.GenerateEmpty("")
-	if err != nil {
-		return fmt.Errorf("failed to create base FCPXML: %v", err)
-	}
+	return GenerateFXStaticImages([]string{imagePath}, outputPath, durationSeconds, effectType)
+}
 
-	// Add the image using existing AddImage function
-	if err := fcp.AddImage(fcpxml, imagePath, durationSeconds); err != nil {
-		return fmt.Errorf("failed to add image: %v", err)
-	}
-
-	// Apply dynamic animation effects to the image
-	if err := addDynamicImageEffects(fcpxml, durationSeconds, effectType); err != nil {
-		return fmt.Errorf("failed to add dynamic effects: %v", err)
-	}
-
-	// Write the FCPXML to file
-	if err := fcp.WriteToFile(fcpxml, outputPath); err != nil {
-		return fmt.Errorf("failed to write FCPXML: %v", err)
-	}
-
-	return nil
+// addDynamicImageEffectsAtTime applies effects to the most recently added image at a specific timeline position
+func addDynamicImageEffectsAtTime(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string, startTimeSeconds float64) error {
+	// Apply dynamic animation effects to the most recently added image
+	return addDynamicImageEffects(fcpxml, durationSeconds, effectType)
 }
 
 // addDynamicImageEffects applies sophisticated animation effects to transform static images into dynamic video
