@@ -118,7 +118,7 @@ def upload_video(youtube, video_file, title, description, channel_id=None, tags=
         },
         'status': {
             'privacyStatus': privacy_status,
-            'madeForKids': False,
+            'selfDeclaredMadeForKids': False,
         }
     }
     
