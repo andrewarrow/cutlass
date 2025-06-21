@@ -16,30 +16,36 @@ import (
 // ✅ Uses AdjustTransform with KeyframeAnimation structs for smooth animations
 // ✅ Frame-aligned timing with ConvertSecondsToFCPDuration() function
 //
-// 🎯 Features: Multi-layer transform keyframes (position, scale, rotation) with professional easing
-// ⚡ Effect Stack: Handheld camera shake + Ken Burns + parallax motion simulation
+// 🎯 Enhanced Features: Multi-layer transform keyframes with professional easing
+// ⚡ Effect Stack: Camera shake + 3D perspective + 360° tilt/pan + light effects + Ken Burns + parallax motion
 func HandleFXStaticImageCommand(args []string) {
 	if len(args) < 1 {
-		fmt.Println("Error: Please provide a PNG image file")
+		fmt.Println("Usage: fx-static-image <image.png> [output.fcpxml] [effect-type]")
+		fmt.Println("Effect types: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
 		return
 	}
 
 	imageFile := args[0]
 	outputFile := strings.TrimSuffix(imageFile, filepath.Ext(imageFile)) + "_fx.fcpxml"
+	effectType := "cinematic"
+	
 	if len(args) > 1 {
 		outputFile = args[1]
+	}
+	if len(args) > 2 {
+		effectType = args[2]
 	}
 
 	// Default duration for dynamic effects (10 seconds provides good animation showcase)
 	duration := 10.0
 
-	if err := GenerateFXStaticImage(imageFile, outputFile, duration); err != nil {
+	if err := GenerateFXStaticImage(imageFile, outputFile, duration, effectType); err != nil {
 		fmt.Printf("Error generating FX static image: %v\n", err)
 		return
 	}
 
 	fmt.Printf("✅ Generated dynamic FCPXML: %s\n", outputFile)
-	fmt.Printf("🎬 Duration: %.1f seconds with cinematic animation effects\n", duration)
+	fmt.Printf("🎬 Duration: %.1f seconds with %s animation effects\n", duration, effectType)
 	fmt.Printf("🎯 Ready to import into Final Cut Pro for professional video content\n")
 }
 
@@ -55,7 +61,7 @@ func HandleFXStaticImageCommand(args []string) {
 // ✅ Uses AdjustTransform structs with KeyframeAnimation (not string templates)
 // ✅ Frame-aligned timing with ConvertSecondsToFCPDuration()
 // ✅ Uses proven effect UIDs from samples/ directory only
-func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64) error {
+func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64, effectType string) error {
 	// Create base FCPXML using existing infrastructure
 	fcpxml, err := fcp.GenerateEmpty("")
 	if err != nil {
@@ -68,7 +74,7 @@ func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64
 	}
 
 	// Apply dynamic animation effects to the image
-	if err := addDynamicImageEffects(fcpxml, durationSeconds); err != nil {
+	if err := addDynamicImageEffects(fcpxml, durationSeconds, effectType); err != nil {
 		return fmt.Errorf("failed to add dynamic effects: %v", err)
 	}
 
@@ -98,7 +104,7 @@ func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64
 // - Animation: Direct keyframe animation on the image itself
 // - Effects: NONE (to prevent crashes)
 // - Based on samples/slide.fcpxml which shows Video with adjust-transform working
-func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64) error {
+func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string) error {
 	// 🚨 CRITICAL CHANGE: Apply animation directly to image Video element
 	// This follows the working pattern from samples/slide.fcpxml
 	
@@ -113,7 +119,24 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64) error {
 	
 	// Apply sophisticated animation directly to the image (crash-safe approach)
 	// This creates visible movement since it affects the actual image
-	imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
+	switch effectType {
+	case "shake":
+		imageVideo.AdjustTransform = createCameraShakeAnimation(durationSeconds, videoStartTime)
+	case "perspective":
+		imageVideo.AdjustTransform = createPerspective3DAnimation(durationSeconds, videoStartTime)
+	case "flip":
+		imageVideo.AdjustTransform = createFlip3DAnimation(durationSeconds, videoStartTime)
+	case "360-tilt":
+		imageVideo.AdjustTransform = create360TiltAnimation(durationSeconds, videoStartTime)
+	case "360-pan":
+		imageVideo.AdjustTransform = create360PanAnimation(durationSeconds, videoStartTime)
+	case "light-rays":
+		imageVideo.AdjustTransform = createLightRaysAnimation(durationSeconds, videoStartTime)
+	case "glow":
+		imageVideo.AdjustTransform = createGlowAnimation(durationSeconds, videoStartTime)
+	default: // "cinematic"
+		imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
+	}
 
 	return nil
 }
@@ -342,6 +365,418 @@ func createMultiPhaseAnchorKeyframes(duration float64, videoStartTime string) []
 			Value: "0.05 -0.03",    // Elegant final anchor point
 			Curve: "linear",        // Only curve attribute for anchor
 		},
+	}
+}
+
+// createCameraShakeAnimation generates subtle handheld camera shake effects
+// 🎬 SHAKE PATTERN: High-frequency micro-movements with random variations
+// Position: Small random movements (-5 to +5 pixels)
+// Rotation: Subtle tilt variations (-0.5° to +0.5°)  
+// Scale: Minor zoom fluctuations (98% to 102%)
+func createCameraShakeAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShakePositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShakeRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShakeScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createPerspective3DAnimation creates illusion of rotating 2D plane in 3D space
+// 🎬 3D PERSPECTIVE PATTERN: Simulates depth and viewing angle changes
+// Scale X/Y: Different ratios to simulate perspective (0.8-1.2 range)
+// Position: Compensating movement to maintain visual center
+// Rotation: Subtle tilt to enhance 3D illusion
+func createPerspective3DAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPerspectivePositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPerspectiveScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPerspectiveRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createFlip3DAnimation creates dramatic 3D flip effects
+// 🎬 FLIP PATTERN: Complete 180° rotations with perspective scaling
+// Rotation: Full flip movements (0° → 180° → 360°)
+// Scale: Dramatic perspective changes (1.0 → 0.1 → 1.0) to simulate depth
+// Position: Slight movement to enhance 3D effect
+func createFlip3DAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFlipRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFlipScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createFlipPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// create360TiltAnimation applies 360° tilt effects even on normal images
+// 🎬 360° TILT PATTERN: Full rotation cycles with dynamic scaling
+// Rotation: Complete 360° rotations (0° → 360° → 720°)
+// Scale: Rhythmic zoom cycles synchronized with rotation
+// Position: Orbital movement to enhance rotation effect
+func create360TiltAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360TiltRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360TiltScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360TiltPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// create360PanAnimation applies 360° pan effects with orbital motion
+// 🎬 360° PAN PATTERN: Circular orbital movement around center
+// Position: Large circular motion (-100 to +100 pixel radius)
+// Scale: Perspective changes as image "orbits" (0.8 to 1.3 range)
+// Rotation: Counter-rotation to maintain orientation or enhance spin
+func create360PanAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360PanPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360PanScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: create360PanRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createLightRaysAnimation simulates light rays/flares effects through transform
+// 🎬 LIGHT RAYS PATTERN: Radiating movement with brightness simulation
+// Scale: Pulsing effect to simulate light intensity (0.9 to 1.4)
+// Position: Subtle radiating movement from center
+// Rotation: Slow rotation to simulate moving light source
+func createLightRaysAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createLightRaysScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createLightRaysPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createLightRaysRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createGlowAnimation simulates glow effects through scaling and movement
+// 🎬 GLOW PATTERN: Breathing effect with soft pulsing motion
+// Scale: Gentle pulsing (0.95 to 1.15) to simulate glow breathing
+// Position: Minimal floating movement
+// All effects are subtle to maintain image clarity while adding glow feel
+func createGlowAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createGlowScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createGlowPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// SHAKE EFFECT KEYFRAMES
+func createShakePositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.1), Value: "-2 1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "3 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.3), Value: "-1 3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "4 -1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "-3 2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "2 -3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.7), Value: "-4 1"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "1 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.9), Value: "-2 4"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createShakeRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.15), Value: "-0.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.3), Value: "0.4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.45), Value: "-0.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "0.5", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-0.4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.9), Value: "0.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+func createShakeScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "1.01 0.99", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "0.99 1.02", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "1.02 0.98", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "0.98 1.01", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+// PERSPECTIVE 3D EFFECT KEYFRAMES
+func createPerspectivePositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "-15 8"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "20 -12"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-10 15"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createPerspectiveScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0.8 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "1.2 0.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0.9 1.1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createPerspectiveRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.33), Value: "-2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.66), Value: "3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0", Curve: "linear"},
+	}
+}
+
+// FLIP 3D EFFECT KEYFRAMES  
+func createFlipRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "90", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "180", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "270", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "360", Curve: "linear"},
+	}
+}
+
+func createFlipScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "0.1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "0.1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createFlipPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+// 360° TILT EFFECT KEYFRAMES
+func create360TiltRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "360", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "720", Curve: "linear"},
+	}
+}
+
+func create360TiltScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "1.3 1.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0.8 0.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "1.4 1.4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func create360TiltPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "30 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 30"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-30 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+// 360° PAN EFFECT KEYFRAMES
+func create360PanPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.125), Value: "70 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "50 50"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.375), Value: "0 70"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "-50 50"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.625), Value: "-70 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "-50 -50"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.875), Value: "0 -70"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func create360PanScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "1.3 1.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0.8 0.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func create360PanRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "-360", Curve: "linear"},
+	}
+}
+
+// LIGHT RAYS EFFECT KEYFRAMES
+func createLightRaysScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.2), Value: "1.1 1.1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.4), Value: "1.4 1.4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "1.2 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "1.3 1.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createLightRaysPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.33), Value: "5 -8"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.66), Value: "-8 12"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createLightRaysRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "45", Curve: "linear"},
+	}
+}
+
+// GLOW EFFECT KEYFRAMES
+func createGlowScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.25), Value: "1.05 1.05", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "1.15 1.15", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.75), Value: "1.08 1.08", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createGlowPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration*0.5), Value: "0 -3"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
 	}
 }
 
