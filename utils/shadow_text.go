@@ -94,10 +94,10 @@ func generateShadowTextFCPXML(inputFile, outputFile string, totalDuration float6
 			Formats: []fcp.Format{
 				{
 					ID:            "r1",
-					Name:          "FFVideoFormat720p2398",
+					Name:          "FFVideoFormat1080x1920p2398",
 					FrameDuration: "1001/24000s",
-					Width:         "1280",
-					Height:        "720",
+					Width:         "1080",
+					Height:        "1920",
 					ColorSpace:    "1-1-1 (Rec. 709)",
 				},
 			},
