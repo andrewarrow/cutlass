@@ -154,7 +154,7 @@ func callChatterboxWithVoice(sentence, audioFilename, voice string) error {
 
 	// Voice specified, use utah.py like genaudio-play does
 	cmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python",
-		"/opt/miniconda3/envs/chatterbox/utah.py",
+		"/Users/aa/os/chatterbox/chatterbox/utah.py",
 		sentence,
 		audioFilename,
 		voice)
@@ -571,7 +571,7 @@ func createCharacterVoiceMapping(dialogue []DialogueEntry) map[string]string {
 
 func callChatterboxUtah(line, lineNum, voice string) error {
 	cmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python",
-		"/opt/miniconda3/envs/chatterbox/utah.py",
+		"/Users/aa/os/chatterbox/chatterbox/utah.py",
 		line,
 		lineNum,
 		voice)

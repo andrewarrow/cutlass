@@ -217,6 +217,7 @@ Effect Types:
 Standard: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)
 Creative: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind
 Advanced: inner-collapse (digital mind breakdown with complex multi-layer animation)
+Cinematic: shatter-archive (nostalgic stop-motion with analog photography decay)
 Special: 
   potpourri (cycles through all effects at 1-second intervals)
   variety-pack (random effect per image, perfect for multiple images)

@@ -26,6 +26,7 @@ func HandleFXStaticImageCommand(args []string) {
 		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
 		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind")
 		fmt.Println("Advanced effects: inner-collapse (digital mind breakdown with complex multi-layer animation)")
+		fmt.Println("Cinematic effects: shatter-archive (nostalgic stop-motion with analog photography decay)")
 		fmt.Println("Special effects:")
 		fmt.Println("  potpourri (cycles through all effects at 1-second intervals)")
 		fmt.Println("  variety-pack (random effect per image, great for multiple images)")
@@ -226,6 +227,8 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 		imageVideo.AdjustTransform = createWindSwayAnimation(durationSeconds, videoStartTime)
 	case "inner-collapse":
 		imageVideo.AdjustTransform = createInnerCollapseAnimation(durationSeconds, videoStartTime)
+	case "shatter-archive":
+		imageVideo.AdjustTransform = createShatterArchiveAnimation(durationSeconds, videoStartTime)
 	case "potpourri":
 		imageVideo.AdjustTransform = createPotpourriAnimation(durationSeconds, videoStartTime)
 	default: // "cinematic"
@@ -239,7 +242,7 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 func isValidEffectType(effectType string) bool {
 	validEffects := []string{
 		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
-		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse", "potpourri", "variety-pack",
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse", "shatter-archive", "potpourri", "variety-pack",
 	}
 	for _, valid := range validEffects {
 		if effectType == valid {
@@ -262,7 +265,7 @@ func generateRandomEffectsForImages(numImages int) []string {
 		// Standard effects
 		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
 		// Creative effects  
-		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse",
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse", "shatter-archive",
 	}
 	
 	effects := make([]string, numImages)
@@ -1966,6 +1969,325 @@ func createInnerCollapseAnchorKeyframes(duration float64, videoStartTime string)
 		{Time: calculateAbsoluteTime(videoStartTime, 9.7), Value: "-0.01 0.005", Curve: "linear"},     // Final scatter
 		{Time: calculateAbsoluteTime(videoStartTime, 9.9), Value: "0.005 -0.002", Curve: "linear"},   // Data corruption
 		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0", Curve: "linear"},        // Complete dissolution
+	}
+}
+
+// ============================================================================
+// SHATTER ARCHIVE EFFECT - "Shatter Archive: The Dream Album"
+// ============================================================================
+
+// createShatterArchiveAnimation creates nostalgic stop-motion with analog photography decay
+// 📸 SHATTER ARCHIVE PATTERN: Nostalgic stop-motion with emotional memory decay
+// 
+// 🎬 CONCEPT: "Shatter Archive: The Dream Album" - 10 seconds of dreamlike photography
+// Duration: 10.0 seconds, Stop-motion aesthetic (12fps simulation), Nostalgic mood
+// 
+// 🔧 TECHNICAL BREAKDOWN:
+// Phase 1 (0-2.5s): MEMORY AWAKENING - Gentle paper drift and sepia fade-in
+// Phase 2 (2.5-5s): PHOTO REVELATION - Torn edge reveals with light leaks  
+// Phase 3 (5-7.5s): GLASS DISTORTION - Cracked viewing with magnification
+// Phase 4 (7.5-10s): ANALOG DECAY - Film burn and fragile dissolution
+//
+// 🎯 ANIMATION LAYERS:
+// Position: Gentle paper drift simulating aged documents moving from breeze
+// Scale: Subtle breathing effect like living memories (0.95x to 1.08x)
+// Rotation: Slight pendulum sway as if hanging from invisible threads
+// Anchor: Shifted pivot points simulating torn photo corners
+//
+// 📷 AESTHETIC SIMULATION: Hand-cranked camera, torn paper masks, light leaks
+// 🎭 EMOTIONAL TIMING: 12fps stutter for stop-motion authenticity 
+// 🕯️ NOSTALGIC DECAY: Sepia tones, film grain, and fragile imperfections
+func createShatterArchiveAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			// Position Animation: Gentle paper drift like aged documents in breeze
+			{
+				Name: "position", 
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShatterArchivePositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			// Scale Animation: Subtle breathing effect like living memories
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShatterArchiveScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			// Rotation Animation: Slight pendulum sway as if hanging from threads
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShatterArchiveRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			// Anchor Animation: Shifted pivot points simulating torn photo corners
+			{
+				Name: "anchor",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createShatterArchiveAnchorKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
+// createShatterArchivePositionKeyframes creates gentle paper drift like aged documents
+// 📸 POSITION DRIFT PATTERN (Stop-motion 12fps aesthetic):
+// Phase 1 (0-2.5s): MEMORY AWAKENING - Slow horizontal drift from left (like slide projector)
+// Phase 2 (2.5-5s): PHOTO REVELATION - Stuttered reveals with torn edge simulation
+// Phase 3 (5-7.5s): GLASS DISTORTION - Subtle shifting as if viewed through cracked glass
+// Phase 4 (7.5-10s): ANALOG DECAY - Final drift before memory fades
+//
+// 🎯 MATHEMATICAL BASIS: Organic drift patterns with 12fps stop-motion stuttering
+// Simulates hand-cranked film projector and aged photo album pages turning
+func createShatterArchivePositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// PHASE 1: MEMORY AWAKENING (0-2.5s) - Slow horizontal drift
+		{Time: videoStartTime, Value: "-15 5"},                                   // Start off-center (like old photo placement)
+		{Time: calculateAbsoluteTime(videoStartTime, 0.3), Value: "-12 4"},       // Gentle drift begins
+		{Time: calculateAbsoluteTime(videoStartTime, 0.6), Value: "-8 3"},        // Continued drift
+		{Time: calculateAbsoluteTime(videoStartTime, 0.9), Value: "-5 2"},        // Moving toward center
+		{Time: calculateAbsoluteTime(videoStartTime, 1.2), Value: "-2 1"},        // Almost centered
+		{Time: calculateAbsoluteTime(videoStartTime, 1.5), Value: "1 0"},         // Center crossing
+		{Time: calculateAbsoluteTime(videoStartTime, 1.8), Value: "3 -1"},        // Past center
+		{Time: calculateAbsoluteTime(videoStartTime, 2.1), Value: "5 -2"},        // Continuing right
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "8 -3"},        // End of phase 1
+		
+		// PHASE 2: PHOTO REVELATION (2.5-5s) - Stuttered reveals (12fps simulation)
+		{Time: calculateAbsoluteTime(videoStartTime, 2.7), Value: "6 -2"},        // Slight recoil (stop-motion stutter)
+		{Time: calculateAbsoluteTime(videoStartTime, 2.9), Value: "10 -4"},       // Photo edge reveal
+		{Time: calculateAbsoluteTime(videoStartTime, 3.1), Value: "8 -3"},        // Stutter back
+		{Time: calculateAbsoluteTime(videoStartTime, 3.3), Value: "12 -5"},       // Torn edge movement
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "9 -3"},        // Stop-motion adjustment
+		{Time: calculateAbsoluteTime(videoStartTime, 3.7), Value: "14 -6"},       // Light leak reveal
+		{Time: calculateAbsoluteTime(videoStartTime, 3.9), Value: "11 -4"},       // Stutter correction
+		{Time: calculateAbsoluteTime(videoStartTime, 4.1), Value: "15 -7"},       // Maximum reveal
+		{Time: calculateAbsoluteTime(videoStartTime, 4.3), Value: "12 -5"},       // Settling back
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "8 -3"},        // Return motion
+		{Time: calculateAbsoluteTime(videoStartTime, 4.7), Value: "5 -2"},        // Almost settled
+		{Time: calculateAbsoluteTime(videoStartTime, 5.0), Value: "2 0"},         // Phase 2 end
+		
+		// PHASE 3: GLASS DISTORTION (5-7.5s) - Cracked glass viewing
+		{Time: calculateAbsoluteTime(videoStartTime, 5.2), Value: "0 2"},         // Vertical shift (glass crack)
+		{Time: calculateAbsoluteTime(videoStartTime, 5.4), Value: "-3 1"},        // Diagonal distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 5.6), Value: "1 -1"},        // Glass refraction
+		{Time: calculateAbsoluteTime(videoStartTime, 5.8), Value: "-2 3"},        // Crack line shift
+		{Time: calculateAbsoluteTime(videoStartTime, 6.0), Value: "4 0"},         // Glass fragment view
+		{Time: calculateAbsoluteTime(videoStartTime, 6.2), Value: "-1 -2"},       // Distortion continue
+		{Time: calculateAbsoluteTime(videoStartTime, 6.4), Value: "2 1"},         // Fragment alignment
+		{Time: calculateAbsoluteTime(videoStartTime, 6.6), Value: "-3 -1"},       // Glass stress
+		{Time: calculateAbsoluteTime(videoStartTime, 6.8), Value: "1 2"},         // Refraction shift
+		{Time: calculateAbsoluteTime(videoStartTime, 7.0), Value: "-1 0"},        // Glass settling
+		{Time: calculateAbsoluteTime(videoStartTime, 7.2), Value: "0 -1"},        // Final crack view
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "0 0"},         // Return to center
+		
+		// PHASE 4: ANALOG DECAY (7.5-10s) - Film burn and memory fade
+		{Time: calculateAbsoluteTime(videoStartTime, 7.7), Value: "-5 3"},        // Film edge curl
+		{Time: calculateAbsoluteTime(videoStartTime, 7.9), Value: "-8 5"},        // Burn progression
+		{Time: calculateAbsoluteTime(videoStartTime, 8.1), Value: "-12 7"},       // Film melting
+		{Time: calculateAbsoluteTime(videoStartTime, 8.3), Value: "-15 9"},       // Analog decay
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "-18 11"},      // Memory fragmentation
+		{Time: calculateAbsoluteTime(videoStartTime, 8.7), Value: "-20 12"},      // Film dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 8.9), Value: "-22 13"},      // Final burn edge
+		{Time: calculateAbsoluteTime(videoStartTime, 9.1), Value: "-23 14"},      // Near complete fade
+		{Time: calculateAbsoluteTime(videoStartTime, 9.3), Value: "-24 14"},      // Memory echo
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "-24 15"},      // Last flicker
+		{Time: calculateAbsoluteTime(videoStartTime, 9.7), Value: "-25 15"},      // Final drift
+		{Time: calculateAbsoluteTime(videoStartTime, 9.9), Value: "-25 15"},      // Memory held
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "-25 15"}, // Dissolved away
+	}
+}
+
+// createShatterArchiveScaleKeyframes creates subtle breathing effect like living memories
+// 📸 SCALE BREATHING PATTERN (Organic memory pulse):
+// Phase 1 (0-2.5s): MEMORY AWAKENING - Gentle expansion like photo developing
+// Phase 2 (2.5-5s): PHOTO REVELATION - Subtle pulsing during torn reveals
+// Phase 3 (5-7.5s): GLASS DISTORTION - Magnification effects through cracked glass
+// Phase 4 (7.5-10s): ANALOG DECAY - Shrinking as memory dissolves
+//
+// 🎯 MATHEMATICAL BASIS: Organic breathing patterns with film grain simulation
+// Simulates photo paper expanding/contracting and analog magnification
+func createShatterArchiveScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// PHASE 1: MEMORY AWAKENING (0-2.5s) - Photo developing expansion
+		{Time: videoStartTime, Value: "0.95 0.95", Curve: "linear"},                       // Start slightly small (undeveloped)
+		{Time: calculateAbsoluteTime(videoStartTime, 0.4), Value: "0.98 0.98", Curve: "linear"},    // Gentle expansion
+		{Time: calculateAbsoluteTime(videoStartTime, 0.8), Value: "1.01 1.01", Curve: "linear"},    // Photo developing
+		{Time: calculateAbsoluteTime(videoStartTime, 1.2), Value: "0.99 0.99", Curve: "linear"},    // Slight contraction
+		{Time: calculateAbsoluteTime(videoStartTime, 1.6), Value: "1.02 1.02", Curve: "linear"},    // Expansion continue
+		{Time: calculateAbsoluteTime(videoStartTime, 2.0), Value: "1.00 1.00", Curve: "linear"},    // Return to normal
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "1.03 1.03", Curve: "linear"},    // Ready for reveal
+		
+		// PHASE 2: PHOTO REVELATION (2.5-5s) - Pulsing during reveals
+		{Time: calculateAbsoluteTime(videoStartTime, 2.7), Value: "1.05 1.05", Curve: "linear"},    // Revelation pulse
+		{Time: calculateAbsoluteTime(videoStartTime, 2.9), Value: "1.02 1.02", Curve: "linear"},    // Settle back
+		{Time: calculateAbsoluteTime(videoStartTime, 3.1), Value: "1.06 1.06", Curve: "linear"},    // Torn edge reveal
+		{Time: calculateAbsoluteTime(videoStartTime, 3.3), Value: "1.03 1.03", Curve: "linear"},    // Stop-motion adjust
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "1.07 1.07", Curve: "linear"},    // Light leak pulse
+		{Time: calculateAbsoluteTime(videoStartTime, 3.7), Value: "1.04 1.04", Curve: "linear"},    // Breathing rhythm
+		{Time: calculateAbsoluteTime(videoStartTime, 3.9), Value: "1.08 1.08", Curve: "linear"},    // Maximum reveal
+		{Time: calculateAbsoluteTime(videoStartTime, 4.1), Value: "1.05 1.05", Curve: "linear"},    // Photo stability
+		{Time: calculateAbsoluteTime(videoStartTime, 4.3), Value: "1.03 1.03", Curve: "linear"},    // Gentle return
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "1.04 1.04", Curve: "linear"},    // Breathing maintain
+		{Time: calculateAbsoluteTime(videoStartTime, 4.7), Value: "1.02 1.02", Curve: "linear"},    // Settle rhythm
+		{Time: calculateAbsoluteTime(videoStartTime, 5.0), Value: "1.00 1.00", Curve: "linear"},    // Phase transition
+		
+		// PHASE 3: GLASS DISTORTION (5-7.5s) - Magnification through cracked glass
+		{Time: calculateAbsoluteTime(videoStartTime, 5.2), Value: "1.12 1.12", Curve: "linear"},    // Glass magnification
+		{Time: calculateAbsoluteTime(videoStartTime, 5.4), Value: "0.92 0.92", Curve: "linear"},    // Crack distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 5.6), Value: "1.15 1.15", Curve: "linear"},    // Fragment zoom
+		{Time: calculateAbsoluteTime(videoStartTime, 5.8), Value: "0.88 0.88", Curve: "linear"},    // Glass refraction
+		{Time: calculateAbsoluteTime(videoStartTime, 6.0), Value: "1.18 1.18", Curve: "linear"},    // Maximum magnify
+		{Time: calculateAbsoluteTime(videoStartTime, 6.2), Value: "0.85 0.85", Curve: "linear"},    // Crack minimize
+		{Time: calculateAbsoluteTime(videoStartTime, 6.4), Value: "1.10 1.10", Curve: "linear"},    // Glass focus
+		{Time: calculateAbsoluteTime(videoStartTime, 6.6), Value: "0.95 0.95", Curve: "linear"},    // Distortion ease
+		{Time: calculateAbsoluteTime(videoStartTime, 6.8), Value: "1.05 1.05", Curve: "linear"},    // Final magnify
+		{Time: calculateAbsoluteTime(videoStartTime, 7.0), Value: "1.00 1.00", Curve: "linear"},    // Glass clear
+		{Time: calculateAbsoluteTime(videoStartTime, 7.2), Value: "1.02 1.02", Curve: "linear"},    // Last distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "1.00 1.00", Curve: "linear"},    // Return to normal
+		
+		// PHASE 4: ANALOG DECAY (7.5-10s) - Memory shrinking as it dissolves
+		{Time: calculateAbsoluteTime(videoStartTime, 7.7), Value: "0.98 0.98", Curve: "linear"},    // Film edge curl
+		{Time: calculateAbsoluteTime(videoStartTime, 7.9), Value: "0.95 0.95", Curve: "linear"},    // Burn shrinkage
+		{Time: calculateAbsoluteTime(videoStartTime, 8.1), Value: "0.92 0.92", Curve: "linear"},    // Film melting
+		{Time: calculateAbsoluteTime(videoStartTime, 8.3), Value: "0.88 0.88", Curve: "linear"},    // Analog decay
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "0.85 0.85", Curve: "linear"},    // Memory fragment
+		{Time: calculateAbsoluteTime(videoStartTime, 8.7), Value: "0.82 0.82", Curve: "linear"},    // Film dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 8.9), Value: "0.78 0.78", Curve: "linear"},    // Final burn
+		{Time: calculateAbsoluteTime(videoStartTime, 9.1), Value: "0.75 0.75", Curve: "linear"},    // Near fade
+		{Time: calculateAbsoluteTime(videoStartTime, 9.3), Value: "0.72 0.72", Curve: "linear"},    // Memory echo
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "0.70 0.70", Curve: "linear"},    // Last flicker
+		{Time: calculateAbsoluteTime(videoStartTime, 9.7), Value: "0.68 0.68", Curve: "linear"},    // Final moments
+		{Time: calculateAbsoluteTime(videoStartTime, 9.9), Value: "0.65 0.65", Curve: "linear"},    // Almost gone
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0.60 0.60", Curve: "linear"}, // Dissolved away
+	}
+}
+
+// createShatterArchiveRotationKeyframes creates pendulum sway as if hanging from threads
+// 📸 ROTATION PENDULUM PATTERN (Hanging photo aesthetic):
+// Phase 1 (0-2.5s): MEMORY AWAKENING - Gentle sway like photos on string
+// Phase 2 (2.5-5s): PHOTO REVELATION - Stop-motion stutter with torn edge tilts
+// Phase 3 (5-7.5s): GLASS DISTORTION - Refraction angles through cracked glass
+// Phase 4 (7.5-10s): ANALOG DECAY - Final tilt as memory falls away
+//
+// 🎯 MATHEMATICAL BASIS: Pendulum physics with stop-motion stuttering
+// Simulates photos hanging from invisible threads with organic movement
+func createShatterArchiveRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// PHASE 1: MEMORY AWAKENING (0-2.5s) - Gentle pendulum sway
+		{Time: videoStartTime, Value: "-2.5", Curve: "linear"},                              // Start tilted left (hanging)
+		{Time: calculateAbsoluteTime(videoStartTime, 0.5), Value: "-1.8", Curve: "linear"},           // Swing toward center
+		{Time: calculateAbsoluteTime(videoStartTime, 1.0), Value: "-0.8", Curve: "linear"},           // Past center
+		{Time: calculateAbsoluteTime(videoStartTime, 1.5), Value: "0.5", Curve: "linear"},            // Swing right
+		{Time: calculateAbsoluteTime(videoStartTime, 2.0), Value: "1.2", Curve: "linear"},            // Maximum right
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "0.8", Curve: "linear"},            // Return swing
+		
+		// PHASE 2: PHOTO REVELATION (2.5-5s) - Stop-motion stutter tilts
+		{Time: calculateAbsoluteTime(videoStartTime, 2.7), Value: "1.2", Curve: "linear"},            // Stutter back
+		{Time: calculateAbsoluteTime(videoStartTime, 2.9), Value: "0.3", Curve: "linear"},            // Torn edge tilt
+		{Time: calculateAbsoluteTime(videoStartTime, 3.1), Value: "0.8", Curve: "linear"},            // Stutter adjust
+		{Time: calculateAbsoluteTime(videoStartTime, 3.3), Value: "-0.2", Curve: "linear"},           // Photo reveal angle
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "0.5", Curve: "linear"},            // Stop-motion correct
+		{Time: calculateAbsoluteTime(videoStartTime, 3.7), Value: "-0.7", Curve: "linear"},           // Light leak angle
+		{Time: calculateAbsoluteTime(videoStartTime, 3.9), Value: "0.1", Curve: "linear"},            // Stutter settle
+		{Time: calculateAbsoluteTime(videoStartTime, 4.1), Value: "-0.4", Curve: "linear"},           // Reveal position
+		{Time: calculateAbsoluteTime(videoStartTime, 4.3), Value: "0.3", Curve: "linear"},            // Return motion
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "-0.1", Curve: "linear"},           // Almost level
+		{Time: calculateAbsoluteTime(videoStartTime, 4.7), Value: "0.2", Curve: "linear"},            // Final adjust
+		{Time: calculateAbsoluteTime(videoStartTime, 5.0), Value: "0", Curve: "linear"},              // Phase transition
+		
+		// PHASE 3: GLASS DISTORTION (5-7.5s) - Refraction angles
+		{Time: calculateAbsoluteTime(videoStartTime, 5.2), Value: "-1.5", Curve: "linear"},           // Glass crack angle
+		{Time: calculateAbsoluteTime(videoStartTime, 5.4), Value: "1.8", Curve: "linear"},            // Refraction tilt
+		{Time: calculateAbsoluteTime(videoStartTime, 5.6), Value: "-2.2", Curve: "linear"},           // Fragment view
+		{Time: calculateAbsoluteTime(videoStartTime, 5.8), Value: "2.5", Curve: "linear"},            // Glass distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 6.0), Value: "-1.9", Curve: "linear"},           // Crack line view
+		{Time: calculateAbsoluteTime(videoStartTime, 6.2), Value: "1.6", Curve: "linear"},            // Fragment align
+		{Time: calculateAbsoluteTime(videoStartTime, 6.4), Value: "-1.2", Curve: "linear"},           // Glass settle
+		{Time: calculateAbsoluteTime(videoStartTime, 6.6), Value: "0.9", Curve: "linear"},            // Distortion ease
+		{Time: calculateAbsoluteTime(videoStartTime, 6.8), Value: "-0.6", Curve: "linear"},           // Final refraction
+		{Time: calculateAbsoluteTime(videoStartTime, 7.0), Value: "0.3", Curve: "linear"},            // Glass clear
+		{Time: calculateAbsoluteTime(videoStartTime, 7.2), Value: "-0.2", Curve: "linear"},           // Last distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "0", Curve: "linear"},              // Return level
+		
+		// PHASE 4: ANALOG DECAY (7.5-10s) - Final tilt as memory falls
+		{Time: calculateAbsoluteTime(videoStartTime, 7.7), Value: "-0.8", Curve: "linear"},           // Film edge curl
+		{Time: calculateAbsoluteTime(videoStartTime, 7.9), Value: "-1.5", Curve: "linear"},           // Burn tilt
+		{Time: calculateAbsoluteTime(videoStartTime, 8.1), Value: "-2.3", Curve: "linear"},           // Film melting
+		{Time: calculateAbsoluteTime(videoStartTime, 8.3), Value: "-3.1", Curve: "linear"},           // Analog decay
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "-3.8", Curve: "linear"},           // Memory fragment
+		{Time: calculateAbsoluteTime(videoStartTime, 8.7), Value: "-4.5", Curve: "linear"},           // Film dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 8.9), Value: "-5.2", Curve: "linear"},           // Final burn
+		{Time: calculateAbsoluteTime(videoStartTime, 9.1), Value: "-5.8", Curve: "linear"},           // Near fall
+		{Time: calculateAbsoluteTime(videoStartTime, 9.3), Value: "-6.3", Curve: "linear"},           // Memory echo
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "-6.7", Curve: "linear"},           // Last tilt
+		{Time: calculateAbsoluteTime(videoStartTime, 9.7), Value: "-7.0", Curve: "linear"},           // Final moments
+		{Time: calculateAbsoluteTime(videoStartTime, 9.9), Value: "-7.2", Curve: "linear"},           // Almost fallen
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "-7.5", Curve: "linear"},       // Fallen away
+	}
+}
+
+// createShatterArchiveAnchorKeyframes creates shifted pivot points simulating torn photo corners
+// 📸 ANCHOR SHIFT PATTERN (Torn photo corners):
+// Phase 1 (0-2.5s): MEMORY AWAKENING - Natural photo corner placement
+// Phase 2 (2.5-5s): PHOTO REVELATION - Torn edge anchor shifts
+// Phase 3 (5-7.5s): GLASS DISTORTION - Refraction pivot changes
+// Phase 4 (7.5-10s): ANALOG DECAY - Corner burn and anchor dissolution
+//
+// 🎯 MATHEMATICAL BASIS: Torn photo corner simulation with organic anchor shifts
+// Simulates photo corners ripping and changing the natural pivot point
+func createShatterArchiveAnchorKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// PHASE 1: MEMORY AWAKENING (0-2.5s) - Natural photo placement
+		{Time: videoStartTime, Value: "-0.02 0.03", Curve: "linear"},                       // Slightly off-center (aged photo)
+		{Time: calculateAbsoluteTime(videoStartTime, 0.6), Value: "-0.01 0.02", Curve: "linear"},      // Natural settle
+		{Time: calculateAbsoluteTime(videoStartTime, 1.2), Value: "0.01 0.01", Curve: "linear"},       // Center approach
+		{Time: calculateAbsoluteTime(videoStartTime, 1.8), Value: "0.02 -0.01", Curve: "linear"},      // Past center
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "0.03 -0.02", Curve: "linear"},      // Ready for reveal
+		
+		// PHASE 2: PHOTO REVELATION (2.5-5s) - Torn edge anchor shifts
+		{Time: calculateAbsoluteTime(videoStartTime, 2.7), Value: "0.05 -0.03", Curve: "linear"},      // First tear
+		{Time: calculateAbsoluteTime(videoStartTime, 2.9), Value: "0.08 -0.05", Curve: "linear"},      // Torn corner
+		{Time: calculateAbsoluteTime(videoStartTime, 3.1), Value: "0.06 -0.04", Curve: "linear"},      // Stutter back
+		{Time: calculateAbsoluteTime(videoStartTime, 3.3), Value: "0.10 -0.07", Curve: "linear"},      // Edge rip
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "0.07 -0.05", Curve: "linear"},      // Adjust anchor
+		{Time: calculateAbsoluteTime(videoStartTime, 3.7), Value: "0.12 -0.08", Curve: "linear"},      // Major tear
+		{Time: calculateAbsoluteTime(videoStartTime, 3.9), Value: "0.09 -0.06", Curve: "linear"},      // Settle tear
+		{Time: calculateAbsoluteTime(videoStartTime, 4.1), Value: "0.14 -0.10", Curve: "linear"},      // Maximum tear
+		{Time: calculateAbsoluteTime(videoStartTime, 4.3), Value: "0.11 -0.07", Curve: "linear"},      // Return motion
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "0.08 -0.05", Curve: "linear"},      // Stabilize
+		{Time: calculateAbsoluteTime(videoStartTime, 4.7), Value: "0.06 -0.04", Curve: "linear"},      // Final position
+		{Time: calculateAbsoluteTime(videoStartTime, 5.0), Value: "0.05 -0.03", Curve: "linear"},      // Phase end
+		
+		// PHASE 3: GLASS DISTORTION (5-7.5s) - Refraction pivot changes
+		{Time: calculateAbsoluteTime(videoStartTime, 5.2), Value: "0.08 -0.06", Curve: "linear"},      // Glass crack shift
+		{Time: calculateAbsoluteTime(videoStartTime, 5.4), Value: "0.03 -0.02", Curve: "linear"},      // Refraction pivot
+		{Time: calculateAbsoluteTime(videoStartTime, 5.6), Value: "0.11 -0.08", Curve: "linear"},      // Fragment view
+		{Time: calculateAbsoluteTime(videoStartTime, 5.8), Value: "0.01 -0.01", Curve: "linear"},      // Glass distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 6.0), Value: "0.13 -0.09", Curve: "linear"},      // Maximum refraction
+		{Time: calculateAbsoluteTime(videoStartTime, 6.2), Value: "0.04 -0.03", Curve: "linear"},      // Crack align
+		{Time: calculateAbsoluteTime(videoStartTime, 6.4), Value: "0.09 -0.06", Curve: "linear"},      // Glass settle
+		{Time: calculateAbsoluteTime(videoStartTime, 6.6), Value: "0.06 -0.04", Curve: "linear"},      // Distortion ease
+		{Time: calculateAbsoluteTime(videoStartTime, 6.8), Value: "0.07 -0.05", Curve: "linear"},      // Final refraction
+		{Time: calculateAbsoluteTime(videoStartTime, 7.0), Value: "0.05 -0.03", Curve: "linear"},      // Glass clear
+		{Time: calculateAbsoluteTime(videoStartTime, 7.2), Value: "0.04 -0.03", Curve: "linear"},      // Last distortion
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "0.03 -0.02", Curve: "linear"},      // Return anchor
+		
+		// PHASE 4: ANALOG DECAY (7.5-10s) - Corner burn and dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 7.7), Value: "0.06 -0.04", Curve: "linear"},      // Film edge burn
+		{Time: calculateAbsoluteTime(videoStartTime, 7.9), Value: "0.09 -0.06", Curve: "linear"},      // Corner burning
+		{Time: calculateAbsoluteTime(videoStartTime, 8.1), Value: "0.12 -0.08", Curve: "linear"},      // Film melting
+		{Time: calculateAbsoluteTime(videoStartTime, 8.3), Value: "0.15 -0.10", Curve: "linear"},      // Analog decay
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "0.18 -0.12", Curve: "linear"},      // Memory fragment
+		{Time: calculateAbsoluteTime(videoStartTime, 8.7), Value: "0.20 -0.14", Curve: "linear"},      // Film dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 8.9), Value: "0.22 -0.15", Curve: "linear"},      // Final burn
+		{Time: calculateAbsoluteTime(videoStartTime, 9.1), Value: "0.23 -0.16", Curve: "linear"},      // Near dissolution
+		{Time: calculateAbsoluteTime(videoStartTime, 9.3), Value: "0.24 -0.16", Curve: "linear"},      // Memory echo
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "0.24 -0.17", Curve: "linear"},      // Last anchor
+		{Time: calculateAbsoluteTime(videoStartTime, 9.7), Value: "0.25 -0.17", Curve: "linear"},      // Final moments
+		{Time: calculateAbsoluteTime(videoStartTime, 9.9), Value: "0.25 -0.17", Curve: "linear"},      // Almost gone
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0.25 -0.17", Curve: "linear"},  // Dissolved away
 	}
 }
 
