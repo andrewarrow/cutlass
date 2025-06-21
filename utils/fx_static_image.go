@@ -82,6 +82,11 @@ func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64
 
 // addDynamicImageEffects applies sophisticated animation effects to transform static images into dynamic video
 //
+// 🚨 CRITICAL ARCHITECTURE FIX: 
+// - Changed from Video+NestedAssetClip (caused addAssetClip:toObject:parentFormatID crash)
+// - Now uses AssetClip directly in spine (matches working samples/pip.fcpxml pattern)
+// - Effects applied at AssetClip level, not nested within Video elements
+//
 // 🎬 ENHANCED EFFECT STACK:
 // 1. Multi-phase camera movement (slow→fast→super fast→slow with variable timing)
 // 2. Sophisticated zoom patterns (zoom-in/zoom-out cycles)
@@ -89,31 +94,44 @@ func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64
 // 4. Creative rotation and anchor point animation
 // 5. Professional easing curves with speed variations
 //
-// 🎯 TIMING STRATEGY: 
-// - Uses absolute timeline positions matching working samples pattern
+// 🎯 CRASH-SAFE STRATEGY: 
+// - Uses AssetClip in spine with effects (proven working pattern from samples/pip.fcpxml)
 // - Multiple animation phases with different speeds (slow/fast/super fast/slow)
-// - Keyframes use video's actual start time for proper FCP animation
-// - Creates cinematic camera movement with dramatic speed changes
+// - Keyframes use absolute timeline positions for proper FCP animation
+// - NO nested AssetClip inside Video (this caused the crash)
 func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64) error {
-	// Get the existing image video element in the spine
+	// 🚨 CRITICAL CHANGE: Replace Video element with AssetClip element for effects compatibility
 	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 	if len(sequence.Spine.Videos) == 0 {
-		return fmt.Errorf("no video elements found in spine to animate")
+		return fmt.Errorf("no video elements found in spine to replace")
 	}
 
-	// Find the image video element (should be the last one added)
+	// Get the existing image video element (to be replaced)
 	imageVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
-
-	// Parse the video's start time to use for absolute keyframe positioning
 	videoStartTime := imageVideo.Start
 	
-	// Create sophisticated multi-phase transform animation with variable speeds
-	imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
+	// Remove the Video element from spine (it will be replaced with AssetClip)
+	sequence.Spine.Videos = sequence.Spine.Videos[:len(sequence.Spine.Videos)-1]
 
-	// Add built-in FCP effects for enhanced realism
-	if err := addBuiltInFCPEffects(fcpxml, imageVideo); err != nil {
+	// Create AssetClip with sophisticated animation and effects
+	// This follows the proven working pattern from samples/pip.fcpxml
+	imageAssetClip := fcp.AssetClip{
+		Ref:      imageVideo.Ref, // Same asset reference
+		Offset:   imageVideo.Offset,
+		Name:     imageVideo.Name,
+		Duration: imageVideo.Duration,
+		Start:    videoStartTime,
+		// Add sophisticated multi-phase transform animation
+		AdjustTransform: createCinematicCameraAnimation(durationSeconds, videoStartTime),
+	}
+
+	// Add built-in FCP effects using the proven AssetClip pattern
+	if err := addBuiltInFCPEffectsToAssetClip(fcpxml, &imageAssetClip); err != nil {
 		return fmt.Errorf("failed to add built-in effects: %v", err)
 	}
+
+	// Add the enhanced AssetClip to spine (replaces the simple Video element)
+	sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, imageAssetClip)
 
 	return nil
 }
@@ -361,19 +379,24 @@ func createMultiPhaseAnchorKeyframes(duration float64, videoStartTime string) []
 	}
 }
 
-// addBuiltInFCPEffects adds sophisticated built-in Final Cut Pro effects for enhanced realism
+// addBuiltInFCPEffectsToAssetClip adds sophisticated built-in Final Cut Pro effects for enhanced realism
+//
+// 🚨 CRITICAL ARCHITECTURE FIX:
+// - Now applies effects directly to AssetClip (no nested structures)
+// - Follows proven working pattern from samples/pip.fcpxml
+// - NO nested AssetClip inside Video (that caused the crash)
 //
 // 🎬 BUILT-IN EFFECT STACK:
 // 1. Shape Mask (FFSuperEllipseMask) - Creates subtle 3D perspective and handheld shake
-// 2. Applied via nested AssetClip structure (FCP architecture pattern)
+// 2. Applied directly to AssetClip in spine (crash-safe architecture)
 // 3. Professional parameter settings from working samples
 //
 // 🎯 EFFECT STRATEGY:
 // - Uses proven effect UIDs from samples/pip.fcpxml (FFSuperEllipseMask verified working)
-// - Applies subtle parameter adjustments to simulate camera shake and 3D perspective
+// - Applies effects directly to AssetClip element (same pattern as working samples)
 // - Creates visual depth without overwhelming the image content
-// - Follows FCP architecture: effects applied at AssetClip level, not Video level
-func addBuiltInFCPEffects(fcpxml *fcp.FCPXML, imageVideo *fcp.Video) error {
+// - Crash-safe: No nested AssetClip structures that cause addAssetClip:parentFormatID crashes
+func addBuiltInFCPEffectsToAssetClip(fcpxml *fcp.FCPXML, imageAssetClip *fcp.AssetClip) error {
 	// Initialize ResourceRegistry and Transaction for proper resource management
 	registry := fcp.NewResourceRegistry(fcpxml)
 	tx := fcp.NewTransaction(registry)
@@ -390,43 +413,32 @@ func addBuiltInFCPEffects(fcpxml *fcp.FCPXML, imageVideo *fcp.Video) error {
 		UID:  "FFSuperEllipseMask", // ✅ VERIFIED: Working UID from samples/pip.fcpxml
 	})
 
-	// Create nested AssetClip with Shape Mask effect (FCP architecture pattern)
-	// This follows the pattern where effects are applied at AssetClip level
-	nestedAssetClip := fcp.AssetClip{
-		Ref:      imageVideo.Ref, // Reference the same asset as the parent video
-		Offset:   "0s",           // Start at beginning of parent video
-		Duration: imageVideo.Duration,
-		Name:     "Effect Layer",
-		FilterVideos: []fcp.FilterVideo{
+	// Apply Shape Mask effect directly to AssetClip (proven working pattern)
+	// This matches the exact structure from samples/pip.fcpxml
+	imageAssetClip.FilterVideos = append(imageAssetClip.FilterVideos, fcp.FilterVideo{
+		Ref:  shapeMaskID,
+		Name: "Shape Mask",
+		Params: []fcp.Param{
+			// Radius: Creates subtle rounded corners for depth
+			{Name: "Radius", Key: "160", Value: "200 150"}, // Smaller radius for subtlety
+			// Curvature: Adds slight 3D perspective feel
+			{Name: "Curvature", Key: "159", Value: "0.15"}, // Reduced for subtlety
+			// Feather: Soft edges for handheld camera feel
+			{Name: "Feather", Key: "102", Value: "50"}, // Moderate feathering
+			// Falloff: Controls edge softness
+			{Name: "Falloff", Key: "158", Value: "-50"}, // Gentle falloff
+			// Input Size: Match typical image dimensions
+			{Name: "Input Size", Key: "205", Value: "1920 1080"},
+			// Transforms: Subtle scale adjustments for 3D feel
 			{
-				Ref:  shapeMaskID,
-				Name: "Shape Mask",
-				Params: []fcp.Param{
-					// Radius: Creates subtle rounded corners for depth
-					{Name: "Radius", Key: "160", Value: "200 150"}, // Smaller radius for subtlety
-					// Curvature: Adds slight 3D perspective feel
-					{Name: "Curvature", Key: "159", Value: "0.15"}, // Reduced for subtlety
-					// Feather: Soft edges for handheld camera feel
-					{Name: "Feather", Key: "102", Value: "50"}, // Moderate feathering
-					// Falloff: Controls edge softness
-					{Name: "Falloff", Key: "158", Value: "-50"}, // Gentle falloff
-					// Input Size: Match typical image dimensions
-					{Name: "Input Size", Key: "205", Value: "1920 1080"},
-					// Transforms: Subtle scale adjustments for 3D feel
-					{
-						Name: "Transforms",
-						Key:  "200",
-						NestedParams: []fcp.Param{
-							{Name: "Scale", Key: "203", Value: "1.05 1.05"}, // Very subtle scale for depth
-						},
-					},
+				Name: "Transforms",
+				Key:  "200",
+				NestedParams: []fcp.Param{
+					{Name: "Scale", Key: "203", Value: "1.05 1.05"}, // Very subtle scale for depth
 				},
 			},
 		},
-	}
-
-	// Add the nested AssetClip with effects to the Video element
-	imageVideo.NestedAssetClips = append(imageVideo.NestedAssetClips, nestedAssetClip)
+	})
 
 	// Commit transaction to finalize resource management
 	if err := tx.Commit(); err != nil {
