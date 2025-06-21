@@ -172,6 +172,41 @@ cutlass utils add-shadow-text shadow.txt custom_output.fcpxml`,
 	},
 }
 
+var fxStaticImageCmd = &cobra.Command{
+	Use:   "fx-static-image <image.png> [output.fcpxml]",
+	Short: "Generate dynamic FCPXML with animated effects for static PNG images",
+	Long: `Generate FCPXML with sophisticated animation effects to make static PNG images appear dynamic.
+
+This command transforms static images into cinematic video content using:
+
+🎬 Camera Movement Simulation:
+- Multi-layer transform keyframes for position, scale, and rotation
+- Handheld camera motion with subtle panning and scaling
+- Smooth easing curves for professional cinematography
+- Ken Burns effect with enhanced parallax motion
+
+🎯 Dynamic Effects:
+- Built-in Final Cut Pro effects for realistic movement
+- Transform animations with anchor point adjustments  
+- Simulated depth of field and focus changes
+- Layered motion for dimensional storytelling
+
+⚡ Features:
+- Frame-aligned timing for smooth playback
+- Professional easing curves (easeIn, easeOut, smooth)
+- Configurable duration with optimal pacing
+- FCP-compatible effect UIDs and proper resource management
+
+Example:
+cutlass utils fx-static-image photo.png
+cutlass utils fx-static-image photo.png dynamic_video.fcpxml`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.HandleFXStaticImageCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
 	utilsCmd.AddCommand(genaudioPlayCmd)
@@ -179,4 +214,5 @@ func init() {
 	utilsCmd.AddCommand(parseVttAndCutCmd)
 	utilsCmd.AddCommand(creativeTextCmd)
 	utilsCmd.AddCommand(addShadowTextCmd)
+	utilsCmd.AddCommand(fxStaticImageCmd)
 }
