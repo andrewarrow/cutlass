@@ -147,7 +147,7 @@ cutlass utils creative-text jenny_hansen_lane.json output.fcpxml`,
 }
 
 var addShadowTextCmd = &cobra.Command{
-	Use:   "add-shadow-text <file.txt> [output.fcpxml]",
+	Use:   "add-shadow-text <file.txt> [output.fcpxml] [duration-seconds]",
 	Short: "Generate shadow text FCPXML from text file",
 	Long: `Generate FCPXML with shadow text effects from a simple text file.
 
@@ -157,10 +157,11 @@ text elements with shadow formatting on the timeline.
 
 Features:
 - Automatic text chunking with intelligent word grouping
-- Dynamic duration calculation based on text length (0.375s to 0.67s)
+- Customizable total duration (defaults to auto-calculated based on text length)
+- Text elements are distributed evenly across the specified duration
 - Adaptive font sizing (600px for short text, 460px for longer text)
 - Professional shadow text styling matching samples/shadow_text.fcpxml
-- Creative text splitting for visual impact (e.g., "IMEC" -> "IME" + "C")
+- Creative text splitting for visual impact preserving word spacing
 - Proper FCPXML structure with frame-aligned timing
 
 Font and Style:
@@ -171,7 +172,8 @@ Font and Style:
 
 Example:
 cutlass utils add-shadow-text shadow.txt
-cutlass utils add-shadow-text shadow.txt custom_output.fcpxml`,
+cutlass utils add-shadow-text shadow.txt custom_output.fcpxml
+cutlass utils add-shadow-text shadow.txt output.fcpxml 30`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.HandleAddShadowTextCommand(args)

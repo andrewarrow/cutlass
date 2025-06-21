@@ -42,12 +42,22 @@ func HandleAddShadowTextCommand(args []string) {
 		outputFile = args[1]
 	}
 
-	if err := generateShadowTextFCPXML(textFile, outputFile); err != nil {
+	var totalDuration float64 = 0 // 0 means auto-calculate
+	if len(args) > 2 {
+		if duration, err := strconv.ParseFloat(args[2], 64); err != nil {
+			fmt.Printf("Error: Invalid duration '%s'. Please provide a number in seconds.\n", args[2])
+			return
+		} else {
+			totalDuration = duration
+		}
+	}
+
+	if err := generateShadowTextFCPXML(textFile, outputFile, totalDuration); err != nil {
 		fmt.Printf("Error generating shadow text FCPXML: %v\n", err)
 	}
 }
 
-func generateShadowTextFCPXML(inputFile, outputFile string) error {
+func generateShadowTextFCPXML(inputFile, outputFile string, totalDuration float64) error {
 	// Read the text file
 	file, err := os.Open(inputFile)
 	if err != nil {
@@ -75,7 +85,7 @@ func generateShadowTextFCPXML(inputFile, outputFile string) error {
 	}
 
 	// Break text into chunks
-	textChunks := breakTextIntoChunks(text)
+	textChunks := breakTextIntoChunks(text, totalDuration)
 
 	// Create FCPXML structure
 	fcpxml := &fcp.FCPXML{
@@ -181,7 +191,7 @@ func createSequenceWithShadowText(chunks []TextChunk) fcp.Sequence {
 	return sequence
 }
 
-func breakTextIntoChunks(text string) []TextChunk {
+func breakTextIntoChunks(text string, totalDuration float64) []TextChunk {
 	words := strings.Fields(text)
 	var chunks []TextChunk
 	
@@ -208,17 +218,30 @@ func breakTextIntoChunks(text string) []TextChunk {
 			}
 		}
 		
-		// Determine duration and font size based on text length
-		duration := calculateTextDuration(chunkText)
+		// Determine font size based on text length
 		fontSize := calculateFontSize(chunkText)
 		isLong := len(chunkText) > 8
 		
 		chunks = append(chunks, TextChunk{
 			Text:     chunkText,
-			Duration: duration,
+			Duration: 0, // Will be calculated after all chunks are created
 			FontSize: fontSize,
 			IsLong:   isLong,
 		})
+	}
+	
+	// Calculate durations based on total duration
+	if totalDuration > 0 {
+		// Distribute the total duration evenly across all chunks
+		chunkDuration := totalDuration / float64(len(chunks))
+		for i := range chunks {
+			chunks[i].Duration = chunkDuration
+		}
+	} else {
+		// Use original duration calculation logic
+		for i := range chunks {
+			chunks[i].Duration = calculateTextDuration(chunks[i].Text)
+		}
 	}
 	
 	return chunks
@@ -371,41 +394,29 @@ func createTitleForChunk(chunk TextChunk, offsetSeconds float64, index int, text
 }
 
 func splitTextForShadowEffect(text string) []string {
-	// Split text creatively like in the sample
-	// Examples from sample: "IMEC" -> ["IME", "C"], "Isn't one" -> ["Isn't on", "e"]
+	// Split text creatively but preserve spaces between originally separate words
+	// The chunking already grouped words appropriately, so we should only split
+	// individual words, never combine words that were originally separate
 	
-	if len(text) <= 3 {
-		return []string{text}
-	}
-	
-	if len(text) <= 6 {
-		// Split at last character
-		return []string{text[:len(text)-1], text[len(text)-1:]}
-	}
-	
-	// For longer text, split more creatively
 	words := strings.Fields(text)
-	if len(words) >= 2 {
-		// Split at word boundary, but sometimes break the last word
-		lastWord := words[len(words)-1]
-		if len(lastWord) > 3 {
-			// Keep most words, break last word
-			prefix := strings.Join(words[:len(words)-1], " ")
-			if len(prefix) > 0 {
-				prefix += " " + lastWord[:len(lastWord)-1]
-			} else {
-				prefix = lastWord[:len(lastWord)-1]
-			}
-			return []string{prefix, lastWord[len(lastWord)-1:]}
-		} else {
-			// Split at word boundary
-			prefix := strings.Join(words[:len(words)-1], " ")
-			return []string{prefix, lastWord}
+	
+	// If single word, split it creatively for shadow effect
+	if len(words) == 1 {
+		word := words[0]
+		if len(word) <= 3 {
+			return []string{word}
 		}
+		if len(word) <= 6 {
+			// Split at last character
+			return []string{word[:len(word)-1], word[len(word)-1:]}
+		}
+		// For longer single words, split at last character
+		return []string{word[:len(word)-1], word[len(word)-1:]}
 	}
 	
-	// Fallback: split at last character
-	return []string{text[:len(text)-1], text[len(text)-1:]}
+	// If multiple words, return each word as separate text-style
+	// This preserves the space between words that were originally separate
+	return words
 }
 
 func createTitleParams(fontSize int) []fcp.Param {
