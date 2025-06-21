@@ -23,6 +23,7 @@ func HandleFXStaticImageCommand(args []string) {
 		fmt.Println("Usage: fx-static-image <image.png> [output.fcpxml] [effect-type]")
 		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
 		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind")
+		fmt.Println("Special effect: potpourri (cycles through all effects at 1-second intervals)")
 		return
 	}
 
@@ -30,11 +31,24 @@ func HandleFXStaticImageCommand(args []string) {
 	outputFile := strings.TrimSuffix(imageFile, filepath.Ext(imageFile)) + "_fx.fcpxml"
 	effectType := "cinematic"
 	
+	// Debug: show all arguments
+	fmt.Printf("🔍 Arguments received: %v\n", args)
+	
+	// Smart argument parsing: detect if arg1 is an effect type or output file
 	if len(args) > 1 {
-		outputFile = args[1]
-	}
-	if len(args) > 2 {
-		effectType = args[2]
+		arg1 := args[1]
+		// Check if arg1 looks like an effect type (no file extension)
+		if !strings.Contains(arg1, ".") && isValidEffectType(arg1) {
+			effectType = arg1
+			fmt.Printf("🎯 Detected '%s' as effect type in position 1\n", effectType)
+		} else {
+			outputFile = arg1
+			fmt.Printf("📁 Using '%s' as output file\n", outputFile)
+			if len(args) > 2 {
+				effectType = args[2]
+				fmt.Printf("🎯 Using '%s' as effect type in position 2\n", effectType)
+			}
+		}
 	}
 
 	// Default duration for dynamic effects (10 seconds provides good animation showcase)
@@ -46,7 +60,7 @@ func HandleFXStaticImageCommand(args []string) {
 	}
 
 	fmt.Printf("✅ Generated dynamic FCPXML: %s\n", outputFile)
-	fmt.Printf("🎬 Duration: %.1f seconds with %s animation effects\n", duration, effectType)
+	fmt.Printf("🎬 Duration: %.1f seconds with '%s' animation effects\n", duration, effectType)
 	fmt.Printf("🎯 Ready to import into Final Cut Pro for professional video content\n")
 }
 
@@ -152,11 +166,27 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 		imageVideo.AdjustTransform = createHeartbeatAnimation(durationSeconds, videoStartTime)
 	case "wind":
 		imageVideo.AdjustTransform = createWindSwayAnimation(durationSeconds, videoStartTime)
+	case "potpourri":
+		imageVideo.AdjustTransform = createPotpourriAnimation(durationSeconds, videoStartTime)
 	default: // "cinematic"
 		imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
 	}
 
 	return nil
+}
+
+// isValidEffectType checks if the given string is a valid effect type
+func isValidEffectType(effectType string) bool {
+	validEffects := []string{
+		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "potpourri",
+	}
+	for _, valid := range validEffects {
+		if effectType == valid {
+			return true
+		}
+	}
+	return false
 }
 
 // createCinematicCameraAnimation generates sophisticated multi-phase camera movement with variable speeds
@@ -1012,6 +1042,35 @@ func createHeartbeatAnimation(durationSeconds float64, videoStartTime string) *f
 	}
 }
 
+// createPotpourriAnimation cycles through all effect types rapidly for maximum visual variety
+// 🎬 POTPOURRI PATTERN: Fast-switching showcase of all effects in 1-second intervals
+// Each second features a different effect's signature movement pattern
+// Position, Scale, Rotation: Rapid style changes every second for dynamic presentation
+func createPotpourriAnimation(durationSeconds float64, videoStartTime string) *fcp.AdjustTransform {
+	return &fcp.AdjustTransform{
+		Params: []fcp.Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPotpourriPositionKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPotpourriScaleKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &fcp.KeyframeAnimation{
+					Keyframes: createPotpourriRotationKeyframes(durationSeconds, videoStartTime),
+				},
+			},
+		},
+	}
+}
+
 // createWindSwayAnimation simulates organic wind effects with irregular motion
 // 🎬 WIND PATTERN: Organic, irregular swaying like a tree in wind
 // Position: Irregular swaying with gusts and calm periods
@@ -1320,6 +1379,154 @@ func createWindScaleKeyframes(duration float64, videoStartTime string) []fcp.Key
 		{Time: calculateAbsoluteTime(videoStartTime, duration*0.6), Value: "1.01 0.99", Curve: "linear"},
 		{Time: calculateAbsoluteTime(videoStartTime, duration*0.8), Value: "0.99 1.02", Curve: "linear"},
 		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+// POTPOURRI KEYFRAMES - Cycling through all effects rapidly
+// 🎬 EFFECT SEQUENCE (10 seconds, ~1 second each):
+// 0-1s: Shake (micro movements)
+// 1-2s: Perspective (3D illusion) 
+// 2-3s: Flip (rotation + scale)
+// 3-4s: 360-tilt (full rotation)
+// 4-5s: Light-rays (pulsing)
+// 5-6s: Parallax (depth movement)
+// 6-7s: Breathe (organic pulsing)
+// 7-8s: Pendulum (physics swing)
+// 8-9s: Elastic (stretchy bounce)
+// 9-10s: Spiral (vortex motion)
+
+func createPotpourriPositionKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// 0-1s: Shake (micro movements)
+		{Time: videoStartTime, Value: "0 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, 0.5), Value: "-2 1"},
+		{Time: calculateAbsoluteTime(videoStartTime, 1), Value: "3 -2"},
+		
+		// 1-2s: Perspective (3D positioning)
+		{Time: calculateAbsoluteTime(videoStartTime, 1.5), Value: "-15 8"},
+		{Time: calculateAbsoluteTime(videoStartTime, 2), Value: "20 -12"},
+		
+		// 2-3s: Flip (minimal movement during flip)
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "0 -10"},
+		{Time: calculateAbsoluteTime(videoStartTime, 3), Value: "0 0"},
+		
+		// 3-4s: 360-tilt (orbital movement)
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "30 0"},
+		{Time: calculateAbsoluteTime(videoStartTime, 4), Value: "0 30"},
+		
+		// 4-5s: Light-rays (radiating movement)
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "5 -8"},
+		{Time: calculateAbsoluteTime(videoStartTime, 5), Value: "-8 12"},
+		
+		// 5-6s: Parallax (slow depth movement)
+		{Time: calculateAbsoluteTime(videoStartTime, 5.5), Value: "-25 10"},
+		{Time: calculateAbsoluteTime(videoStartTime, 6), Value: "-40 25"},
+		
+		// 6-7s: Breathe (subtle floating)
+		{Time: calculateAbsoluteTime(videoStartTime, 6.5), Value: "0 -2"},
+		{Time: calculateAbsoluteTime(videoStartTime, 7), Value: "1 1"},
+		
+		// 7-8s: Pendulum (wide swing)
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "0 -20"},
+		{Time: calculateAbsoluteTime(videoStartTime, 8), Value: "50 0"},
+		
+		// 8-9s: Elastic (bouncy movement)
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "15 -8"},
+		{Time: calculateAbsoluteTime(videoStartTime, 9), Value: "-20 12"},
+		
+		// 9-10s: Spiral (vortex positioning)
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "20 20"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "0 0"},
+	}
+}
+
+func createPotpourriScaleKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// 0-1s: Shake (micro scale changes)
+		{Time: videoStartTime, Value: "1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 0.5), Value: "1.01 0.99", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 1), Value: "0.99 1.02", Curve: "linear"},
+		
+		// 1-2s: Perspective (asymmetric scaling)
+		{Time: calculateAbsoluteTime(videoStartTime, 1.5), Value: "0.8 1.2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 2), Value: "1.2 0.8", Curve: "linear"},
+		
+		// 2-3s: Flip (dramatic perspective changes)
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "0.1 1", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 3), Value: "1 1", Curve: "linear"},
+		
+		// 3-4s: 360-tilt (rhythmic zoom)
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "1.3 1.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 4), Value: "0.8 0.8", Curve: "linear"},
+		
+		// 4-5s: Light-rays (pulsing intensity)
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "1.4 1.4", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 5), Value: "1.2 1.2", Curve: "linear"},
+		
+		// 5-6s: Parallax (depth scaling)
+		{Time: calculateAbsoluteTime(videoStartTime, 5.5), Value: "0.9 0.9", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 6), Value: "1.1 1.1", Curve: "linear"},
+		
+		// 6-7s: Breathe (organic pulsing)
+		{Time: calculateAbsoluteTime(videoStartTime, 6.5), Value: "1.06 1.06", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 7), Value: "0.96 0.96", Curve: "linear"},
+		
+		// 7-8s: Pendulum (perspective swing)
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "0.95 1.05", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 8), Value: "1 1", Curve: "linear"},
+		
+		// 8-9s: Elastic (dramatic stretching)
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "0.6 1.8", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 9), Value: "1.4 0.7", Curve: "linear"},
+		
+		// 9-10s: Spiral (vortex scaling)
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "0.3 0.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "1 1", Curve: "linear"},
+	}
+}
+
+func createPotpourriRotationKeyframes(duration float64, videoStartTime string) []fcp.Keyframe {
+	return []fcp.Keyframe{
+		// 0-1s: Shake (micro tilts)
+		{Time: videoStartTime, Value: "0", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 0.5), Value: "-0.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 1), Value: "0.4", Curve: "linear"},
+		
+		// 1-2s: Perspective (3D tilt)
+		{Time: calculateAbsoluteTime(videoStartTime, 1.5), Value: "-2", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 2), Value: "3", Curve: "linear"},
+		
+		// 2-3s: Flip (full rotation)
+		{Time: calculateAbsoluteTime(videoStartTime, 2.5), Value: "90", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 3), Value: "180", Curve: "linear"},
+		
+		// 3-4s: 360-tilt (continuous spin)
+		{Time: calculateAbsoluteTime(videoStartTime, 3.5), Value: "270", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 4), Value: "360", Curve: "linear"},
+		
+		// 4-5s: Light-rays (slow rotation)
+		{Time: calculateAbsoluteTime(videoStartTime, 4.5), Value: "380", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 5), Value: "405", Curve: "linear"},
+		
+		// 5-6s: Parallax (minimal tilt)
+		{Time: calculateAbsoluteTime(videoStartTime, 5.5), Value: "404", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 6), Value: "405", Curve: "linear"},
+		
+		// 6-7s: Breathe (organic tilt)
+		{Time: calculateAbsoluteTime(videoStartTime, 6.5), Value: "405.3", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 7), Value: "405", Curve: "linear"},
+		
+		// 7-8s: Pendulum (swing tilt)
+		{Time: calculateAbsoluteTime(videoStartTime, 7.5), Value: "397", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 8), Value: "413", Curve: "linear"},
+		
+		// 8-9s: Elastic (wobble rotation)
+		{Time: calculateAbsoluteTime(videoStartTime, 8.5), Value: "419", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, 9), Value: "409", Curve: "linear"},
+		
+		// 9-10s: Spiral (rapid spin finish)
+		{Time: calculateAbsoluteTime(videoStartTime, 9.5), Value: "629", Curve: "linear"},
+		{Time: calculateAbsoluteTime(videoStartTime, duration), Value: "720", Curve: "linear"},
 	}
 }
 
