@@ -209,7 +209,9 @@ This command creates dramatic video movement using advanced Final Cut Pro techni
 Effect Types:
 Standard: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)
 Creative: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind
-Special: potpourri (cycles through all effects at 1-second intervals)
+Special: 
+  potpourri (cycles through all effects at 1-second intervals)
+  variety-pack (random effect per image, perfect for multiple images)
 
 Examples:
 Single image:
@@ -220,7 +222,8 @@ cutlass utils fx-static-image photo.png parallax
 
 Multiple images (10 seconds each):
 cutlass utils fx-static-image image1.png,image2.png,image3.png output.fcpxml potpourri
-cutlass utils fx-static-image photo1.png,photo2.png heartbeat`,
+cutlass utils fx-static-image photo1.png,photo2.png heartbeat
+cutlass utils fx-static-image a.png,b.png,c.png,d.png variety-pack`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		utils.HandleFXStaticImageCommand(args)

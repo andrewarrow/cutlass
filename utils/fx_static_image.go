@@ -3,8 +3,10 @@ package utils
 import (
 	"cutlass/fcp"
 	"fmt"
+	"math/rand"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // HandleFXStaticImageCommand processes a PNG image and generates FCPXML with dynamic animation effects
@@ -23,8 +25,10 @@ func HandleFXStaticImageCommand(args []string) {
 		fmt.Println("Usage: fx-static-image <image.png|image1.png,image2.png> [output.fcpxml] [effect-type]")
 		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
 		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind")
-		fmt.Println("Special effect: potpourri (cycles through all effects at 1-second intervals)")
-		fmt.Println("Multiple images: Each image gets 10 seconds with the same effect applied")
+		fmt.Println("Special effects:")
+		fmt.Println("  potpourri (cycles through all effects at 1-second intervals)")
+		fmt.Println("  variety-pack (random effect per image, great for multiple images)")
+		fmt.Println("Multiple images: Each image gets 10 seconds with the effect applied")
 		return
 	}
 
@@ -93,17 +97,31 @@ func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeco
 		return fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
 
-	// Add each image sequentially with the same effect
+	// Handle variety-pack special case: generate random effects for each image
+	var effectsToUse []string
+	if effectType == "variety-pack" {
+		effectsToUse = generateRandomEffectsForImages(len(imagePaths))
+		fmt.Printf("🎲 Variety pack: %v\n", effectsToUse)
+	} else {
+		// Use the same effect for all images
+		effectsToUse = make([]string, len(imagePaths))
+		for i := range effectsToUse {
+			effectsToUse[i] = effectType
+		}
+	}
+
+	// Add each image sequentially with its assigned effect
 	currentStartTime := 0.0
 	for i, imagePath := range imagePaths {
-		fmt.Printf("🎬 Adding image %d/%d: %s (%.1fs)\n", i+1, len(imagePaths), filepath.Base(imagePath), durationSeconds)
+		currentEffect := effectsToUse[i]
+		fmt.Printf("🎬 Adding image %d/%d: %s (%.1fs) with '%s' effect\n", i+1, len(imagePaths), filepath.Base(imagePath), durationSeconds, currentEffect)
 		
 		if err := fcp.AddImage(fcpxml, imagePath, durationSeconds); err != nil {
 			return fmt.Errorf("failed to add image %s: %v", imagePath, err)
 		}
 
 		// Apply dynamic animation effects to the most recently added image
-		if err := addDynamicImageEffectsAtTime(fcpxml, durationSeconds, effectType, currentStartTime); err != nil {
+		if err := addDynamicImageEffectsAtTime(fcpxml, durationSeconds, currentEffect, currentStartTime); err != nil {
 			return fmt.Errorf("failed to add dynamic effects to %s: %v", imagePath, err)
 		}
 		
@@ -218,7 +236,7 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 func isValidEffectType(effectType string) bool {
 	validEffects := []string{
 		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
-		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "potpourri",
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "potpourri", "variety-pack",
 	}
 	for _, valid := range validEffects {
 		if effectType == valid {
@@ -226,6 +244,53 @@ func isValidEffectType(effectType string) bool {
 		}
 	}
 	return false
+}
+
+// generateRandomEffectsForImages creates a list of random effects for multiple images
+// 🎲 VARIETY PACK STRATEGY: Each image gets a different random effect for maximum visual variety
+// Excludes potpourri and variety-pack from random selection to avoid recursion
+// Ensures good distribution across effect categories (standard, creative)
+func generateRandomEffectsForImages(numImages int) []string {
+	// Initialize random seed based on current time
+	rand.Seed(time.Now().UnixNano())
+	
+	// Available effects for random selection (excluding special effects)
+	availableEffects := []string{
+		// Standard effects
+		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
+		// Creative effects  
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind",
+	}
+	
+	effects := make([]string, numImages)
+	usedEffects := make(map[string]bool)
+	
+	// For variety, try to avoid repeating effects until we've used most of them
+	for i := 0; i < numImages; i++ {
+		var selectedEffect string
+		attempts := 0
+		maxAttempts := 20 // Prevent infinite loop
+		
+		for attempts < maxAttempts {
+			selectedEffect = availableEffects[rand.Intn(len(availableEffects))]
+			
+			// If we haven't used this effect yet, or we've used most effects, use it
+			if !usedEffects[selectedEffect] || len(usedEffects) >= len(availableEffects)-2 {
+				break
+			}
+			attempts++
+		}
+		
+		effects[i] = selectedEffect
+		usedEffects[selectedEffect] = true
+		
+		// Reset used effects tracking when we've used most of them
+		if len(usedEffects) >= len(availableEffects)-1 {
+			usedEffects = make(map[string]bool)
+		}
+	}
+	
+	return effects
 }
 
 // createCinematicCameraAnimation generates sophisticated multi-phase camera movement with variable speeds
