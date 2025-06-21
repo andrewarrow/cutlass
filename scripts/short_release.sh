@@ -1,0 +1,1 @@
+python3 main.py --title "vibe code your way to WWDC" --description ../data/trip.txt --privacy public --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --tags "vibe,vibecoding,coding,wwdc" --related-video-id nfgxUhcaaRY  ~/Desktop/pixel.mov

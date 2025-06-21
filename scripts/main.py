@@ -4,6 +4,8 @@ import os
 import sys
 import argparse
 import pickle
+import subprocess
+import json
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -41,6 +43,30 @@ def authenticate_youtube():
     
     return build(API_SERVICE_NAME, API_VERSION, credentials=creds)
 
+def get_video_dimensions(video_file):
+    """Get video dimensions using ffprobe."""
+    try:
+        cmd = [
+            'ffprobe', '-v', 'quiet', '-print_format', 'json',
+            '-show_streams', '-select_streams', 'v:0', video_file
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(result.stdout)
+        
+        if 'streams' in data and len(data['streams']) > 0:
+            stream = data['streams'][0]
+            width = int(stream.get('width', 0))
+            height = int(stream.get('height', 0))
+            return width, height
+    except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError, ValueError) as e:
+        print(f"Warning: Could not detect video dimensions: {e}")
+    
+    return None, None
+
+def is_vertical_short(width, height):
+    """Check if video is a vertical short (1080x1920)."""
+    return width == 1080 and height == 1920
+
 def verify_channel_access(youtube, channel_id):
     """Verify that the authenticated user has access to the specified channel."""
     try:
@@ -62,7 +88,7 @@ def verify_channel_access(youtube, channel_id):
         print(f"Error verifying channel access: {e}")
         return False
 
-def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None, not_made_for_kids=True):
+def upload_video(youtube, video_file, title, description, channel_id=None, tags=None, category_id="22", privacy_status="private", thumbnail_path=None, not_made_for_kids=True, related_video_id=None):
     """Upload a video to YouTube."""
     if not os.path.exists(video_file):
         print(f"Error: Video file '{video_file}' not found.")
@@ -72,6 +98,16 @@ def upload_video(youtube, video_file, title, description, channel_id=None, tags=
         return None
     
     tags = tags or []
+    
+    # Check if this is a vertical short and use related video if specified
+    width, height = get_video_dimensions(video_file)
+    if is_vertical_short(width, height) and related_video_id:
+        print(f"Detected 1080x1920 short, adding related video: {related_video_id}")
+        # Add related video to description
+        if description:
+            description += f"\n\nRelated video: https://www.youtube.com/watch?v={related_video_id}"
+        else:
+            description = f"Related video: https://www.youtube.com/watch?v={related_video_id}"
     
     body = {
         'snippet': {
@@ -177,6 +213,7 @@ def main():
     parser.add_argument('--channel-id', help='YouTube channel ID to upload to (required if you have multiple channels)')
     parser.add_argument('--thumbnail', help='Path to PNG thumbnail image file')
     parser.add_argument('--not-made-for-kids', action='store_true', help='Mark video as not made for kids')
+    parser.add_argument('--related-video-id', help='Related video ID to add for 1080x1920 shorts (e.g., h8EfnJmcwG4)')
     
     args = parser.parse_args()
     
@@ -208,7 +245,8 @@ def main():
             category_id=args.category,
             privacy_status=args.privacy,
             thumbnail_path=args.thumbnail,
-            not_made_for_kids=args.not_made_for_kids
+            not_made_for_kids=args.not_made_for_kids,
+            related_video_id=getattr(args, 'related_video_id')
         )
         
         if video_id:
