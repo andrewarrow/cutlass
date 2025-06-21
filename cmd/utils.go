@@ -174,28 +174,37 @@ cutlass utils add-shadow-text shadow.txt custom_output.fcpxml`,
 
 var fxStaticImageCmd = &cobra.Command{
 	Use:   "fx-static-image <image.png> [output.fcpxml]",
-	Short: "Generate dynamic FCPXML with animated effects for static PNG images",
-	Long: `Generate FCPXML with sophisticated animation effects to make static PNG images appear dynamic.
+	Short: "Generate dynamic FCPXML with sophisticated multi-phase animated effects for static PNG images",
+	Long: `Generate FCPXML with sophisticated multi-phase animation effects to transform static PNG images into cinematic video content.
 
-This command transforms static images into cinematic video content using:
+This command creates dramatic video movement using advanced Final Cut Pro techniques:
 
-🎬 Camera Movement Simulation:
-- Multi-layer transform keyframes for position, scale, and rotation
-- Handheld camera motion with subtle panning and scaling
-- Smooth easing curves for professional cinematography
-- Ken Burns effect with enhanced parallax motion
+🎬 ENHANCED MULTI-PHASE CAMERA MOVEMENT:
+- Phase 1 (0-25%): SLOW gentle drift and zoom-in with smooth easing
+- Phase 2 (25-50%): FAST panning and rotation with quick transitions  
+- Phase 3 (50-75%): SUPER FAST dramatic movement with maximum speed
+- Phase 4 (75-100%): SLOW elegant settle with smooth finish
+- Variable speed timing creates cinematic tension and release
 
-🎯 Dynamic Effects:
-- Built-in Final Cut Pro effects for realistic movement
-- Transform animations with anchor point adjustments  
-- Simulated depth of field and focus changes
-- Layered motion for dimensional storytelling
+🎯 SOPHISTICATED ANIMATION STACK:
+- Position: Complex multi-directional movement (-80 to +80 pixels)
+- Scale: Dynamic zoom cycles (100% → 140% → 90% → 160% → 125%)
+- Rotation: Dramatic tilt changes (-4° to +4° with speed variations)
+- Anchor Point: Dynamic pivot points for interesting rotation centers
+- Professional easing curves (linear, easeIn, easeOut, smooth)
 
-⚡ Features:
-- Frame-aligned timing for smooth playback
-- Professional easing curves (easeIn, easeOut, smooth)
-- Configurable duration with optimal pacing
-- FCP-compatible effect UIDs and proper resource management
+⚡ BUILT-IN FINAL CUT PRO EFFECTS:
+- Shape Mask (FFSuperEllipseMask) for subtle 3D perspective
+- Handheld camera shake simulation
+- Rounded corners and depth effects
+- Professional parameter settings from working samples
+
+🔧 TECHNICAL FEATURES:
+- Frame-aligned timing with 23.976fps timebase compliance
+- 5 keyframes per animation parameter for smooth motion
+- Proper resource management with transaction system
+- FCP-compatible effect UIDs verified from samples
+- DTD-compliant FCPXML structure
 
 Example:
 cutlass utils fx-static-image photo.png
