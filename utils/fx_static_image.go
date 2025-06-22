@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// HandleFXStaticImageCommandWithColor processes a PNG image and generates FCPXML with dynamic animation effects and custom font color
+func HandleFXStaticImageCommandWithColor(args []string, fontColor string) {
+	handleFXStaticImageCommandInternal(args, fontColor)
+}
+
 // HandleFXStaticImageCommand processes a PNG image and generates FCPXML with dynamic animation effects
 //
 // 🎬 CRITICAL: Follows CLAUDE.md patterns for crash-safe FCPXML generation:
@@ -22,6 +27,12 @@ import (
 // 🎯 Enhanced Features: Multi-layer transform keyframes with professional easing
 // ⚡ Effect Stack: Camera shake + 3D perspective + 360° tilt/pan + light effects + Ken Burns + parallax motion
 func HandleFXStaticImageCommand(args []string) {
+	// Use default pink color
+	handleFXStaticImageCommandInternal(args, "0.985542 0.00945401 0.999181 1")
+}
+
+// Internal function that handles the actual processing
+func handleFXStaticImageCommandInternal(args []string, fontColor string) {
 	if len(args) < 1 {
 		fmt.Println("Usage: fx-static-image <image.png|image1.png,image2.png> [output.fcpxml] [effect-type]")
 		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
@@ -75,7 +86,7 @@ func HandleFXStaticImageCommand(args []string) {
 		duration = 9.0
 	}
 
-	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType); err != nil {
+	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType, fontColor); err != nil {
 		fmt.Printf("Error generating FX static image: %v\n", err)
 		return
 	}
@@ -99,7 +110,7 @@ func HandleFXStaticImageCommand(args []string) {
 // ✅ Uses AdjustTransform structs with KeyframeAnimation (not string templates)
 // ✅ Frame-aligned timing with ConvertSecondsToFCPDuration()
 // ✅ Uses proven effect UIDs from samples/ directory only
-func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeconds float64, effectType string) error {
+func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeconds float64, effectType string, fontColor string) error {
 	// Create base FCPXML using existing infrastructure
 	fcpxml, err := fcp.GenerateEmpty("")
 	if err != nil {
@@ -130,7 +141,7 @@ func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeco
 		}
 
 		// Apply dynamic animation effects to the most recently added image
-		if err := addDynamicImageEffectsAtTime(fcpxml, durationSeconds, currentEffect, currentStartTime); err != nil {
+		if err := addDynamicImageEffectsAtTime(fcpxml, durationSeconds, currentEffect, currentStartTime, fontColor); err != nil {
 			return fmt.Errorf("failed to add dynamic effects to %s: %v", imagePath, err)
 		}
 
@@ -158,13 +169,14 @@ func GenerateFXStaticImages(imagePaths []string, outputPath string, durationSeco
 // ✅ Frame-aligned timing with ConvertSecondsToFCPDuration()
 // ✅ Uses proven effect UIDs from samples/ directory only
 func GenerateFXStaticImage(imagePath, outputPath string, durationSeconds float64, effectType string) error {
-	return GenerateFXStaticImages([]string{imagePath}, outputPath, durationSeconds, effectType)
+	// Use default pink color for backward compatibility
+	return GenerateFXStaticImages([]string{imagePath}, outputPath, durationSeconds, effectType, "0.985542 0.00945401 0.999181 1")
 }
 
 // addDynamicImageEffectsAtTime applies effects to the most recently added image at a specific timeline position
-func addDynamicImageEffectsAtTime(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string, startTimeSeconds float64) error {
+func addDynamicImageEffectsAtTime(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string, startTimeSeconds float64, fontColor string) error {
 	// Apply dynamic animation effects to the most recently added image
-	return addDynamicImageEffects(fcpxml, durationSeconds, effectType)
+	return addDynamicImageEffects(fcpxml, durationSeconds, effectType, fontColor)
 }
 
 // addDynamicImageEffects applies sophisticated animation effects to transform static images into dynamic video
@@ -185,7 +197,7 @@ func addDynamicImageEffectsAtTime(fcpxml *fcp.FCPXML, durationSeconds float64, e
 // - Animation: Direct keyframe animation on the image itself
 // - Effects: NONE (to prevent crashes)
 // - Based on samples/slide.fcpxml which shows Video with adjust-transform working
-func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string) error {
+func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectType string, fontColor string) error {
 	// 🚨 CRITICAL CHANGE: Apply animation directly to image Video element
 	// This follows the working pattern from samples/slide.fcpxml
 
@@ -252,7 +264,7 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 		}
 	case "word-bounce":
 		// Create animated text words with random positioning effects
-		if err := createWordBounceEffect(fcpxml, durationSeconds, videoStartTime); err != nil {
+		if err := createWordBounceEffect(fcpxml, durationSeconds, videoStartTime, fontColor); err != nil {
 			return fmt.Errorf("failed to create word bounce effect: %v", err)
 		}
 	default: // "cinematic"
@@ -528,7 +540,7 @@ func createMultiPhaseRotationKeyframes(duration float64, videoStartTime string) 
 // - Uses Avenir Next Condensed Heavy Italic font with magenta color and white stroke
 // - 9 seconds total duration with multiple position changes
 // - Uses verified Text effect UID from samples
-func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoStartTime string) error {
+func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoStartTime string, fontColor string) error {
 	// Get words from environment variable or use default set
 	wordsParam := os.Getenv("WORDS")
 	if wordsParam == "" {
@@ -833,7 +845,7 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 							Font:        "Avenir Next Condensed", // From sample
 							FontSize:    "400", // From sample
 							FontFace:    "Heavy Italic", // From sample
-							FontColor:   "0.985542 0.00945318 0.999181 1", // Magenta from sample
+							FontColor:   fontColor, // Custom font color from CLI parameter
 							Bold:        "1", // From sample
 							Italic:      "1", // From sample
 							StrokeColor: "0.999995 1 1 1", // White stroke from sample

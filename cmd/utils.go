@@ -237,7 +237,8 @@ cutlass utils fx-static-image photo1.png,photo2.png heartbeat
 cutlass utils fx-static-image a.png,b.png,c.png,d.png variety-pack`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		utils.HandleFXStaticImageCommand(args)
+		fontColor, _ := cmd.Flags().GetString("font-color")
+		utils.HandleFXStaticImageCommandWithColor(args, fontColor)
 		return nil
 	},
 }
@@ -295,4 +296,7 @@ func init() {
 	utilsCmd.AddCommand(addShadowTextCmd)
 	utilsCmd.AddCommand(fxStaticImageCmd)
 	utilsCmd.AddCommand(findBeatsCmd)
+	
+	// Add flags for fx-static-image command
+	fxStaticImageCmd.Flags().StringP("font-color", "c", "0.985542 0.00945401 0.999181 1", "Font color in FCPXML format (R G B A values 0-1, default: pink)")
 }
