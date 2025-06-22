@@ -4,6 +4,7 @@ import (
 	"cutlass/fcp"
 	"fmt"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -27,10 +28,12 @@ func HandleFXStaticImageCommand(args []string) {
 		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind, kaleido, particle-emitter")
 		fmt.Println("Advanced effects: inner-collapse (digital mind breakdown with complex multi-layer animation)")
 		fmt.Println("Cinematic effects: shatter-archive (nostalgic stop-motion with analog photography decay)")
+		fmt.Println("Text effects: word-bounce (use WORDS='anger,tattle,entertainment,compilation' env var)")
 		fmt.Println("Special effects:")
 		fmt.Println("  potpourri (cycles through all effects at 1-second intervals)")
 		fmt.Println("  variety-pack (random effect per image, great for multiple images)")
 		fmt.Println("Multiple images: Each image gets 10 seconds with the effect applied")
+		fmt.Println("Example: WORDS='hello,world,test,demo' cutlass fx-static-image image.png word-bounce")
 		return
 	}
 
@@ -66,7 +69,11 @@ func HandleFXStaticImageCommand(args []string) {
 	}
 
 	// Default duration for dynamic effects (10 seconds provides good animation showcase)
+	// For word-bounce effect, use 9 seconds as requested
 	duration := 10.0
+	if effectType == "word-bounce" {
+		duration = 9.0
+	}
 
 	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType); err != nil {
 		fmt.Printf("Error generating FX static image: %v\n", err)
@@ -243,6 +250,11 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 		if err := createParticleEmitterEffect(fcpxml, durationSeconds, videoStartTime); err != nil {
 			return fmt.Errorf("failed to create particle emitter effect: %v", err)
 		}
+	case "word-bounce":
+		// Create animated text words with random positioning effects
+		if err := createWordBounceEffect(fcpxml, durationSeconds, videoStartTime); err != nil {
+			return fmt.Errorf("failed to create word bounce effect: %v", err)
+		}
 	default: // "cinematic"
 		imageVideo.AdjustTransform = createCinematicCameraAnimation(durationSeconds, videoStartTime)
 	}
@@ -254,7 +266,7 @@ func addDynamicImageEffects(fcpxml *fcp.FCPXML, durationSeconds float64, effectT
 func isValidEffectType(effectType string) bool {
 	validEffects := []string{
 		"shake", "perspective", "flip", "360-tilt", "360-pan", "light-rays", "glow", "cinematic",
-		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse", "shatter-archive", "potpourri", "variety-pack", "kaleido", "particle-emitter",
+		"parallax", "breathe", "pendulum", "elastic", "spiral", "figure8", "heartbeat", "wind", "inner-collapse", "shatter-archive", "potpourri", "variety-pack", "kaleido", "particle-emitter", "word-bounce",
 	}
 	for _, valid := range validEffects {
 		if effectType == valid {
@@ -504,4 +516,201 @@ func createMultiPhaseRotationKeyframes(duration float64, videoStartTime string) 
 			Curve: "linear",                                        // Only curve attribute for rotation
 		},
 	}
+}
+
+// createWordBounceEffect creates animated text words with random positioning similar to four_words.fcpxml
+//
+// 🎬 WORD BOUNCE EFFECT: Creates 4 text elements in different lanes with random positioning
+// Based on slide_text.fcpxml pattern:
+// - Each word gets its own lane (1, 2, 3, 4) 
+// - Staggered timing with sequential appearance
+// - Random X,Y positioning for bounce effect
+// - 9 seconds total duration as requested
+// - Uses verified Text effect UID from samples
+func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoStartTime string) error {
+	// Get words from environment variable or use default set
+	wordsParam := os.Getenv("WORDS")
+	if wordsParam == "" {
+		wordsParam = "anger,tattle,entertainment,compilation"
+	}
+	
+	words := strings.Split(wordsParam, ",")
+	if len(words) > 4 {
+		words = words[:4] // Limit to 4 words like the sample
+	}
+	
+	// Add Text effect to resources if not already present
+	textEffectID := "r4" // Use consistent ID like samples
+	hasTextEffect := false
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.UID == ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti" {
+			hasTextEffect = true
+			textEffectID = effect.ID
+			break
+		}
+	}
+	
+	if !hasTextEffect {
+		fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, fcp.Effect{
+			ID:   textEffectID,
+			Name: "Text",
+			UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+		})
+	}
+	
+	// Get the background video to add titles to
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.Videos) == 0 {
+		return fmt.Errorf("no video elements found in spine")
+	}
+	
+	backgroundVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+	
+	// Initialize random seed for positioning
+	rand.Seed(time.Now().UnixNano())
+	
+	// Create animated text elements for each word
+	for i, word := range words {
+		word = strings.TrimSpace(word)
+		if word == "" {
+			continue
+		}
+		
+		// Calculate timing: staggered appearance over 9 seconds
+		wordDelay := float64(i) * (durationSeconds / 4.0) // Spread evenly
+		wordOffset := calculateAbsoluteTime(videoStartTime, wordDelay)
+		wordDuration := durationSeconds - wordDelay // Remaining time
+		
+		// Generate random position within screen bounds (like four_words.fcpxml pattern)
+		// Use larger range for more dramatic bounce effect
+		randomX := rand.Intn(800) - 400  // -400 to +400 pixels
+		randomY := rand.Intn(600) - 300  // -300 to +300 pixels
+		
+		// Create unique text style ID for each word
+		textStyleID := fmt.Sprintf("ts%d", i+1)
+		
+		// Create title element based on slide_text.fcpxml pattern
+		titleElement := fcp.Title{
+			Ref:      textEffectID,
+			Lane:     fmt.Sprintf("%d", 4-i), // Lanes 4, 3, 2, 1 (reverse order like sample)
+			Offset:   wordOffset,
+			Name:     fmt.Sprintf("%s - Text", word),
+			Duration: fcp.ConvertSecondsToFCPDuration(wordDuration),
+			Start:    "0s", // Relative to video start
+			Params: []fcp.Param{
+				// Random position for bounce effect
+				{
+					Name:  "Position",
+					Key:   "9999/10003/13260/3296672360/1/100/101",
+					Value: fmt.Sprintf("%d %d", randomX, randomY),
+				},
+				// Layout settings from slide_text.fcpxml
+				{
+					Name:  "Layout Method",
+					Key:   "9999/10003/13260/3296672360/2/314",
+					Value: "1 (Paragraph)",
+				},
+				{
+					Name:  "Left Margin",
+					Key:   "9999/10003/13260/3296672360/2/323",
+					Value: "-1730",
+				},
+				{
+					Name:  "Right Margin", 
+					Key:   "9999/10003/13260/3296672360/2/324",
+					Value: "1730",
+				},
+				{
+					Name:  "Top Margin",
+					Key:   "9999/10003/13260/3296672360/2/325", 
+					Value: "960",
+				},
+				{
+					Name:  "Bottom Margin",
+					Key:   "9999/10003/13260/3296672360/2/326",
+					Value: "-960",
+				},
+				{
+					Name:  "Alignment",
+					Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
+					Value: "0 (Left)",
+				},
+				{
+					Name:  "Line Spacing",
+					Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
+					Value: "-19",
+				},
+				{
+					Name:  "Auto-Shrink",
+					Key:   "9999/10003/13260/3296672360/2/370",
+					Value: "3 (To All Margins)",
+				},
+				{
+					Name:  "Alignment",
+					Key:   "9999/10003/13260/3296672360/2/373",
+					Value: "0 (Left) 0 (Top)",
+				},
+				// Initial opacity (invisible)
+				{
+					Name:  "Opacity",
+					Key:   "9999/10003/13260/3296672360/4/3296673134/1000/1044",
+					Value: "0",
+				},
+				// Custom speed animation for dramatic entrance
+				{
+					Name:  "Speed",
+					Key:   "9999/10003/13260/3296672360/4/3296673134/201/208",
+					Value: "6 (Custom)",
+				},
+				{
+					Name: "Custom Speed",
+					Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+					KeyframeAnimation: &fcp.KeyframeAnimation{
+						Keyframes: []fcp.Keyframe{
+							{
+								Time:  "-469658744/1000000000s", // Start invisible
+								Value: "0",
+							},
+							{
+								Time:  "12328542033/1000000000s", // Fade in
+								Value: "1",
+							},
+						},
+					},
+				},
+				{
+					Name:  "Apply Speed",
+					Key:   "9999/10003/13260/3296672360/4/3296673134/201/211",
+					Value: "2 (Per Object)",
+				},
+			},
+			Text: &fcp.TitleText{
+				TextStyles: []fcp.TextStyleRef{
+					{
+						Ref:  textStyleID,
+						Text: word,
+					},
+				},
+			},
+			TextStyleDefs: []fcp.TextStyleDef{
+				{
+					ID: textStyleID,
+					TextStyle: fcp.TextStyle{
+						Font:        "Helvetica Neue",
+						FontSize:    "134",
+						FontColor:   "1 1 1 1", // White text
+						Bold:        "1",
+						LineSpacing: "-19",
+					},
+				},
+			},
+		}
+		
+		// Add the title to the background video
+		backgroundVideo.NestedTitles = append(backgroundVideo.NestedTitles, titleElement)
+		
+		fmt.Printf("🎯 Added word '%s' in lane %d at position (%d, %d)\n", word, 4-i, randomX, randomY)
+	}
+	
+	return nil
 }
