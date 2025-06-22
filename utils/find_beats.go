@@ -604,26 +604,11 @@ func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFil
 				Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
 				Name:     colorName,
 				Duration: fcp.ConvertSecondsToFCPDuration(segmentDuration),
-				Start:    "0s",
-				Lane:     "1", // Put background on lane 1
+				Start:    "86486400/24000s", // Use standard start time like samples
+				Lane:     "1", // Put on connected storyline above audio
 			}
 
-			// Add color parameters for blue or green
-			if isBlue {
-				colorVideo.Params = []fcp.Param{
-					{
-						Name:  "Color",
-						Value: "0.0 0.3 1.0 1.0", // Blue RGBA
-					},
-				}
-			} else {
-				colorVideo.Params = []fcp.Param{
-					{
-						Name:  "Color", 
-						Value: "0.0 1.0 0.3 1.0", // Green RGBA
-					},
-				}
-			}
+			// Remove custom color parameters for now - use default generator colors
 
 			sequence.Spine.Videos = append(sequence.Spine.Videos, colorVideo)
 		}
@@ -652,37 +637,22 @@ func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFil
 			Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
 			Name:     colorName,
 			Duration: fcp.ConvertSecondsToFCPDuration(finalDuration),
-			Start:    "0s",
-			Lane:     "1",
+			Start:    "86486400/24000s",
+			Lane:     "1", // Put on connected storyline above audio
 		}
 
-		if isBlue {
-			finalVideo.Params = []fcp.Param{
-				{
-					Name:  "Color",
-					Value: "0.0 0.3 1.0 1.0", // Blue RGBA
-				},
-			}
-		} else {
-			finalVideo.Params = []fcp.Param{
-				{
-					Name:  "Color",
-					Value: "0.0 1.0 0.3 1.0", // Green RGBA
-				},
-			}
-		}
+		// Use default generator colors
 
 		sequence.Spine.Videos = append(sequence.Spine.Videos, finalVideo)
 	}
 
-	// Add audio asset-clip to spine (on a separate lane)
+	// Add audio asset-clip to spine as primary storyline
 	audioClip := fcp.AssetClip{
 		Ref:      audioAsset.ID,
 		Offset:   "0s",
 		Name:     audioAsset.Name,
 		Duration: audioDuration,
 		Start:    "0s",
-		Lane:     "2", // Put audio on lane 2
 		Format:   audioAsset.Format,
 		TCFormat: "NDF",
 	}
