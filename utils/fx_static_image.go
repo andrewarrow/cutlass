@@ -569,8 +569,8 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 	rand.Seed(time.Now().UnixNano())
 	
 	// Create blade-cut animated text elements for each word (following Info.fcpxml pattern)
-	totalBlades := 60 // Many more blade cuts for continuous coverage like Info.fcpxml
-	bladeDuration := 0.166 // Blade duration to ensure no gaps (9 seconds / 60 blades ≈ 0.15s each)
+	totalBlades := 120 // Double the blade cuts for smoother movement
+	bladeDuration := 0.083 // Blade duration to ensure no gaps (9 seconds / 120 blades ≈ 0.075s each)
 	
 	textStyleCounter := 1 // Global counter for unique text style IDs
 	
