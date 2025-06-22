@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"cutlass/fcp"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
 	"os"
+	"path/filepath"
 	"sort"
 )
 
@@ -117,15 +119,16 @@ func TestWAVHeader(filename string) {
 // HandleFindBeatsCommand processes the find-beats command
 func HandleFindBeatsCommand(args []string) error {
 	if len(args) < 1 {
-		return fmt.Errorf("usage: find-beats <file.wav>")
+		return fmt.Errorf("usage: find-beats <file.wav> [output.fcpxml]")
 	}
 
 	wavFile := args[0]
+	outputFile := "beats.fcpxml"
+	if len(args) > 1 {
+		outputFile = args[1]
+	}
 	
-	// Debug WAV file structure first
-	fmt.Printf("=== Analyzing WAV file structure ===\n")
-	TestWAVHeader(wavFile)
-	fmt.Printf("\n=== Beat detection analysis ===\n")
+	// Analyze audio file
 	
 	analyzer, err := NewAudioAnalyzer(wavFile)
 	if err != nil {
@@ -146,6 +149,13 @@ func HandleFindBeatsCommand(args []string) error {
 			i+1, beat.Timestamp, beat.Intensity, beat.Type)
 	}
 
+	// Generate FCPXML with alternating colors
+	err = GenerateBeatsVisualization(wavFile, beats, outputFile)
+	if err != nil {
+		return fmt.Errorf("failed to generate FCPXML: %v", err)
+	}
+
+	fmt.Printf("Generated %s with %d color changes\n", outputFile, len(beats))
 	return nil
 }
 
@@ -277,9 +287,9 @@ func NewAudioAnalyzer(filename string) (*AudioAnalyzer, error) {
 		analyzer.samples = monoSamples
 	}
 
-	fmt.Printf("Audio info: %d Hz, %d channels, %d-bit, %d samples, %.2f seconds\n", 
-		analyzer.sampleRate, analyzer.channels, analyzer.bitsPerSample, 
-		len(analyzer.samples), float64(len(analyzer.samples))/float64(analyzer.sampleRate))
+	// Audio info for reference
+	duration := float64(len(analyzer.samples))/float64(analyzer.sampleRate)
+	fmt.Printf("Audio: %.1fs, %d Hz, %d channels\n", duration, analyzer.sampleRate, analyzer.channels)
 
 	return analyzer, nil
 }
@@ -487,4 +497,201 @@ func (a *AudioAnalyzer) filterStrongBeats(beats []BeatDetection, minIntensity fl
 	}
 	
 	return filtered
+}
+
+// GenerateBeatsVisualization creates an FCPXML with alternating background colors and audio
+func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFile string) error {
+	// Get absolute path for WAV file
+	absWavPath, err := filepath.Abs(wavFile)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for audio: %v", err)
+	}
+
+	// Check if audio file exists
+	if _, err := os.Stat(absWavPath); os.IsNotExist(err) {
+		return fmt.Errorf("audio file does not exist: %s", absWavPath)
+	}
+
+	// Calculate total duration from last beat + some extra time
+	totalDuration := 10.0 // Default minimum
+	if len(beats) > 0 {
+		lastBeat := beats[len(beats)-1]
+		totalDuration = lastBeat.Timestamp + 5.0 // Add 5 seconds after last beat
+	}
+
+	// Create base FCPXML
+	fcpxml, err := fcp.GenerateEmpty("")
+	if err != nil {
+		return fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+
+	// Use proper resource management
+	registry := fcp.NewResourceRegistry(fcpxml)
+	tx := fcp.NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs for audio asset, color generators
+	numIDs := 4 // audio asset, audio format, blue generator, green generator
+	ids := tx.ReserveIDs(numIDs)
+	
+	audioAssetID := ids[0]
+	audioFormatID := ids[1]
+	blueGeneratorID := ids[2]
+	greenGeneratorID := ids[3]
+	
+	// Create audio asset and format
+	audioName := filepath.Base(absWavPath)
+	audioName = audioName[:len(audioName)-len(filepath.Ext(audioName))] // Remove extension
+	
+	// For now, use the total duration we calculated
+	audioDuration := fcp.ConvertSecondsToFCPDuration(totalDuration)
+	
+	_, err = tx.CreateFormatWithFrameDuration(audioFormatID, "1001/24000s", "", "", "")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create audio format: %v", err)
+	}
+	
+	audioAsset, err := tx.CreateAsset(audioAssetID, absWavPath, audioName, audioDuration, audioFormatID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create audio asset: %v", err)
+	}
+
+	// Create Vivid generator effects for blue and green
+	_, err = tx.CreateEffect(blueGeneratorID, "Vivid Blue", ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create blue generator: %v", err)
+	}
+	_, err = tx.CreateEffect(greenGeneratorID, "Vivid Green", ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create green generator: %v", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Get the sequence to add color changes
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	
+	// Create color segments based on beats
+	currentTime := 0.0
+	isBlue := true // Start with blue
+
+	for _, beat := range beats {
+		// Create color segment from currentTime to beat.Timestamp
+		segmentDuration := beat.Timestamp - currentTime
+		
+		if segmentDuration > 0 {
+			var generatorID string
+			var colorName string
+			
+			if isBlue {
+				generatorID = blueGeneratorID
+				colorName = "Blue Background"
+			} else {
+				generatorID = greenGeneratorID
+				colorName = "Green Background"
+			}
+
+			// Create video element for this color segment
+			colorVideo := fcp.Video{
+				Ref:      generatorID,
+				Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
+				Name:     colorName,
+				Duration: fcp.ConvertSecondsToFCPDuration(segmentDuration),
+				Start:    "0s",
+				Lane:     "1", // Put background on lane 1
+			}
+
+			// Add color parameters for blue or green
+			if isBlue {
+				colorVideo.Params = []fcp.Param{
+					{
+						Name:  "Color",
+						Value: "0.0 0.3 1.0 1.0", // Blue RGBA
+					},
+				}
+			} else {
+				colorVideo.Params = []fcp.Param{
+					{
+						Name:  "Color", 
+						Value: "0.0 1.0 0.3 1.0", // Green RGBA
+					},
+				}
+			}
+
+			sequence.Spine.Videos = append(sequence.Spine.Videos, colorVideo)
+		}
+
+		currentTime = beat.Timestamp
+		isBlue = !isBlue // Alternate color
+	}
+
+	// Add final color segment from last beat to end
+	if currentTime < totalDuration {
+		finalDuration := totalDuration - currentTime
+		
+		var generatorID string
+		var colorName string
+		
+		if isBlue {
+			generatorID = blueGeneratorID
+			colorName = "Blue Background"
+		} else {
+			generatorID = greenGeneratorID
+			colorName = "Green Background"
+		}
+
+		finalVideo := fcp.Video{
+			Ref:      generatorID,
+			Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
+			Name:     colorName,
+			Duration: fcp.ConvertSecondsToFCPDuration(finalDuration),
+			Start:    "0s",
+			Lane:     "1",
+		}
+
+		if isBlue {
+			finalVideo.Params = []fcp.Param{
+				{
+					Name:  "Color",
+					Value: "0.0 0.3 1.0 1.0", // Blue RGBA
+				},
+			}
+		} else {
+			finalVideo.Params = []fcp.Param{
+				{
+					Name:  "Color",
+					Value: "0.0 1.0 0.3 1.0", // Green RGBA
+				},
+			}
+		}
+
+		sequence.Spine.Videos = append(sequence.Spine.Videos, finalVideo)
+	}
+
+	// Add audio asset-clip to spine (on a separate lane)
+	audioClip := fcp.AssetClip{
+		Ref:      audioAsset.ID,
+		Offset:   "0s",
+		Name:     audioAsset.Name,
+		Duration: audioDuration,
+		Start:    "0s",
+		Lane:     "2", // Put audio on lane 2
+		Format:   audioAsset.Format,
+		TCFormat: "NDF",
+	}
+	
+	sequence.Spine.AssetClips = append(sequence.Spine.AssetClips, audioClip)
+
+	// Update sequence duration
+	sequence.Duration = fcp.ConvertSecondsToFCPDuration(totalDuration)
+
+	// Write the FCPXML file
+	return fcp.WriteToFile(fcpxml, outputFile)
 }
