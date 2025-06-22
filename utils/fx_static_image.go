@@ -580,18 +580,22 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 		directionX, directionY int
 	})
 	
-	// Initialize starting positions and directions for each word
-	for _, word := range words {
+	// Initialize starting positions and directions for each word with better randomization
+	for i, word := range words {
 		word = strings.TrimSpace(word)
 		if word == "" {
 			continue
 		}
+		
+		// Add word index to seed for more variation between words
+		rand.Seed(time.Now().UnixNano() + int64(i*1000))
+		
 		wordPositions[word] = struct {
 			x, y           int
 			directionX, directionY int
 		}{
-			x: rand.Intn(400) - 200,  // Start in smaller range: -200 to +200
-			y: rand.Intn(300) - 150,  // Start in smaller range: -150 to +150
+			x: rand.Intn(2000) - 1000,  // Start anywhere across full range: -1000 to +1000 (like Info.fcpxml)
+			y: -rand.Intn(4000),        // Start only in negative Y range: 0 to -4000 (like Info.fcpxml)
 			directionX: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
 			directionY: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
 		}
@@ -641,19 +645,19 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			pos.y += pos.directionY * moveSpeed
 			
 			// Bounce off boundaries like a screensaver (flip direction when hitting wall)
-			if pos.x > 600 {
-				pos.x = 600
+			if pos.x > 1000 {
+				pos.x = 1000
 				pos.directionX = -1  // Bounce off right wall
-			} else if pos.x < -600 {
-				pos.x = -600
+			} else if pos.x < -1000 {
+				pos.x = -1000
 				pos.directionX = 1   // Bounce off left wall
 			}
 			
-			if pos.y > 400 {
-				pos.y = 400
-				pos.directionY = -1  // Bounce off top wall
-			} else if pos.y < -400 {
-				pos.y = -400
+			if pos.y > 100 {
+				pos.y = 100
+				pos.directionY = -1  // Bounce off top wall (small positive allowed)
+			} else if pos.y < -4000 {
+				pos.y = -4000
 				pos.directionY = 1   // Bounce off bottom wall
 			}
 			
