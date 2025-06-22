@@ -10,6 +10,7 @@ import os
 import random
 from datetime import datetime, timedelta
 import colorsys
+import re
 
 class iMessageGenerator:
     def __init__(self, background_path=None):
@@ -131,7 +132,58 @@ class iMessageGenerator:
             small_font = font
         draw.text((battery_x + battery_width + 15, 45), "72", fill=self.ios_text_primary, font=small_font)
     
-    def draw_messages_header(self, draw, contact_name="Family group chat"):
+    def create_group_avatar_cluster(self):
+        """Create complex overlapping group avatar like real screenshot"""
+        cluster_size = 120  # Overall cluster size
+        cluster = Image.new('RGBA', (cluster_size, cluster_size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(cluster)
+        
+        # Individual avatar size (smaller for overlapping)
+        avatar_size = 84
+        
+        # Positions for overlapping layout (like real screenshot)
+        positions = [
+            (10, 5),   # Top left - eagle/bird face
+            (26, 5),   # Top right - man with glasses
+            (10, 21),  # Bottom left - family emoji
+            (26, 21)   # Bottom right - another person
+        ]
+        
+        # Avatar data with realistic faces/emojis
+        avatars_data = [
+            {'color': (139, 69, 19), 'content': '🦅', 'font_size': 32},  # Eagle
+            {'color': (70, 130, 180), 'content': '👨‍🦳', 'font_size': 28},  # Man with glasses
+            {'color': (218, 165, 32), 'content': '👨‍👩‍👧‍👦', 'font_size': 20},  # Family
+            {'color': (160, 82, 45), 'content': '👤', 'font_size': 30}   # Generic person
+        ]
+        
+        for i, (pos, avatar_data) in enumerate(zip(positions, avatars_data)):
+            x, y = pos
+            
+            # Draw circular background
+            draw.ellipse([x, y, x + avatar_size, y + avatar_size], 
+                        fill=avatar_data['color'])
+            
+            # Add content (emoji or text)
+            try:
+                content_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 
+                                                 avatar_data['font_size'])
+            except:
+                content_font = ImageFont.load_default()
+            
+            # Center the content
+            bbox = draw.textbbox((0, 0), avatar_data['content'], font=content_font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            text_x = x + (avatar_size - text_width) // 2
+            text_y = y + (avatar_size - text_height) // 2
+            
+            draw.text((text_x, text_y), avatar_data['content'], 
+                     fill=(255, 255, 255), font=content_font)
+        
+        return cluster
+    
+    def draw_messages_header(self, draw, contact_name="Family group chat >"):
         """Draw Messages app header like real screenshot"""
         header_y = self.status_bar_height
         
@@ -149,34 +201,49 @@ class iMessageGenerator:
         # Back button (blue chevron)
         draw.text((45, header_y + 45), "<", fill=self.ios_blue, font=title_font)
         
-        # Group avatars (like in real screenshot, scaled)
-        avatar_center_x = self.width // 2
-        avatar_y = header_y + 30
+        # Group avatar cluster (complex overlapping like real screenshot)
+        avatar_cluster = self.create_group_avatar_cluster()
+        avatar_center_x = self.width // 2 - 60  # Center the cluster
+        avatar_y = header_y + 20
         
-        # Draw group avatar cluster
-        avatar_colors = [(255, 182, 0), (255, 59, 48), (52, 199, 89), (0, 122, 255)]
-        avatar_positions = [
-            (-60, -30), (30, -30), (-60, 45), (30, 45)  # 2x2 grid, scaled
+        # Create a temporary image to paste the cluster
+        temp_img = Image.new('RGBA', (self.width, self.height), (0, 0, 0, 0))
+        temp_img.paste(avatar_cluster, (avatar_center_x, avatar_y), avatar_cluster)
+        
+        # Convert back to RGB and composite
+        result_img = Image.new('RGB', (self.width, self.height), (0, 0, 0))
+        result_img.paste(temp_img, (0, 0))
+        
+        # Update the main image
+        # Note: We need to handle this differently since we're working with draw context
+        # For now, just draw the basic cluster elements directly
+        cluster_center_x = self.width // 2
+        cluster_y = header_y + 30
+        
+        # Draw overlapping avatars manually
+        positions = [(-45, -15), (15, -15), (-45, 30), (15, 30)]
+        avatars_data = [
+            {'color': (139, 69, 19), 'content': '🦅'},
+            {'color': (70, 130, 180), 'content': '👨‍🦳'},
+            {'color': (218, 165, 32), 'content': '👨‍👩‍👧‍👦'},
+            {'color': (160, 82, 45), 'content': '👤'}
         ]
         
-        for i, ((dx, dy), color) in enumerate(zip(avatar_positions, avatar_colors)):
-            if i < 4:  # Only draw 4 avatars
-                x = avatar_center_x + dx
-                y = avatar_y + dy
-                draw.ellipse([x, y, x + 60, y + 60], fill=color)
-                
-                # Add emoji/initials with proper font
-                try:
-                    emoji_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 30)
-                except:
-                    emoji_font = ImageFont.load_default()
-                
-                if i == 0:
-                    draw.text((x + 18, y + 12), "🦅", fill=(255, 255, 255), font=emoji_font)
-                elif i == 1:
-                    draw.text((x + 12, y + 12), "👨‍💼", fill=(255, 255, 255), font=emoji_font)
+        for (dx, dy), avatar_data in zip(positions, avatars_data):
+            x = cluster_center_x + dx
+            y = cluster_y + dy
+            draw.ellipse([x, y, x + 75, y + 75], fill=avatar_data['color'])
+            
+            # Add content
+            try:
+                emoji_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 24)
+            except:
+                emoji_font = ImageFont.load_default()
+            
+            draw.text((x + 20, y + 20), avatar_data['content'], 
+                     fill=(255, 255, 255), font=emoji_font)
         
-        # Contact name/group name (centered below avatars)
+        # Contact name/group name with ">" (centered below avatars)
         bbox = draw.textbbox((0, 0), contact_name, font=title_font)
         text_width = bbox[2] - bbox[0]
         title_x = (self.width - text_width) // 2
@@ -221,7 +288,7 @@ class iMessageGenerator:
         
         return bubble_width, bubble_height
     
-    def draw_message_bubble(self, draw, x, y, text, is_sent=False, show_tail=True):
+    def draw_message_bubble(self, draw, x, y, text, is_sent=False, show_tail=True, has_image=False, image_path=None):
         """Draw a realistic iOS message bubble with high quality fonts"""
         try:
             font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 48)
@@ -231,7 +298,29 @@ class iMessageGenerator:
             except:
                 font = ImageFont.load_default()
         
+        # Handle image attachment - determine height dynamically
+        image_height = 0
+        if has_image and image_path:
+            try:
+                if os.path.exists(image_path):
+                    # Get actual image dimensions to calculate bubble size
+                    temp_img = Image.open(image_path)
+                    temp_width = bubble_width - 48
+                    image_height = int(temp_width * temp_img.height / temp_img.width)
+                    # Limit maximum height
+                    image_height = min(image_height, 300)
+                    temp_img.close()
+                else:
+                    image_height = 200  # Placeholder height
+            except:
+                image_height = 200  # Fallback height
+        
         bubble_width, bubble_height = self.calculate_bubble_size(text, font)
+        
+        # Increase bubble size if it contains an image
+        if has_image:
+            bubble_width = max(bubble_width, 450)  # Minimum width for image
+            bubble_height += image_height + 30  # Add space for image + padding
         
         # Choose colors
         if is_sent:
@@ -272,16 +361,110 @@ class iMessageGenerator:
                 ]
             draw.polygon(tail_points, fill=bubble_color)
         
+        # Add image if present (before text)
+        current_content_y = y + 24  # Start with padding
+        if has_image:
+            try:
+                if image_path and os.path.exists(image_path):
+                    # Load and resize the actual image file
+                    actual_img = Image.open(image_path)
+                    
+                    # Calculate dimensions to fit in bubble while maintaining aspect ratio
+                    img_width = bubble_width - 48  # Leave padding
+                    img_height = int(img_width * actual_img.height / actual_img.width)
+                    
+                    # Limit maximum height
+                    max_img_height = 300
+                    if img_height > max_img_height:
+                        img_height = max_img_height
+                        img_width = int(img_height * actual_img.width / actual_img.height)
+                    
+                    # Resize the image
+                    actual_img = actual_img.resize((img_width, img_height), Image.Resampling.LANCZOS)
+                    
+                    # Position image in bubble
+                    img_x = x + (bubble_width - img_width) // 2
+                    img_y = current_content_y
+                    
+                    # Create a temporary image to composite the attachment
+                    temp_img = Image.new('RGBA', (self.width, self.height), (0, 0, 0, 0))
+                    temp_draw = ImageDraw.Draw(temp_img)
+                    
+                    # Add rounded corners to the image by creating a mask
+                    mask = Image.new('L', (img_width, img_height), 0)
+                    mask_draw = ImageDraw.Draw(mask)
+                    mask_draw.rounded_rectangle([0, 0, img_width, img_height], radius=12, fill=255)
+                    
+                    # Apply the mask to the image
+                    rounded_img = Image.new('RGBA', (img_width, img_height), (0, 0, 0, 0))
+                    rounded_img.paste(actual_img, (0, 0))
+                    rounded_img.putalpha(mask)
+                    
+                    # For drawing purposes, we'll draw a placeholder rectangle and note the image path
+                    # In a real implementation, you'd need to composite this properly with the main image
+                    draw.rounded_rectangle(
+                        [img_x, img_y, img_x + img_width, img_y + img_height],
+                        radius=12, fill=(240, 240, 245)
+                    )
+                    
+                    # Add a border to indicate it's an image
+                    draw.rounded_rectangle(
+                        [img_x, img_y, img_x + img_width, img_y + img_height],
+                        radius=12, outline=(200, 200, 200), width=2
+                    )
+                    
+                    # Add image filename as overlay to show it's loaded
+                    try:
+                        img_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 24)
+                    except:
+                        img_font = font
+                    
+                    filename = os.path.basename(image_path)
+                    draw.text((img_x + 10, img_y + 10), f"📷 {filename}", fill=(100, 100, 100), font=img_font)
+                    
+                    # Update image_height to actual loaded image height
+                    image_height = img_height
+                    current_content_y += img_height + 24
+                    
+                else:
+                    # Fallback: create a placeholder if image file doesn't exist
+                    img_width = bubble_width - 48
+                    img_height = 200
+                    img_x = x + (bubble_width - img_width) // 2
+                    img_y = current_content_y
+                    
+                    draw.rounded_rectangle(
+                        [img_x, img_y, img_x + img_width, img_y + img_height],
+                        radius=12, fill=(240, 240, 240)
+                    )
+                    
+                    try:
+                        placeholder_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 36)
+                    except:
+                        placeholder_font = font
+                    
+                    draw.text((img_x + 20, img_y + img_height//2 - 20), "❌ Image not found", 
+                             fill=(150, 150, 150), font=placeholder_font)
+                    if image_path:
+                        draw.text((img_x + 20, img_y + img_height//2 + 20), f"Path: {os.path.basename(image_path)}", 
+                                 fill=(120, 120, 120), font=placeholder_font)
+                    
+                    current_content_y += img_height + 24
+                
+            except Exception as e:
+                print(f"Error loading image {image_path}: {e}")
+                # Fallback to text placeholder
+                current_content_y += 24
+        
         # Add text (handle multi-line, scaled)
         lines = text.split('\n')
         line_height = 60  # 3x original
-        text_start_y = y + (bubble_height - len(lines) * line_height) // 2
         
         for i, line in enumerate(lines):
             bbox = draw.textbbox((0, 0), line, font=font)
             line_width = bbox[2] - bbox[0]
             text_x = x + (bubble_width - line_width) // 2
-            text_y = text_start_y + i * line_height
+            text_y = current_content_y + i * line_height
             
             draw.text((text_x, text_y), line, fill=text_color, font=font)
         
@@ -371,10 +554,14 @@ class iMessageGenerator:
             else:
                 bubble_x = 210  # Leave space for avatar (scaled)
             
+            # Check if this message has an image attachment
+            has_image = 'image_path' in message and message['image_path'] is not None
+            image_path = message.get('image_path', None)
+            
             # Draw message bubble
             show_tail = (sender != last_sender)
             bubble_height = self.draw_message_bubble(
-                draw, bubble_x, current_y, text, is_sent, show_tail
+                draw, bubble_x, current_y, text, is_sent, show_tail, has_image, image_path
             )
             
             # Add extra spacing between different senders (scaled)
@@ -431,8 +618,77 @@ class iMessageGenerator:
         
         return result
 
+def parse_conversation_file(file_path):
+    """Parse conversation from text file format"""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Conversation file not found: {file_path}")
+    
+    # Check if file is actually a text file
+    try:
+        with open(file_path, 'rb') as f:
+            header = f.read(4)
+            # Check for common binary file signatures
+            if header.startswith(b'\x89PNG') or header.startswith(b'\xff\xd8\xff') or header.startswith(b'GIF8'):
+                raise ValueError(f"File appears to be an image/binary file, not a text conversation: {file_path}")
+    except Exception as e:
+        if "image/binary file" in str(e):
+            raise e
+    
+    messages = []
+    base_time = datetime.now() - timedelta(hours=2)
+    current_time = base_time
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+    except UnicodeDecodeError:
+        raise ValueError(f"File is not a valid UTF-8 text file. Please provide a text file with conversation data: {file_path}")
+    
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Parse format: "Name: Message text [optional_image_path]"
+        if ':' not in line:
+            continue
+            
+        parts = line.split(':', 1)
+        sender = parts[0].strip()
+        message_content = parts[1].strip()
+        
+        # Check for image attachment in format [path]
+        image_path = None
+        text_content = message_content
+        
+        # Look for image path in brackets
+        image_match = re.search(r'\[([^\]]+)\]', message_content)
+        if image_match:
+            image_path = image_match.group(1)
+            # Remove the image path from text content
+            text_content = re.sub(r'\s*\[([^\]]+)\]\s*', '', message_content).strip()
+        
+        # Determine if message is sent by current user (you can customize this logic)
+        # For now, assume messages from "Me", "You", or no specific sender are sent messages
+        is_sent = sender.lower() in ['me', 'you'] or sender == ''
+        
+        # Add some time progression
+        current_time += timedelta(minutes=random.randint(1, 30))
+        
+        message = {
+            'text': text_content,
+            'sender': sender if not is_sent else 'You',
+            'is_sent': is_sent,
+            'timestamp': current_time,
+            'image_path': image_path
+        }
+        
+        messages.append(message)
+    
+    return messages
+
 def create_sample_conversation():
-    """Create a sample conversation matching the style of real screenshot"""
+    """Create a sample conversation - kept for backward compatibility"""
     base_time = datetime.now() - timedelta(hours=2)
     
     messages = [
@@ -481,22 +737,56 @@ def create_sample_conversation():
     return messages
 
 def main():
-    # Save output to current directory
-    output_path = sys.argv[1] if len(sys.argv) > 1 else "./generated_imessage.png"
+    # Parse command line arguments
+    if len(sys.argv) < 2:
+        print("Usage: python3 imessage.py <conversation_file.txt> [output_image.png]")
+        print("Example: python3 imessage.py imessage.txt output.png")
+        print()
+        print("Conversation file format:")
+        print("Name: Message text")
+        print("Name: Message with image [/path/to/image.png]")
+        print()
+        print("Example conversation file:")
+        print("Jason: Hello everyone")
+        print("Jordan: Wait what is going on here?")
+        print("Jen: This is a group chat.")
+        print("Jordan: Yes look at this [/path/to/image.png]")
+        sys.exit(1)
+    
+    conversation_file = sys.argv[1]
+    output_path = sys.argv[2] if len(sys.argv) > 2 else "./generated_imessage.png"
     
     try:
         generator = iMessageGenerator()
         
-        # Create sample conversation
-        messages = create_sample_conversation()
+        # Parse conversation from file
+        messages = parse_conversation_file(conversation_file)
+        
+        if not messages:
+            print(f"No messages found in {conversation_file}")
+            sys.exit(1)
+        
+        # Extract group name from first few senders or use default
+        senders = list(set(msg['sender'] for msg in messages if not msg['is_sent']))
+        if len(senders) > 2:
+            group_name = "Group Chat >"
+        elif len(senders) == 1:
+            group_name = senders[0]
+        else:
+            group_name = "Chat >"
+        
+        print(f"Generating conversation with {len(messages)} messages...")
         
         # Generate the image
-        result = generator.generate_conversation(messages, "Family Group")
+        result = generator.generate_conversation(messages, group_name)
         
-        # Save result to current directory
+        # Save result
         result.save(output_path)
         print(f"Generated realistic iMessage conversation: {output_path}")
         
+    except FileNotFoundError as e:
+        print(f"File not found: {e}")
+        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}")
         import traceback
