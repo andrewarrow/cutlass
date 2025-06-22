@@ -84,6 +84,13 @@ func HandleFXStaticImageCommandWithColor(args []string, fontColor string) {
 	handleFXStaticImageCommandInternal(args, rgbaColor)
 }
 
+// HandleFXStaticImageCommandWithColorAndDuration processes a PNG image and generates FCPXML with dynamic animation effects, custom font color, and duration
+func HandleFXStaticImageCommandWithColorAndDuration(args []string, fontColor string, duration float64) {
+	// Convert color name to RGBA format
+	rgbaColor := colorNameToRGBA(fontColor)
+	handleFXStaticImageCommandInternalWithDuration(args, rgbaColor, duration)
+}
+
 // HandleFXStaticImageCommand processes a PNG image and generates FCPXML with dynamic animation effects
 //
 // 🎬 CRITICAL: Follows CLAUDE.md patterns for crash-safe FCPXML generation:
@@ -154,6 +161,79 @@ func handleFXStaticImageCommandInternal(args []string, fontColor string) {
 	duration := 10.0
 	if effectType == "word-bounce" {
 		duration = 9.0
+	}
+
+	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType, fontColor); err != nil {
+		fmt.Printf("Error generating FX static image: %v\n", err)
+		return
+	}
+
+	totalDuration := duration * float64(len(imageFiles))
+	fmt.Printf("✅ Generated dynamic FCPXML: %s\n", outputFile)
+	fmt.Printf("📸 Images: %d files, %.1f seconds each\n", len(imageFiles), duration)
+	fmt.Printf("🎬 Total Duration: %.1f seconds with '%s' animation effects\n", totalDuration, effectType)
+	fmt.Printf("🎯 Ready to import into Final Cut Pro for professional video content\n")
+}
+
+// Internal function that handles the actual processing with custom duration
+func handleFXStaticImageCommandInternalWithDuration(args []string, fontColor string, customDuration float64) {
+	if len(args) < 1 {
+		fmt.Println("Usage: fx-static-image <image.png|image1.png,image2.png> [output.fcpxml] [effect-type]")
+		fmt.Println("Standard effects: shake, perspective, flip, 360-tilt, 360-pan, light-rays, glow, cinematic (default)")
+		fmt.Println("Creative effects: parallax, breathe, pendulum, elastic, spiral, figure8, heartbeat, wind, kaleido, particle-emitter")
+		fmt.Println("Advanced effects: inner-collapse (digital mind breakdown with complex multi-layer animation)")
+		fmt.Println("Cinematic effects: shatter-archive (nostalgic stop-motion with analog photography decay)")
+		fmt.Println("Text effects: word-bounce (use WORDS='anger,tattle,entertainment,compilation' env var)")
+		fmt.Println("Special effects:")
+		fmt.Println("  potpourri (cycles through all effects at 1-second intervals)")
+		fmt.Println("  variety-pack (random effect per image, great for multiple images)")
+		fmt.Println("Multiple images: Each image gets specified duration with the effect applied")
+		fmt.Println("Example: WORDS='hello,world,test,demo' cutlass fx-static-image image.png word-bounce -d 20")
+		return
+	}
+
+	imageFiles := strings.Split(args[0], ",")
+
+	// Default output file in ./data directory
+	firstImage := imageFiles[0]
+	imageName := strings.TrimSuffix(filepath.Base(firstImage), filepath.Ext(firstImage))
+	outputFile := filepath.Join("./data", imageName+"_fx.fcpxml")
+	if len(imageFiles) > 1 {
+		outputFile = "./data/multi_fx.fcpxml"
+	}
+	effectType := "cinematic"
+
+	// Debug: show all arguments
+	fmt.Printf("🔍 Arguments received: %v\n", args)
+	fmt.Printf("📸 Image files: %v\n", imageFiles)
+
+	// Smart argument parsing: detect if arg1 is an effect type or output file
+	if len(args) > 1 {
+		arg1 := args[1]
+		// Check if arg1 looks like an effect type (no file extension)
+		if !strings.Contains(arg1, ".") && isValidEffectType(arg1) {
+			effectType = arg1
+			fmt.Printf("🎯 Detected '%s' as effect type in position 1\n", effectType)
+		} else {
+			outputFile = arg1
+			fmt.Printf("📁 Using '%s' as output file\n", outputFile)
+			if len(args) > 2 {
+				effectType = args[2]
+				fmt.Printf("🎯 Using '%s' as effect type in position 2\n", effectType)
+			}
+		}
+	}
+
+	// Use custom duration for word-bounce effect, or default durations for others
+	duration := customDuration
+	if effectType != "word-bounce" {
+		// For non-word-bounce effects, use default durations
+		duration = 10.0
+		if effectType == "word-bounce" {
+			duration = 9.0
+		}
+	} else {
+		fmt.Printf("⏱️  Using custom duration: %.1f seconds for word-bounce effect\n", duration)
 	}
 
 	if err := GenerateFXStaticImages(imageFiles, outputFile, duration, effectType, fontColor); err != nil {

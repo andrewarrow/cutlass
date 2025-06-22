@@ -234,11 +234,16 @@ cutlass utils fx-static-image photo.png parallax
 Multiple images (10 seconds each):
 cutlass utils fx-static-image image1.png,image2.png,image3.png output.fcpxml potpourri
 cutlass utils fx-static-image photo1.png,photo2.png heartbeat
-cutlass utils fx-static-image a.png,b.png,c.png,d.png variety-pack`,
+cutlass utils fx-static-image a.png,b.png,c.png,d.png variety-pack
+
+Word-bounce with custom duration:
+cutlass utils fx-static-image image.png word-bounce -c blue -d 20
+WORDS='hello,world,test' cutlass utils fx-static-image image.png word-bounce -d 15`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fontColor, _ := cmd.Flags().GetString("font-color")
-		utils.HandleFXStaticImageCommandWithColor(args, fontColor)
+		duration, _ := cmd.Flags().GetFloat64("duration")
+		utils.HandleFXStaticImageCommandWithColorAndDuration(args, fontColor, duration)
 		return nil
 	},
 }
@@ -299,4 +304,5 @@ func init() {
 	
 	// Add flags for fx-static-image command
 	fxStaticImageCmd.Flags().StringP("font-color", "c", "pink", "Font color as English name (red, blue, green, yellow, etc.) or RGBA values (0-1 format)")
+	fxStaticImageCmd.Flags().Float64P("duration", "d", 9.0, "Duration in seconds for word-bounce effect (default: 9.0)")
 }
