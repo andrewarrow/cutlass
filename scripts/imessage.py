@@ -1,353 +1,506 @@
 #!/usr/bin/env python3
 """
-iMessage Screenshot Editor
-Removes text from iPhone message bubbles and replaces with test messages
+Realistic iMessage Screenshot Generator
+Creates authentic-looking iPhone Messages conversations from scratch
 """
 
 from PIL import Image, ImageDraw, ImageFont
 import sys
 import os
+import random
+from datetime import datetime, timedelta
+import colorsys
 
-class iMessageEditor:
-    def __init__(self, image_path):
-        self.image = Image.open(image_path)
-        self.width, self.height = self.image.size
-        self.draw = ImageDraw.Draw(self.image)
+class iMessageGenerator:
+    def __init__(self, background_path=None):
+        # Use high resolution like original screenshot
+        self.width, self.height = 1179, 2556  # High res iPhone dimensions
+        self.phone_bg = Image.new('RGB', (self.width, self.height), (0, 0, 0))
         
-        # iPhone message bubble colors (RGB)
-        self.blue_bubble = (0, 122, 255)  # iOS blue (sent messages)
-        self.gray_bubble_light = (229, 229, 234)  # iOS gray (light mode)
-        self.gray_bubble_dark = (60, 60, 67)  # iOS gray (dark mode)
-        self.white_text = (255, 255, 255)
-        self.black_text = (0, 0, 0)
+        # iOS Colors (exact values)
+        self.ios_blue = (0, 122, 255)
+        self.ios_gray_dark = (60, 60, 67)
+        self.ios_gray_light = (229, 229, 234)
+        self.ios_background = (0, 0, 0)  # Dark mode
+        self.ios_text_primary = (255, 255, 255)
+        self.ios_text_secondary = (174, 174, 178)
         
-        # Detect if this is dark mode based on background
-        self.is_dark_mode = self._detect_dark_mode()
-        
-    def find_message_bubbles(self):
-        """
-        Detect both blue and gray message bubbles in the image
-        Returns list of tuples: (bubble_region, bubble_type)
-        bubble_type: 'blue' for sent messages, 'gray' for received messages
-        """
-        bubbles = []
-        pixels = self.image.load()
-        
-        # Scan for message bubble regions
-        visited = set()
-        
-        for y in range(self.height):
-            for x in range(self.width):
-                if (x, y) in visited:
-                    continue
-                    
-                pixel = pixels[x, y]
-                bubble_type = None
-                
-                # Check if pixel matches bubble colors
-                if self._is_blue_bubble_color(pixel):
-                    bubble_type = 'blue'
-                elif self._is_gray_bubble_color(pixel):
-                    bubble_type = 'gray'
-                
-                if bubble_type:
-                    bubble_region = self._trace_bubble_region(x, y, pixels, visited, bubble_type)
-                    if bubble_region and self._is_valid_bubble_size(bubble_region):
-                        bubbles.append((bubble_region, bubble_type))
-        
-        return bubbles
+        # Layout constants (scaled for high resolution)
+        self.status_bar_height = 150
+        self.header_height = 360
+        self.message_area_start = self.status_bar_height + self.header_height
+        self.message_padding = 60
+        self.avatar_size = 96  # 3x original size
+        self.bubble_max_width = 750  # 3x original size
+        self.bubble_min_width = 180
     
-    def _detect_dark_mode(self):
-        """Detect if screenshot is in dark mode by sampling background pixels"""
-        # Sample pixels from top area (status bar background)
-        sample_pixels = []
-        for y in range(50, 100):  # Sample from status bar area
-            for x in range(50, self.width - 50, 20):
-                if x < self.width and y < self.height:
-                    pixel = self.image.getpixel((x, y))
-                    if len(pixel) >= 3:
-                        brightness = sum(pixel[:3]) / 3
-                        sample_pixels.append(brightness)
+    def create_realistic_avatar(self, person_name):
+        """Generate a realistic-looking avatar"""
+        size = self.avatar_size
+        avatar = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(avatar)
         
-        if sample_pixels:
-            avg_brightness = sum(sample_pixels) / len(sample_pixels)
-            return avg_brightness < 100  # Dark if average brightness is low
-        return False
-    
-    def _is_blue_bubble_color(self, pixel):
-        """Check if pixel color matches iOS blue bubble (with tolerance)"""
-        if len(pixel) < 3:
-            return False
-        r, g, b = pixel[:3]
+        # Generate a consistent color based on name
+        hash_val = hash(person_name) % 360
+        hue = hash_val / 360.0
+        rgb = colorsys.hsv_to_rgb(hue, 0.7, 0.9)
+        color = tuple(int(c * 255) for c in rgb)
         
-        # iOS blue with tolerance
-        target_r, target_g, target_b = self.blue_bubble
-        tolerance = 40
+        # Draw circle background
+        draw.ellipse([0, 0, size, size], fill=color)
         
-        return (abs(r - target_r) <= tolerance and 
-                abs(g - target_g) <= tolerance and 
-                abs(b - target_b) <= tolerance)
-    
-    def _is_gray_bubble_color(self, pixel):
-        """Check if pixel color matches iOS gray bubble (with tolerance)"""
-        if len(pixel) < 3:
-            return False
-        r, g, b = pixel[:3]
-        
-        # Choose target gray based on mode
-        if self.is_dark_mode:
-            target_r, target_g, target_b = self.gray_bubble_dark
-        else:
-            target_r, target_g, target_b = self.gray_bubble_light
-        
-        tolerance = 40
-        
-        return (abs(r - target_r) <= tolerance and 
-                abs(g - target_g) <= tolerance and 
-                abs(b - target_b) <= tolerance)
-    
-    def _trace_bubble_region(self, start_x, start_y, pixels, visited, bubble_type):
-        """Trace the boundaries of a message bubble"""
-        min_x = max_x = start_x
-        min_y = max_y = start_y
-        
-        stack = [(start_x, start_y)]
-        bubble_pixels = set()
-        
-        while stack:
-            x, y = stack.pop()
-            
-            if (x, y) in visited or x < 0 or x >= self.width or y < 0 or y >= self.height:
-                continue
-                
-            pixel = pixels[x, y]
-            
-            # Check if pixel matches the bubble type we're tracing
-            is_matching_pixel = False
-            if bubble_type == 'blue':
-                is_matching_pixel = self._is_blue_bubble_color(pixel)
-            elif bubble_type == 'gray':
-                is_matching_pixel = self._is_gray_bubble_color(pixel)
-            
-            if not is_matching_pixel:
-                continue
-                
-            visited.add((x, y))
-            bubble_pixels.add((x, y))
-            
-            min_x = min(min_x, x)
-            max_x = max(max_x, x)
-            min_y = min(min_y, y)
-            max_y = max(max_y, y)
-            
-            # Add neighbors
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                stack.append((x + dx, y + dy))
-        
-        if len(bubble_pixels) > 200:  # Minimum size for a bubble
-            return (min_x, min_y, max_x - min_x, max_y - min_y)
-        return None
-    
-    def _is_valid_bubble_size(self, region):
-        """Check if region is a reasonable size for a message bubble"""
-        x, y, width, height = region
-        return width > 50 and height > 20 and width < self.width * 0.8
-    
-    def clear_bubble_text(self, bubble_region, bubble_type):
-        """Clear text from inside a message bubble by filling with appropriate bubble color"""
-        x, y, width, height = bubble_region
-        
-        # Create a mask for the rounded rectangle shape
-        bubble_img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
-        bubble_draw = ImageDraw.Draw(bubble_img)
-        
-        # Choose color based on bubble type
-        if bubble_type == 'blue':
-            fill_color = self.blue_bubble + (255,)
-        else:  # gray
-            if self.is_dark_mode:
-                fill_color = self.gray_bubble_dark + (255,)
-            else:
-                fill_color = self.gray_bubble_light + (255,)
-        
-        # Draw rounded rectangle with appropriate color
-        corner_radius = min(width, height) // 4
-        bubble_draw.rounded_rectangle(
-            [0, 0, width, height], 
-            radius=corner_radius, 
-            fill=fill_color
-        )
-        
-        # Paste the clean bubble back
-        self.image.paste(bubble_img, (x, y), bubble_img)
-    
-    def add_text_to_bubble(self, bubble_region, text, bubble_type):
-        """Add text to a message bubble with appropriate text color"""
-        x, y, width, height = bubble_region
-        
-        # Try to load system font, fall back to PIL default
+        # Add initials with proper high-res font
         try:
-            font_size = max(12, min(height // 3, 18))
-            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", font_size)
+            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Bold.otf", 42)
         except:
             try:
-                font = ImageFont.truetype("arial.ttf", font_size)
+                font = ImageFont.truetype("Arial.ttf", 42)
             except:
                 font = ImageFont.load_default()
         
-        # Calculate text position (centered)
-        bbox = self.draw.textbbox((0, 0), text, font=font)
+        initials = "".join([word[0].upper() for word in person_name.split()[:2]])
+        bbox = draw.textbbox((0, 0), initials, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         
-        text_x = x + (width - text_width) // 2
-        text_y = y + (height - text_height) // 2
+        text_x = (size - text_width) // 2
+        text_y = (size - text_height) // 2
         
-        # Choose text color based on bubble type and mode
-        if bubble_type == 'blue':
-            text_color = self.white_text  # White text on blue bubble
-        else:  # gray bubble
-            if self.is_dark_mode:
-                text_color = self.white_text  # White text on dark gray bubble
+        draw.text((text_x, text_y), initials, fill=(255, 255, 255), font=font)
+        
+        return avatar
+    
+    def draw_status_bar(self, draw):
+        """Draw iOS status bar like real screenshot"""
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Semibold.otf", 51)
+        except:
+            try:
+                font = ImageFont.truetype("Arial.ttf", 51)
+            except:
+                font = ImageFont.load_default()
+        
+        # Time (left side) - match real screenshot
+        time_str = "9:34"
+        draw.text((60, 45), time_str, fill=self.ios_text_primary, font=font)
+        
+        # Right side indicators (scaled for high res)
+        right_x = self.width - 270
+        
+        # Signal bars (using actual bars instead of dots)
+        bar_width = 9
+        bar_spacing = 12
+        bar_heights = [12, 18, 24, 30]  # Different heights for signal strength
+        
+        for i, height in enumerate(bar_heights):
+            x = right_x + i * (bar_width + bar_spacing)
+            y = 75 - height
+            draw.rectangle([x, y, x + bar_width, 75], fill=self.ios_text_primary)
+        
+        # WiFi symbol (text)
+        wifi_x = right_x + 60
+        try:
+            wifi_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 45)
+        except:
+            wifi_font = font
+        draw.text((wifi_x, 36), "📶", fill=self.ios_text_primary, font=wifi_font)
+        
+        # Battery (more realistic, scaled)
+        battery_x = right_x + 120
+        battery_width = 72
+        battery_height = 36
+        battery_y = 48
+        
+        # Battery outline
+        draw.rectangle([battery_x, battery_y, battery_x + battery_width, battery_y + battery_height], 
+                      outline=self.ios_text_primary, width=3)
+        
+        # Battery fill (72%)
+        fill_width = int(battery_width * 0.72) - 6
+        draw.rectangle([battery_x + 3, battery_y + 3, battery_x + 3 + fill_width, battery_y + battery_height - 3], 
+                      fill=self.ios_text_primary)
+        
+        # Battery tip
+        draw.rectangle([battery_x + battery_width, battery_y + 12, battery_x + battery_width + 6, battery_y + 24], 
+                      fill=self.ios_text_primary)
+        
+        # 72 text
+        try:
+            small_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 42)
+        except:
+            small_font = font
+        draw.text((battery_x + battery_width + 15, 45), "72", fill=self.ios_text_primary, font=small_font)
+    
+    def draw_messages_header(self, draw, contact_name="Family group chat"):
+        """Draw Messages app header like real screenshot"""
+        header_y = self.status_bar_height
+        
+        try:
+            title_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Semibold.otf", 51)
+            detail_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 45)
+        except:
+            try:
+                title_font = ImageFont.truetype("Arial.ttf", 51)
+                detail_font = ImageFont.truetype("Arial.ttf", 45)
+            except:
+                title_font = ImageFont.load_default()
+                detail_font = ImageFont.load_default()
+        
+        # Back button (blue chevron)
+        draw.text((45, header_y + 45), "<", fill=self.ios_blue, font=title_font)
+        
+        # Group avatars (like in real screenshot, scaled)
+        avatar_center_x = self.width // 2
+        avatar_y = header_y + 30
+        
+        # Draw group avatar cluster
+        avatar_colors = [(255, 182, 0), (255, 59, 48), (52, 199, 89), (0, 122, 255)]
+        avatar_positions = [
+            (-60, -30), (30, -30), (-60, 45), (30, 45)  # 2x2 grid, scaled
+        ]
+        
+        for i, ((dx, dy), color) in enumerate(zip(avatar_positions, avatar_colors)):
+            if i < 4:  # Only draw 4 avatars
+                x = avatar_center_x + dx
+                y = avatar_y + dy
+                draw.ellipse([x, y, x + 60, y + 60], fill=color)
+                
+                # Add emoji/initials with proper font
+                try:
+                    emoji_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 30)
+                except:
+                    emoji_font = ImageFont.load_default()
+                
+                if i == 0:
+                    draw.text((x + 18, y + 12), "🦅", fill=(255, 255, 255), font=emoji_font)
+                elif i == 1:
+                    draw.text((x + 12, y + 12), "👨‍💼", fill=(255, 255, 255), font=emoji_font)
+        
+        # Contact name/group name (centered below avatars)
+        bbox = draw.textbbox((0, 0), contact_name, font=title_font)
+        text_width = bbox[2] - bbox[0]
+        title_x = (self.width - text_width) // 2
+        draw.text((title_x, header_y + 150), contact_name, fill=self.ios_text_primary, font=title_font)
+        
+        # Video call icon (blue camera outline, scaled)
+        video_icon_x = self.width - 105
+        video_icon_y = header_y + 45
+        
+        # Draw camera outline
+        draw.rounded_rectangle([video_icon_x, video_icon_y, video_icon_x + 60, video_icon_y + 45], 
+                              radius=9, outline=self.ios_blue, width=6)
+        draw.polygon([(video_icon_x + 60, video_icon_y + 9), 
+                     (video_icon_x + 75, video_icon_y + 3), 
+                     (video_icon_x + 75, video_icon_y + 33),
+                     (video_icon_x + 60, video_icon_y + 27)], fill=self.ios_blue)
+    
+    def calculate_bubble_size(self, text, font):
+        """Calculate appropriate bubble size for text"""
+        # Create temporary draw to measure text
+        temp_img = Image.new('RGB', (1, 1))
+        temp_draw = ImageDraw.Draw(temp_img)
+        
+        # Handle multi-line text (scaled for high res)
+        lines = text.split('\n')
+        max_line_width = 0
+        total_height = 0
+        line_height = 60  # 3x original
+        
+        for line in lines:
+            bbox = temp_draw.textbbox((0, 0), line, font=font)
+            line_width = bbox[2] - bbox[0]
+            max_line_width = max(max_line_width, line_width)
+            total_height += line_height
+        
+        # Add padding (scaled)
+        padding_x = 48  # 3x original
+        padding_y = 36  # 3x original
+        
+        bubble_width = min(self.bubble_max_width, max(self.bubble_min_width, max_line_width + padding_x * 2))
+        bubble_height = max(108, total_height + padding_y * 2)  # 3x original
+        
+        return bubble_width, bubble_height
+    
+    def draw_message_bubble(self, draw, x, y, text, is_sent=False, show_tail=True):
+        """Draw a realistic iOS message bubble with high quality fonts"""
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 48)
+        except:
+            try:
+                font = ImageFont.truetype("Arial.ttf", 48)
+            except:
+                font = ImageFont.load_default()
+        
+        bubble_width, bubble_height = self.calculate_bubble_size(text, font)
+        
+        # Choose colors
+        if is_sent:
+            bubble_color = self.ios_blue
+            text_color = (255, 255, 255)
+        else:
+            bubble_color = self.ios_gray_dark
+            text_color = (255, 255, 255)
+        
+        # Adjust position for sent messages (right-aligned)
+        if is_sent:
+            x = self.width - bubble_width - self.message_padding
+        
+        # Draw main bubble body (scaled)
+        corner_radius = 54  # 3x original
+        draw.rounded_rectangle(
+            [x, y, x + bubble_width, y + bubble_height],
+            radius=corner_radius,
+            fill=bubble_color
+        )
+        
+        # Draw bubble tail (the little point, scaled)
+        if show_tail:
+            tail_size = 18  # 3x original
+            if is_sent:
+                # Right tail for sent messages
+                tail_points = [
+                    (x + bubble_width, y + bubble_height - 45),
+                    (x + bubble_width + tail_size, y + bubble_height - 24),
+                    (x + bubble_width, y + bubble_height - 24)
+                ]
             else:
-                text_color = self.black_text  # Black text on light gray bubble
+                # Left tail for received messages
+                tail_points = [
+                    (x, y + bubble_height - 45),
+                    (x - tail_size, y + bubble_height - 24),
+                    (x, y + bubble_height - 24)
+                ]
+            draw.polygon(tail_points, fill=bubble_color)
         
-        self.draw.text((text_x, text_y), text, fill=text_color, font=font)
+        # Add text (handle multi-line, scaled)
+        lines = text.split('\n')
+        line_height = 60  # 3x original
+        text_start_y = y + (bubble_height - len(lines) * line_height) // 2
+        
+        for i, line in enumerate(lines):
+            bbox = draw.textbbox((0, 0), line, font=font)
+            line_width = bbox[2] - bbox[0]
+            text_x = x + (bubble_width - line_width) // 2
+            text_y = text_start_y + i * line_height
+            
+            draw.text((text_x, text_y), line, fill=text_color, font=font)
+        
+        return bubble_height
     
-    def process_image(self, test_messages=None):
-        """
-        Main processing function:
-        1. Find message bubbles (both blue and gray)
-        2. Clear existing text
-        3. Add new test messages
-        """
-        if test_messages is None:
-            test_messages = ["Test1", "Test2", "Test3", "Test4", "Test5", "Test6", "Test7", "Test8"]
+    def draw_timestamp(self, draw, x, y, timestamp_text):
+        """Draw message timestamp with high quality fonts"""
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 36)
+        except:
+            try:
+                font = ImageFont.truetype("Arial.ttf", 36)
+            except:
+                font = ImageFont.load_default()
         
-        print(f"Dark mode detected: {self.is_dark_mode}")
+        bbox = draw.textbbox((0, 0), timestamp_text, font=font)
+        text_width = bbox[2] - bbox[0]
+        timestamp_x = (self.width - text_width) // 2
         
-        # Find all message bubbles
-        bubbles = self.find_message_bubbles()
+        draw.text((timestamp_x, y), timestamp_text, fill=self.ios_text_secondary, font=font)
         
-        if not bubbles:
-            print("No message bubbles found. Trying alternative method...")
-            # If no bubbles found, look for regions manually
-            bubbles = self._find_regions_manual()
+        return 45  # Height of timestamp (scaled)
+    
+    def generate_conversation(self, messages, contact_name="Family Group"):
+        """Generate a complete conversation"""
+        # Start with phone background
+        result = self.phone_bg.copy()
+        draw = ImageDraw.Draw(result)
         
-        print(f"Found {len(bubbles)} message bubble(s)")
+        # Fill entire screen with black background
+        draw.rectangle([0, 0, self.width, self.height], fill=self.ios_background)
         
-        # Sort bubbles by vertical position (top to bottom)
-        bubbles.sort(key=lambda x: x[0][1])  # Sort by y coordinate
+        # Draw status bar and header
+        self.draw_status_bar(draw)
+        self.draw_messages_header(draw, contact_name)
         
-        # Process each bubble
-        for i, (bubble_region, bubble_type) in enumerate(bubbles):
-            print(f"Processing bubble {i+1}: {bubble_type} at {bubble_region}")
+        # Draw messages
+        current_y = self.message_area_start + 20
+        last_sender = None
+        last_time = None
+        
+        # Create avatars for each unique sender
+        senders = set(msg.get('sender') for msg in messages if not msg.get('is_sent', False))
+        avatars = {}
+        for sender in senders:
+            if sender:
+                avatars[sender] = self.create_realistic_avatar(sender)
+        
+        for i, message in enumerate(messages):
+            text = message['text']
+            is_sent = message.get('is_sent', False)
+            sender = message.get('sender', 'You')
+            timestamp = message.get('timestamp')
             
-            # Clear existing text
-            self.clear_bubble_text(bubble_region, bubble_type)
+            # Add timestamp if significant time gap or first message
+            if timestamp and (last_time is None or 
+                             (timestamp - last_time).total_seconds() > 3600):  # 1 hour gap
+                time_str = timestamp.strftime("%a, %b %d at %I:%M %p").replace(" 0", " ")
+                timestamp_height = self.draw_timestamp(draw, 0, current_y, time_str)
+                current_y += timestamp_height + 20
+                last_time = timestamp
             
-            # Add new test message
-            if i < len(test_messages):
-                self.add_text_to_bubble(bubble_region, test_messages[i], bubble_type)
+            # Add sender name for received messages (if sender changed)
+            if not is_sent and sender != last_sender:
+                try:
+                    name_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 39)
+                except:
+                    try:
+                        name_font = ImageFont.truetype("Arial.ttf", 39)
+                    except:
+                        name_font = ImageFont.load_default()
+                
+                # Draw sender name (scaled position)
+                draw.text((210, current_y), sender.lower(), fill=self.ios_text_secondary, font=name_font)
+                current_y += 60
+            
+            # Add avatar for received messages (if sender changed)
+            avatar_height = 0
+            if not is_sent and sender != last_sender and sender in avatars:
+                avatar_x = self.message_padding
+                avatar_y = current_y
+                result.paste(avatars[sender], (avatar_x, avatar_y), avatars[sender])
+            
+            # Determine bubble position (scaled)
+            if is_sent:
+                bubble_x = 0  # Will be adjusted in draw_message_bubble
             else:
-                # If more bubbles than messages, cycle through messages
-                self.add_text_to_bubble(bubble_region, test_messages[i % len(test_messages)], bubble_type)
-    
-    def _find_regions_manual(self):
-        """Manual detection for message bubble regions when automatic detection fails"""
-        bubbles = []
-        
-        # Search the entire image systematically
-        step_size = 20
-        
-        for search_y in range(100, self.height - 100, step_size):
-            for search_x in range(50, self.width - 50, step_size):
-                pixel = self.image.getpixel((search_x, search_y))
-                
-                # Check for blue bubbles
-                if self._is_blue_bubble_color(pixel):
-                    bubble_width = min(300, self.width - search_x - 50)
-                    bubble_height = 60
-                    bubble_x = search_x - 20
-                    bubble_y = search_y - 20
-                    
-                    # Ensure bubble is within bounds
-                    bubble_x = max(0, min(bubble_x, self.width - bubble_width))
-                    bubble_y = max(0, min(bubble_y, self.height - bubble_height))
-                    
-                    region = (bubble_x, bubble_y, bubble_width, bubble_height)
-                    bubbles.append((region, 'blue'))
-                
-                # Check for gray bubbles
-                elif self._is_gray_bubble_color(pixel):
-                    bubble_width = min(300, self.width - search_x - 50)
-                    bubble_height = 60
-                    bubble_x = search_x - 20
-                    bubble_y = search_y - 20
-                    
-                    # Ensure bubble is within bounds
-                    bubble_x = max(0, min(bubble_x, self.width - bubble_width))
-                    bubble_y = max(0, min(bubble_y, self.height - bubble_height))
-                    
-                    region = (bubble_x, bubble_y, bubble_width, bubble_height)
-                    bubbles.append((region, 'gray'))
-        
-        # Remove duplicate/overlapping bubbles
-        filtered_bubbles = []
-        for bubble in bubbles:
-            region, bubble_type = bubble
-            x, y, w, h = region
+                bubble_x = 210  # Leave space for avatar (scaled)
             
-            # Check if this bubble overlaps significantly with existing ones
-            is_duplicate = False
-            for existing_region, _ in filtered_bubbles:
-                ex, ey, ew, eh = existing_region
-                
-                # Check for significant overlap
-                if (abs(x - ex) < 100 and abs(y - ey) < 40):
-                    is_duplicate = True
-                    break
+            # Draw message bubble
+            show_tail = (sender != last_sender)
+            bubble_height = self.draw_message_bubble(
+                draw, bubble_x, current_y, text, is_sent, show_tail
+            )
             
-            if not is_duplicate:
-                filtered_bubbles.append(bubble)
+            # Add extra spacing between different senders (scaled)
+            spacing = 45 if sender != last_sender else 24
+            current_y += bubble_height + spacing
+            last_sender = sender
         
-        return filtered_bubbles
+        # Draw message input area at bottom (scaled)
+        input_y = self.height - 240
+        
+        # Plus button (left, scaled)
+        plus_size = 90
+        plus_x = 45
+        plus_y = input_y + 15
+        draw.ellipse([plus_x, plus_y, plus_x + plus_size, plus_y + plus_size], 
+                    fill=(44, 44, 46))
+        
+        try:
+            plus_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 45)
+        except:
+            plus_font = ImageFont.load_default()
+        draw.text((plus_x + 24, plus_y + 15), "+", fill=self.ios_text_primary, font=plus_font)
+        
+        # Message input field (scaled)
+        input_field_x = plus_x + plus_size + 30
+        input_field_width = self.width - input_field_x - 180
+        draw.rounded_rectangle(
+            [input_field_x, input_y + 15, input_field_x + input_field_width, input_y + 105],
+            radius=54,
+            fill=(44, 44, 46)
+        )
+        
+        # iMessage placeholder text
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Regular.otf", 48)
+        except:
+            try:
+                font = ImageFont.truetype("Arial.ttf", 48)
+            except:
+                font = ImageFont.load_default()
+        
+        draw.text((input_field_x + 45, input_y + 36), "iMessage", fill=(99, 99, 102), font=font)
+        
+        # Microphone button (right, scaled)
+        mic_x = input_field_x + input_field_width + 30
+        draw.ellipse([mic_x, input_y + 15, mic_x + plus_size, input_y + 105], 
+                    fill=(44, 44, 46))
+        
+        try:
+            mic_font = ImageFont.truetype("/System/Library/Fonts/SF-Pro-Text-Medium.otf", 36)
+        except:
+            mic_font = font
+        draw.text((mic_x + 24, input_y + 24), "🎤", fill=self.ios_text_primary, font=mic_font)
+        
+        return result
+
+def create_sample_conversation():
+    """Create a sample conversation matching the style of real screenshot"""
+    base_time = datetime.now() - timedelta(hours=2)
     
-    def save(self, output_path):
-        """Save the processed image"""
-        self.image.save(output_path)
-        print(f"Saved processed image to: {output_path}")
+    messages = [
+        {
+            'text': 'these probably will change a bit but\nthese are my grades atm', 
+            'sender': 'jordan arrow',
+            'timestamp': base_time
+        },
+        {
+            'text': 'Wow!!!', 
+            'is_sent': True,
+            'timestamp': base_time + timedelta(minutes=2)
+        },
+        {
+            'text': 'Great job.', 
+            'is_sent': True,
+            'timestamp': base_time + timedelta(minutes=2, seconds=30)
+        },
+        {
+            'text': 'ok so monday is the deadline for\nteachers to put in grades', 
+            'sender': 'jordan arrow',
+            'timestamp': base_time + timedelta(hours=4)
+        },
+        {
+            'text': 'Looks great babe 🥰', 
+            'sender': 'Jen Arrow',
+            'timestamp': base_time + timedelta(hours=4, minutes=20)
+        },
+        {
+            'text': 'was the 1996 romeo and juliet the\none one of you wanted me to watch', 
+            'sender': 'jordan arrow',
+            'timestamp': base_time + timedelta(hours=4, minutes=25)
+        },
+        {
+            'text': 'Yes', 
+            'sender': 'Jen Arrow',
+            'timestamp': base_time + timedelta(hours=4, minutes=26)
+        },
+        {
+            'text': "i'm watching it in english rn", 
+            'sender': 'jordan arrow',
+            'timestamp': base_time + timedelta(hours=8)
+        }
+    ]
+    
+    return messages
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python imessage.py <image_path> [output_path]")
-        print("Example: python imessage.py screenshot.png output.png")
-        sys.exit(1)
-    
-    input_path = sys.argv[1]
-    output_path = sys.argv[2] if len(sys.argv) > 2 else "imessage_output.png"
-    
-    if not os.path.exists(input_path):
-        print(f"Error: Image file '{input_path}' not found")
-        sys.exit(1)
+    # Save output to current directory
+    output_path = sys.argv[1] if len(sys.argv) > 1 else "./generated_imessage.png"
     
     try:
-        # Create editor instance
-        editor = iMessageEditor(input_path)
+        generator = iMessageGenerator()
         
-        # Define test messages
-        test_messages = ["Test1", "Test2", "Test3", "Test4", "Test5"]
+        # Create sample conversation
+        messages = create_sample_conversation()
         
-        # Process the image
-        editor.process_image(test_messages)
+        # Generate the image
+        result = generator.generate_conversation(messages, "Family Group")
         
-        # Save result
-        editor.save(output_path)
-        
-        print("Processing complete!")
+        # Save result to current directory
+        result.save(output_path)
+        print(f"Generated realistic iMessage conversation: {output_path}")
         
     except Exception as e:
-        print(f"Error processing image: {e}")
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 if __name__ == "__main__":
