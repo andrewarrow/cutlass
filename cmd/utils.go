@@ -242,6 +242,50 @@ cutlass utils fx-static-image a.png,b.png,c.png,d.png variety-pack`,
 	},
 }
 
+var findBeatsCmd = &cobra.Command{
+	Use:   "find-beats <file.wav>",
+	Short: "Detect dramatic musical changes and beat points in WAV audio files",
+	Long: `Analyze WAV audio files to detect dramatic changes in music such as forceful piano chords,
+sudden dynamics shifts, and other musical transitions.
+
+This command uses advanced audio analysis techniques to identify moments where the music
+has dramatic changes - perfect for timing video cuts, transitions, and effects.
+
+Detection Methods:
+- Amplitude Analysis: Detects sudden increases in volume/energy (like forceful piano chords)
+- Spectral Analysis: Identifies changes in frequency content (musical transitions)
+- Combined Analysis: Merges nearby detections for accurate timing
+
+The algorithm specifically looks for:
+🎹 Forceful piano chord strikes and dramatic volume changes
+🎵 Musical transitions between sections
+🥁 Percussive hits and rhythmic emphasis points
+🎶 Build-ups followed by dramatic drops or changes
+
+Output Format:
+Each detected change shows:
+- Timestamp in seconds (precise to milliseconds)
+- Intensity score (0.0 to 1.0, higher = more dramatic)
+- Detection type (amplitude, spectral, or combined)
+
+Requirements:
+- Input must be 16-bit PCM WAV format
+- Mono or stereo supported (stereo converted to mono)
+- Works best with music that has clear dynamic changes
+
+Example:
+cutlass utils find-beats song.wav
+
+Sample Output:
+1. Time: 15.234s | Intensity: 0.87 | Type: amplitude
+2. Time: 32.156s | Intensity: 0.92 | Type: spectral
+3. Time: 48.789s | Intensity: 0.95 | Type: combined`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return utils.HandleFindBeatsCommand(args)
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
 	utilsCmd.AddCommand(genaudioPlayCmd)
@@ -250,4 +294,5 @@ func init() {
 	utilsCmd.AddCommand(creativeTextCmd)
 	utilsCmd.AddCommand(addShadowTextCmd)
 	utilsCmd.AddCommand(fxStaticImageCmd)
+	utilsCmd.AddCommand(findBeatsCmd)
 }
