@@ -50,11 +50,12 @@ func handleFXStaticImageCommandInternal(args []string, fontColor string) {
 
 	imageFiles := strings.Split(args[0], ",")
 
-	// Default output file based on first image
+	// Default output file in ./data directory
 	firstImage := imageFiles[0]
-	outputFile := strings.TrimSuffix(firstImage, filepath.Ext(firstImage)) + "_fx.fcpxml"
+	imageName := strings.TrimSuffix(filepath.Base(firstImage), filepath.Ext(firstImage))
+	outputFile := filepath.Join("./data", imageName+"_fx.fcpxml")
 	if len(imageFiles) > 1 {
-		outputFile = "multi_fx.fcpxml"
+		outputFile = "./data/multi_fx.fcpxml"
 	}
 	effectType := "cinematic"
 

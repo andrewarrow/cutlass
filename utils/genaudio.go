@@ -148,11 +148,11 @@ func callChatterbox(sentence, audioFilename string) error {
 
 func callChatterboxWithVoice(sentence, audioFilename, voice string) error {
 	if voice == "" {
-		// No voice specified, use the original callChatterbox function
-		return callChatterbox(sentence, audioFilename)
+		// No voice specified, use a default voice
+		voice = "steve"
 	}
 
-	// Voice specified, use utah.py like genaudio-play does
+	// Use utah.py like genaudio-play does
 	cmd := exec.Command("/opt/miniconda3/envs/chatterbox/bin/python",
 		"/Users/aa/os/chatterbox/chatterbox/utah.py",
 		sentence,
