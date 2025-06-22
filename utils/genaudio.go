@@ -5,12 +5,14 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // VttSegment represents a segment from a VTT subtitle file
@@ -55,6 +57,9 @@ func HandleGenAudioCommand(args []string) {
 }
 
 func processSimpleTextFile(filename, voice string) error {
+	// Initialize random seed for voice selection
+	rand.Seed(time.Now().UnixNano())
+	
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %v", err)
@@ -146,10 +151,19 @@ func callChatterbox(sentence, audioFilename string) error {
 	return nil
 }
 
+func getRandomVoice() string {
+	voices := []string{
+		"agucchi", "algernon", "amanda", "archibald", "australian", "china", "deep", "doug", "drew", "dundee", "elsa",
+		"hank", "harry", "heather", "iran", "jane", "jessica", "karen", "kevin", "kosovo", "mike", "miss",
+		"mrs", "pepe", "peter", "rachel", "richie", "saltburn", "sara", "steve", "tommy", "vatra", "yoav",
+	}
+	return voices[rand.Intn(len(voices))]
+}
+
 func callChatterboxWithVoice(sentence, audioFilename, voice string) error {
 	if voice == "" {
-		// No voice specified, use a default voice
-		voice = "steve"
+		// No voice specified, use a random voice
+		voice = getRandomVoice()
 	}
 
 	// Use utah.py like genaudio-play does
