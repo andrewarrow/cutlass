@@ -574,6 +574,29 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 	
 	textStyleCounter := 1 // Global counter for unique text style IDs
 	
+	// Position tracking for each word (incremental movement)
+	wordPositions := make(map[string]struct {
+		x, y           int
+		directionX, directionY int
+	})
+	
+	// Initialize starting positions and directions for each word
+	for _, word := range words {
+		word = strings.TrimSpace(word)
+		if word == "" {
+			continue
+		}
+		wordPositions[word] = struct {
+			x, y           int
+			directionX, directionY int
+		}{
+			x: rand.Intn(400) - 200,  // Start in smaller range: -200 to +200
+			y: rand.Intn(300) - 150,  // Start in smaller range: -150 to +150
+			directionX: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
+			directionY: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
+		}
+	}
+	
 	for i, word := range words {
 		word = strings.TrimSpace(word)
 		if word == "" {
@@ -609,9 +632,46 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			
 			bladeDurationFCP := fcp.ConvertSecondsToFCPDuration(bladeDuration)
 			
-			// Generate random position for this blade (different for each cut) - much larger range like Info.fcpxml
-			randomX := rand.Intn(1400) - 700  // -700 to +700 pixels (much larger range like Info.fcpxml)
-			randomY := rand.Intn(1200) - 600   // -600 to +600 pixels (much larger range like Info.fcpxml)
+			// Update position incrementally for smooth movement (no jumps)
+			pos := wordPositions[word]
+			
+			// Move by moderate increments for smooth, visible movement  
+			moveSpeed := 8 + rand.Intn(5) // Random speed between 8-12 pixels
+			pos.x += pos.directionX * moveSpeed
+			pos.y += pos.directionY * moveSpeed
+			
+			// Bounce off boundaries (keep within reasonable screen bounds)
+			if pos.x > 600 {
+				pos.x = 600
+				pos.directionX = -1
+			} else if pos.x < -600 {
+				pos.x = -600
+				pos.directionX = 1
+			}
+			
+			if pos.y > 400 {
+				pos.y = 400
+				pos.directionY = -1
+			} else if pos.y < -400 {
+				pos.y = -400
+				pos.directionY = 1
+			}
+			
+			// Occasionally change direction for more organic movement (1% chance)
+			if rand.Intn(100) < 1 {
+				pos.directionX = []int{-1, 1}[rand.Intn(2)]
+			}
+			if rand.Intn(100) < 1 {
+				pos.directionY = []int{-1, 1}[rand.Intn(2)]
+			}
+			
+			// Update the position in the map
+			wordPositions[word] = pos
+			
+			// Use the updated position
+			currentX := pos.x
+			currentY := pos.y
+			
 			
 			// Create unique text style ID for each blade cut
 			textStyleID := fmt.Sprintf("ts%d", textStyleCounter)
@@ -637,11 +697,11 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 						Key:   "9999/10000/2/102",
 						Value: "0",
 					},
-					// Random position for bounce effect (key from sample)
+					// Incremental position for smooth bounce effect (key from sample)
 					{
 						Name:  "Position",
 						Key:   "9999/10003/13260/3296672360/1/100/101",
-						Value: fmt.Sprintf("%d %d", randomX, randomY),
+						Value: fmt.Sprintf("%d %d", currentX, currentY),
 					},
 					// Layout settings from three_words.fcpxml
 					{
@@ -754,7 +814,7 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			backgroundVideo.NestedTitles = append(backgroundVideo.NestedTitles, titleElement)
 			
 			fmt.Printf("🎯 Added word '%s' blade %d/%d in lane %d at position (%d, %d) at time %.2fs\n", 
-				word, bladeIndex+1, totalBlades, laneNum, randomX, randomY, bladeStartTime)
+				word, bladeIndex+1, totalBlades, laneNum, currentX, currentY, bladeStartTime)
 		}
 	}
 	
