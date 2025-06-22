@@ -1,1 +1,1 @@
-python3 main.py --title "hypnotherapist telling a non coder that they can learn to vibe code an app" --description ../data/trip.txt --privacy public --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --tags "vibe,vibecoding,coding,hypnotherapist" --related-video-id nfgxUhcaaRY  ~/Desktop/semicolon.mov
+python3 main.py --title "a snake, a blue alien, a yellow flower teach vibe coding a poem" --description ../data/trip.txt --privacy public --channel-id UCHEoWlkGf-nSVdNk9b6SR0g --tags "vibe,vibecoding,snake,flower,poem" --related-video-id nfgxUhcaaRY  ~/Desktop/snake3.mov
