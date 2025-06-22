@@ -6,13 +6,82 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
+// colorNameToRGBA converts English color names to RGBA values for FCPXML
+func colorNameToRGBA(colorName string) string {
+	colorMap := map[string]string{
+		// Basic colors
+		"red":     "1 0 0 1",
+		"green":   "0 1 0 1", 
+		"blue":    "0 0 1 1",
+		"yellow":  "1 1 0 1",
+		"cyan":    "0 1 1 1",
+		"magenta": "1 0 1 1",
+		"purple":  "0.5 0 0.5 1",
+		"orange":  "1 0.5 0 1",
+		"pink":    "0.985542 0.00945401 0.999181 1", // Default pink from original
+		"white":   "1 1 1 1",
+		"black":   "0 0 0 1",
+		"gray":    "0.5 0.5 0.5 1",
+		"grey":    "0.5 0.5 0.5 1",
+		
+		// Extended colors
+		"lime":        "0.5 1 0 1",
+		"navy":        "0 0 0.5 1",
+		"maroon":      "0.5 0 0 1",
+		"olive":       "0.5 0.5 0 1",
+		"teal":        "0 0.5 0.5 1",
+		"silver":      "0.75 0.75 0.75 1",
+		"gold":        "1 0.84 0 1",
+		"brown":       "0.6 0.3 0 1",
+		"turquoise":   "0.25 0.88 0.82 1",
+		"violet":      "0.93 0.51 0.93 1",
+		"indigo":      "0.29 0 0.51 1",
+		"coral":       "1 0.5 0.31 1",
+		"salmon":      "0.98 0.5 0.45 1",
+		"khaki":       "0.94 0.9 0.55 1",
+		"crimson":     "0.86 0.08 0.24 1",
+		"fuchsia":     "1 0 1 1",
+		"aqua":        "0 1 1 1",
+		"darkred":     "0.55 0 0 1",
+		"darkgreen":   "0 0.39 0 1",
+		"darkblue":    "0 0 0.55 1",
+		"lightred":    "1 0.7 0.7 1",
+		"lightgreen":  "0.7 1 0.7 1",
+		"lightblue":   "0.7 0.7 1 1",
+		"beige":       "0.96 0.96 0.86 1",
+		"ivory":       "1 1 0.94 1",
+		"lavender":    "0.9 0.9 0.98 1",
+		"mint":        "0.6 1 0.6 1",
+		"rose":        "1 0.75 0.8 1",
+	}
+	
+	// Check if the input is already in RGBA format (contains spaces and numbers)
+	rgbaPattern := regexp.MustCompile(`^[\d\.\s]+$`)
+	if rgbaPattern.MatchString(strings.TrimSpace(colorName)) {
+		return colorName // Already in RGBA format
+	}
+	
+	// Convert to lowercase for case-insensitive matching
+	colorName = strings.ToLower(strings.TrimSpace(colorName))
+	
+	if rgba, exists := colorMap[colorName]; exists {
+		return rgba
+	}
+	
+	// If color name not found, return default pink
+	return "0.985542 0.00945401 0.999181 1"
+}
+
 // HandleFXStaticImageCommandWithColor processes a PNG image and generates FCPXML with dynamic animation effects and custom font color
 func HandleFXStaticImageCommandWithColor(args []string, fontColor string) {
-	handleFXStaticImageCommandInternal(args, fontColor)
+	// Convert color name to RGBA format
+	rgbaColor := colorNameToRGBA(fontColor)
+	handleFXStaticImageCommandInternal(args, rgbaColor)
 }
 
 // HandleFXStaticImageCommand processes a PNG image and generates FCPXML with dynamic animation effects

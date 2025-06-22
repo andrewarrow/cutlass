@@ -59,7 +59,7 @@ func HandleGenAudioCommand(args []string) {
 func processSimpleTextFile(filename, voice string) error {
 	// Initialize random seed for voice selection
 	rand.Seed(time.Now().UnixNano())
-	
+
 	file, err := os.Open(filename)
 	if err != nil {
 		return fmt.Errorf("failed to open file: %v", err)
@@ -164,6 +164,7 @@ func callChatterboxWithVoice(sentence, audioFilename, voice string) error {
 	if voice == "" {
 		// No voice specified, use a random voice
 		voice = getRandomVoice()
+		fmt.Println(voice)
 	}
 
 	// Use utah.py like genaudio-play does

@@ -298,5 +298,5 @@ func init() {
 	utilsCmd.AddCommand(findBeatsCmd)
 	
 	// Add flags for fx-static-image command
-	fxStaticImageCmd.Flags().StringP("font-color", "c", "0.985542 0.00945401 0.999181 1", "Font color in FCPXML format (R G B A values 0-1, default: pink)")
+	fxStaticImageCmd.Flags().StringP("font-color", "c", "pink", "Font color as English name (red, blue, green, yellow, etc.) or RGBA values (0-1 format)")
 }
