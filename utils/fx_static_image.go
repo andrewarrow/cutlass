@@ -568,9 +568,9 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 	// Initialize random seed for positioning
 	rand.Seed(time.Now().UnixNano())
 	
-	// Create blade-cut animated text elements for each word (following three_words.fcpxml pattern)
-	totalBlades := 8 // Number of blade cuts per word for smooth movement
-	bladeDuration := 0.15 // Small blade duration in seconds for smooth illusion
+	// Create blade-cut animated text elements for each word (following Info.fcpxml pattern)
+	totalBlades := 60 // Many more blade cuts for continuous coverage like Info.fcpxml
+	bladeDuration := 0.166 // Blade duration to ensure no gaps (9 seconds / 60 blades ≈ 0.15s each)
 	
 	textStyleCounter := 1 // Global counter for unique text style IDs
 	
@@ -588,12 +588,30 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 		for bladeIndex := 0; bladeIndex < totalBlades; bladeIndex++ {
 			// Calculate timing for this blade cut
 			bladeStartTime := float64(bladeIndex) * (durationSeconds / float64(totalBlades))
-			bladeOffset := calculateAbsoluteTime(videoStartTime, bladeStartTime)
+			
+			// Use proper frame-aligned offset calculation
+			bladeOffset := videoStartTime
+			if bladeStartTime > 0 {
+				// Parse the video start time and add frame-aligned offset
+				var startNumerator, timeBase int
+				if _, err := fmt.Sscanf(videoStartTime, "%d/%ds", &startNumerator, &timeBase); err != nil {
+					startNumerator = 86399313
+					timeBase = 24000
+				}
+				
+				// Convert blade start time to frame-aligned offset using ConvertSecondsToFCPDuration
+				bladeOffsetDuration := fcp.ConvertSecondsToFCPDuration(bladeStartTime)
+				var offsetNumerator int
+				if _, err := fmt.Sscanf(bladeOffsetDuration, "%d/%ds", &offsetNumerator, &timeBase); err == nil {
+					bladeOffset = fmt.Sprintf("%d/%ds", startNumerator+offsetNumerator, timeBase)
+				}
+			}
+			
 			bladeDurationFCP := fcp.ConvertSecondsToFCPDuration(bladeDuration)
 			
-			// Generate random position for this blade (different for each cut)
-			randomX := rand.Intn(1000) - 500  // -500 to +500 pixels (larger range)
-			randomY := rand.Intn(800) - 400   // -400 to +400 pixels
+			// Generate random position for this blade (different for each cut) - much larger range like Info.fcpxml
+			randomX := rand.Intn(1400) - 700  // -700 to +700 pixels (much larger range like Info.fcpxml)
+			randomY := rand.Intn(1200) - 600   // -600 to +600 pixels (much larger range like Info.fcpxml)
 			
 			// Create unique text style ID for each blade cut
 			textStyleID := fmt.Sprintf("ts%d", textStyleCounter)
