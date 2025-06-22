@@ -149,8 +149,8 @@ func HandleFindBeatsCommand(args []string) error {
 			i+1, beat.Timestamp, beat.Intensity, beat.Type)
 	}
 
-	// Generate FCPXML with alternating colors
-	err = GenerateBeatsVisualization(wavFile, beats, outputFile)
+	// Generate FCPXML with alternating colors using PNG backgrounds
+	err = GenerateBeatsVisualizationPNG(wavFile, beats, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
@@ -499,7 +499,7 @@ func (a *AudioAnalyzer) filterStrongBeats(beats []BeatDetection, minIntensity fl
 	return filtered
 }
 
-// GenerateBeatsVisualization creates an FCPXML with alternating background colors and audio
+// GenerateBeatsVisualization creates an FCPXML with alternating background colors and audio using PNG images
 func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFile string) error {
 	// Get absolute path for WAV file
 	absWavPath, err := filepath.Abs(wavFile)
@@ -510,6 +510,12 @@ func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFil
 	// Check if audio file exists
 	if _, err := os.Stat(absWavPath); os.IsNotExist(err) {
 		return fmt.Errorf("audio file does not exist: %s", absWavPath)
+	}
+
+	// Create solid color PNG files for backgrounds
+	err = createColorPNGs()
+	if err != nil {
+		return fmt.Errorf("failed to create color PNGs: %v", err)
 	}
 
 	// Calculate total duration from last beat + some extra time
@@ -604,7 +610,7 @@ func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFil
 				Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
 				Name:     colorName,
 				Duration: fcp.ConvertSecondsToFCPDuration(segmentDuration),
-				Start:    "86486400/24000s", // Use standard start time like samples
+				Start:    "0s", // Use background start time like creative-text
 				Lane:     "1", // Put on connected storyline above audio
 			}
 
@@ -637,7 +643,7 @@ func GenerateBeatsVisualization(wavFile string, beats []BeatDetection, outputFil
 			Offset:   fcp.ConvertSecondsToFCPDuration(currentTime),
 			Name:     colorName,
 			Duration: fcp.ConvertSecondsToFCPDuration(finalDuration),
-			Start:    "86486400/24000s",
+			Start:    "0s",
 			Lane:     "1", // Put on connected storyline above audio
 		}
 
