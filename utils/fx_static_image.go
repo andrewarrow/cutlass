@@ -635,34 +635,26 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			// Update position incrementally for smooth movement (no jumps)
 			pos := wordPositions[word]
 			
-			// Move by moderate increments for smooth, visible movement  
-			moveSpeed := 8 + rand.Intn(5) // Random speed between 8-12 pixels
+			// Move at constant speed like a screensaver
+			moveSpeed := 8 // Constant speed for smooth screensaver-like movement
 			pos.x += pos.directionX * moveSpeed
 			pos.y += pos.directionY * moveSpeed
 			
-			// Bounce off boundaries (keep within reasonable screen bounds)
+			// Bounce off boundaries like a screensaver (flip direction when hitting wall)
 			if pos.x > 600 {
 				pos.x = 600
-				pos.directionX = -1
+				pos.directionX = -1  // Bounce off right wall
 			} else if pos.x < -600 {
 				pos.x = -600
-				pos.directionX = 1
+				pos.directionX = 1   // Bounce off left wall
 			}
 			
 			if pos.y > 400 {
 				pos.y = 400
-				pos.directionY = -1
+				pos.directionY = -1  // Bounce off top wall
 			} else if pos.y < -400 {
 				pos.y = -400
-				pos.directionY = 1
-			}
-			
-			// Occasionally change direction for more organic movement (1% chance)
-			if rand.Intn(100) < 1 {
-				pos.directionX = []int{-1, 1}[rand.Intn(2)]
-			}
-			if rand.Intn(100) < 1 {
-				pos.directionY = []int{-1, 1}[rand.Intn(2)]
+				pos.directionY = 1   // Bounce off bottom wall
 			}
 			
 			// Update the position in the map
