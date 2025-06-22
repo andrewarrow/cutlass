@@ -293,6 +293,59 @@ Sample Output:
 	},
 }
 
+var txtConvoCmd = &cobra.Command{
+	Use:   "txt-convo <conversation.txt> [output.fcpxml] [duration-per-message]",
+	Short: "Generate iMessage-style conversation animation from text file",
+	Long: `Generate FCPXML with iMessage-style conversation animation from a text file.
+
+The input file should contain conversation in "Name: message" format, one per line:
+
+Example input file:
+John: Hey, how are you?
+Sarah: I'm doing great, thanks for asking!
+John: Want to grab coffee later?
+Sarah: Sure! What time works for you?
+John: How about 3pm at the usual place?
+Sarah: Perfect, see you then! 😊
+
+Features:
+📱 Authentic iMessage appearance with:
+- iPhone background from ./assets/iphone_bg.png
+- Blue bubbles for first person (./assets/bubble_blue.png)
+- Gray bubbles for other participants (./assets/bubble_gray.png)
+- Proper bubble positioning (right/left alignment)
+
+🎬 Smooth animations:
+- Messages slide in sequentially like real iMessage
+- Bubbles animate from off-screen with scale effect
+- Stacked conversation layout with proper spacing
+- Customizable timing per message
+
+📝 Text handling:
+- Clean, readable text over speech bubbles
+- Supports emoji and special characters
+- Automatic text positioning over bubbles
+- Proper font sizing for mobile readability
+
+Requirements:
+- iPhone background: ./assets/iphone_bg.png
+- Blue bubble: ./assets/bubble_blue.png  
+- Gray bubble: ./assets/bubble_gray.png
+- Input text file with "Name: message" format
+
+Examples:
+cutlass utils txt-convo conversation.txt
+cutlass utils txt-convo chat.txt output.fcpxml 
+cutlass utils txt-convo messages.txt final.fcpxml 3.0
+
+Duration per message defaults to 2.5 seconds for natural pacing.`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		utils.HandleTxtConvoCommand(args)
+		return nil
+	},
+}
+
 func init() {
 	utilsCmd.AddCommand(genaudioCmd)
 	utilsCmd.AddCommand(genaudioPlayCmd)
@@ -302,6 +355,7 @@ func init() {
 	utilsCmd.AddCommand(addShadowTextCmd)
 	utilsCmd.AddCommand(fxStaticImageCmd)
 	utilsCmd.AddCommand(findBeatsCmd)
+	utilsCmd.AddCommand(txtConvoCmd)
 	
 	// Add flags for fx-static-image command
 	fxStaticImageCmd.Flags().StringP("font-color", "c", "pink", "Font color as English name (red, blue, green, yellow, etc.) or RGBA values (0-1 format)")

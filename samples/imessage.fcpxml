@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" frameDuration="1001/24000s" width="1080" height="1920" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="phone_blank001" uid="3BF13EB320E3C082405DE41A35F1DACB" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="3BF13EB320E3C082405DE41A35F1DACB" src="file:///Users/aa/Documents/phone_blank001.png">
+                <bookmark>Ym9va/wCAAAAAAQQMAAAAAXmAE91TZRRGgyPCYSz97sEih9uOT42bkh5r3RXEqC61AEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAABIAAAABAQAAcGhvbmVfYmxhbmswMDEucG5nAAAQAAAAAQYAABAAAAAgAAAALAAAAEAAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAA/VIEAAAAAAAIAAAABAMAANJ+wAQAAAAAEAAAAAEGAAB0AAAAhAAAAJQAAACkAAAACAAAAAAEAABBxwRKUj692hgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAIAAAAIAAAABAMAAAIAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAXAAAAAAAAAAFEAAAtAAAAAAAAAAQEAAA3AAAAAAAAABAEAAAzAAAAAAAAABUEAAABAEAAAAAAABVEAAAEAEAAAAAAABWEAAA/AAAAAAAAAACIAAAyAEAAAAAAAAFIAAAOAEAAAAAAAAQIAAASAEAAAAAAAARIAAAfAEAAAAAAAASIAAAXAEAAAAAAAATIAAAbAEAAAAAAAAgIAAAqAEAAAAAAAAwIAAA/AAAAAAAAAABwAAAHAEAAAAAAAARwAAAIAAAAAAAAAASwAAALAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-22 12:45:04 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="1"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="452" height="913" colorSpace="1-13-1"/>
+        <asset id="r4" name="blue_speech001" uid="1EA2484AC5332B02E400581617C071F2" start="0s" duration="0s" hasVideo="1" format="r5" videoSources="1">
+            <media-rep kind="original-media" sig="1EA2484AC5332B02E400581617C071F2" src="file:///Users/aa/Documents/blue_speech001.png">
+                <bookmark>Ym9va/wCAAAAAAQQMAAAAPwg6dxl/rM3yZ7S+6NTXMgE/vf1jMLzxOEIAp2D4a6Y1AEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAABIAAAABAQAAYmx1ZV9zcGVlY2gwMDEucG5nAAAQAAAAAQYAABAAAAAgAAAALAAAAEAAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAA/VIEAAAAAAAIAAAABAMAAON6wAQAAAAAEAAAAAEGAAB0AAAAhAAAAJQAAACkAAAACAAAAAAEAABBxwRJ0XSUCBgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAIAAAAIAAAABAMAAAIAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAXAAAAAAAAAAFEAAAtAAAAAAAAAAQEAAA3AAAAAAAAABAEAAAzAAAAAAAAABUEAAABAEAAAAAAABVEAAAEAEAAAAAAABWEAAA/AAAAAAAAAACIAAAyAEAAAAAAAAFIAAAOAEAAAAAAAAQIAAASAEAAAAAAAARIAAAfAEAAAAAAAASIAAAXAEAAAAAAAATIAAAbAEAAAAAAAAgIAAAqAEAAAAAAAAwIAAA/AAAAAAAAAABwAAAHAEAAAAAAAARwAAAIAAAAAAAAAASwAAALAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-22 12:45:16 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="r5" name="FFVideoFormatRateUndefined" width="392" height="209" colorSpace="1-13-1"/>
+        <effect id="r6" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+        <asset id="r7" name="white_speech001" uid="8B1E084D50810C12F2F6EAF7517875FE" start="0s" duration="0s" hasVideo="1" format="r8" videoSources="1">
+            <media-rep kind="original-media" sig="8B1E084D50810C12F2F6EAF7517875FE" src="file:///Users/aa/Documents/white_speech001.png">
+                <bookmark>Ym9va/wCAAAAAAQQMAAAACEin1CnDiO2Sh31JQPWKmBQm5JIbVSHFcUSis49Z+rN1AEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAABMAAAABAQAAd2hpdGVfc3BlZWNoMDAxLnBuZwAQAAAAAQYAABAAAAAgAAAALAAAAEAAAAAIAAAABAMAAB1CAAAAAAAACAAAAAQDAADHUgQAAAAAAAgAAAAEAwAA/VIEAAAAAAAIAAAABAMAAAx9wAQAAAAAEAAAAAEGAAB0AAAAhAAAAJQAAACkAAAACAAAAAAEAABBxwRKH4j7VRgAAAABAgAAAQAAAAAAAAAPAAAAAAAAAAAAAAAAAAAAAAAAAAEFAAAEAAAAAwMAAAgAAAAEAAAAAwMAAAIAAAAIAAAABAMAAAIAAAAAAAAABAAAAAMDAAD1AQAACAAAAAEJAABmaWxlOi8vLwwAAAABAQAATWFjaW50b3NoIEhECAAAAAQDAAAAkIKW5wAAAAgAAAAABAAAQcZjx6qAAAAkAAAAAQEAADVFMzlFMjUzLTYwQTgtNEQ5Mi05M0NCLURGMURGRDIwMUNCRBgAAAABAgAAgQAAAAEAAADvEwAAAQAAAAAAAAAAAAAAAQAAAAEBAAAvAAAA8AAAAP7///8BAAAAAAAAABMAAAAEEAAAXAAAAAAAAAAFEAAAtAAAAAAAAAAQEAAA3AAAAAAAAABAEAAAzAAAAAAAAABUEAAABAEAAAAAAABVEAAAEAEAAAAAAABWEAAA/AAAAAAAAAACIAAAyAEAAAAAAAAFIAAAOAEAAAAAAAAQIAAASAEAAAAAAAARIAAAfAEAAAAAAAASIAAAXAEAAAAAAAATIAAAbAEAAAAAAAAgIAAAqAEAAAAAAAAwIAAA/AAAAAAAAAABwAAAHAEAAAAAAAARwAAAIAAAAAAAAAASwAAALAEAAAAAAAAQ0AAABAAAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-22 12:46:03 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"/>
+            </metadata>
+        </asset>
+        <format id="r8" name="FFVideoFormatRateUndefined" width="394" height="207" colorSpace="1-13-1"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="B6DD4576-A032-4A00-BF67-D4DD6CA3E2C0">
+            <project name="wiki" uid="CD9DC2C7-C690-4E58-A4BD-350B5CE85723" modDate="2025-06-22 12:54:35 -0700">
+                <sequence format="r1" duration="241241/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="phone_blank001" start="86399313/24000s" duration="132132/24000s">
+                            <video ref="r4" lane="1" offset="86437351/24000s" name="blue_speech001" start="86437351/24000s" duration="203203/24000s">
+                                <adjust-transform position="1.26755 -21.1954" scale="0.617236 0.617236"/>
+                            </video>
+                            <title ref="r6" lane="2" offset="86437351/24000s" name="Hey u there? - Text" start="86524438/24000s" duration="94094/24000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -3071"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">Hey u there?</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Arial" fontSize="204" fontFace="Regular" fontColor="0.999995 1 1 1" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                        <video ref="r2" offset="132132/24000s" name="phone_blank001" start="86531445/24000s" duration="109109/24000s">
+                            <video ref="r7" lane="2" offset="86531445/24000s" name="white_speech001" start="86531445/24000s" duration="109109/24000s">
+                                <adjust-transform position="0.635834 4.00864" scale="0.653172 0.653172"/>
+                            </video>
+                            <title ref="r6" lane="3" offset="86531445/24000s" name="Yes, I'm here. - Text" start="86617531/24000s" duration="109109/24000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -1807"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts2">Yes, I'm here.</text-style>
+                                </text>
+                                <text-style-def id="ts2">
+                                    <text-style font="Arial" fontSize="204" fontFace="Regular" fontColor="0 0 0 1" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r6" lane="4" offset="86531445/24000s" name="Hey u there? - Text" start="86618532/24000s" duration="108108/24000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -3071"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts3">Hey u there?</text-style>
+                                </text>
+                                <text-style-def id="ts3">
+                                    <text-style font="Arial" fontSize="204" fontFace="Regular" fontColor="0.999995 1 1 1" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
