@@ -576,10 +576,26 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			continue
 		}
 		
-		// Calculate timing: staggered appearance over 9 seconds
+		// Calculate timing: staggered appearance over 9 seconds with proper frame alignment
 		wordDelay := float64(i) * (durationSeconds / 4.0) // Spread evenly
-		wordOffset := calculateAbsoluteTime(videoStartTime, wordDelay)
-		wordDuration := durationSeconds - wordDelay // Remaining time
+		
+		// Use FCP's frame conversion for proper frame boundary alignment
+		wordDurationSeconds := durationSeconds - wordDelay
+		wordOffset := videoStartTime
+		if wordDelay > 0 {
+			// Parse video start time and add frame-aligned delay
+			var startNumerator, timeBase int
+			if _, err := fmt.Sscanf(videoStartTime, "%d/%ds", &startNumerator, &timeBase); err != nil {
+				startNumerator = 86399313
+				timeBase = 24000
+			}
+			
+			// Convert delay to frame-aligned offset using FCP's timebase
+			delayFrames := int(wordDelay * float64(timeBase) / 1.001)
+			wordOffset = fmt.Sprintf("%d/%ds", startNumerator+delayFrames, timeBase)
+		}
+		
+		wordDuration := fcp.ConvertSecondsToFCPDuration(wordDurationSeconds)
 		
 		// Generate random position within screen bounds (like four_words.fcpxml pattern)
 		// Use larger range for more dramatic bounce effect
@@ -595,7 +611,7 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			Lane:     fmt.Sprintf("%d", 4-i), // Lanes 4, 3, 2, 1 (reverse order like sample)
 			Offset:   wordOffset,
 			Name:     fmt.Sprintf("%s - Text", word),
-			Duration: fcp.ConvertSecondsToFCPDuration(wordDuration),
+			Duration: wordDuration,
 			Start:    "0s", // Relative to video start
 			Params: []fcp.Param{
 				// Random position for bounce effect

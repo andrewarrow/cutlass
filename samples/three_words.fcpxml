@@ -1,0 +1,426 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <format id="r1" frameDuration="100/6000s" width="1080" height="1920" colorSpace="1-1-1 (Rec. 709)"/>
+        <asset id="r2" name="001" uid="8EC34C5D208AA535B11FA09B3831F8F1" start="0s" duration="0s" hasVideo="1" format="r3" videoSources="1">
+            <media-rep kind="original-media" sig="8EC34C5D208AA535B11FA09B3831F8F1" src="file:///Users/aa/Documents/woman/001.png">
+                <bookmark>Ym9vaxgDAAAAAAQQMAAAAIlVtsa+w+uLo321dWBtPfV6HNuSY7azDYGIQ9j4N/UJ8AEAAAQAAAADAwAAABgAKAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAAJAAAAAQEAAERvY3VtZW50cwAAAAUAAAABAQAAd29tYW4AAAAHAAAAAQEAADAwMS5wbmcAFAAAAAEGAAAQAAAAIAAAACwAAABAAAAAUAAAAAgAAAAEAwAAHUIAAAAAAAAIAAAABAMAAMdSBAAAAAAACAAAAAQDAAD9UgQAAAAAAAgAAAAEAwAAuCe4BAAAAAAIAAAABAMAAPAnuAQAAAAAFAAAAAEGAAB8AAAAjAAAAJwAAACsAAAAvAAAAAgAAAAABAAAQccDqdDZNY0YAAAAAQIAAAEAAAAAAAAADwAAAAAAAAAAAAAAAAAAAAAAAAABBQAABAAAAAMDAAAIAAAABAAAAAMDAAADAAAACAAAAAQDAAADAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHGY8eqgAAAJAAAAAEBAAA1RTM5RTI1My02MEE4LTREOTItOTNDQi1ERjFERkQyMDFDQkQYAAAAAQIAAIEAAAABAAAA7xMAAAEAAAAAAAAAAAAAAAEAAAABAQAALwAAAPAAAAD+////AQAAAAAAAAATAAAABBAAAGAAAAAAAAAABRAAAMwAAAAAAAAAEBAAAPgAAAAAAAAAQBAAAOgAAAAAAAAAVBAAACABAAAAAAAAVRAAACwBAAAAAAAAVhAAABgBAAAAAAAAAiAAAOQBAAAAAAAABSAAAFQBAAAAAAAAECAAAGQBAAAAAAAAESAAAJgBAAAAAAAAEiAAAHgBAAAAAAAAEyAAAIgBAAAAAAAAICAAAMQBAAAAAAAAMCAAABgBAAAAAAAAAcAAADgBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEgBAAAAAAAAENAAAAQAAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"/>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"/>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"/>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-21 15:24:41 -0700"/>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="1"/>
+            </metadata>
+        </asset>
+        <format id="r3" name="FFVideoFormatRateUndefined" width="576" height="1024" colorSpace="1-13-1"/>
+        <effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled%2020250621_2012_PDT.fcpbundle/">
+        <event name="6-13-25" uid="C4525069-8828-4C2F-B9EA-FDBC9D6EEC9F">
+            <project name="words_right" uid="0797FFBC-3FC2-4828-9408-BF078EBAC013" modDate="2025-06-21 20:45:53 -0700">
+                <sequence format="r1" duration="9s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <video ref="r2" offset="0s" name="001" start="21599800/6000s" duration="9s">
+                            <title ref="r4" lane="1" offset="21599800/6000s" name="Level1 - Text" start="3600s" duration="1500/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="265 -209"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts1">Level1</text-style>
+                                </text>
+                                <text-style-def id="ts1">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="21599800/6000s" name="Level2 - Text" start="3600s" duration="1500/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -856"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts2">Level2</text-style>
+                                </text>
+                                <text-style-def id="ts2">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="21599800/6000s" name="Level3 - Text" start="3600s" duration="1500/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-268 -1599"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts3">Level3</text-style>
+                                </text>
+                                <text-style-def id="ts3">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19" tabStops="1055.69L"/>
+                                </text-style-def>
+                                <adjust-transform>
+                                    <param name="position">
+                                        <keyframeAnimation>
+                                            <keyframe time="3600s" value="0 0" curve="linear"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                            </title>
+                            <title ref="r4" lane="1" offset="21601300/6000s" name="Level1 - Text" start="21601500/6000s" duration="2300/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="458 -1460"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts4">Level1</text-style>
+                                </text>
+                                <text-style-def id="ts4">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="21601300/6000s" name="Level2 - Text" start="21601500/6000s" duration="2300/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-450 -658"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts5">Level2</text-style>
+                                </text>
+                                <text-style-def id="ts5">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="21601300/6000s" name="Level3 - Text" start="21601500/6000s" duration="2300/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="78 -2192"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts6">Level3</text-style>
+                                </text>
+                                <text-style-def id="ts6">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19" tabStops="1055.69L"/>
+                                </text-style-def>
+                                <adjust-transform>
+                                    <param name="position">
+                                        <keyframeAnimation>
+                                            <keyframe time="3600s" value="0 0" curve="linear"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                            </title>
+                            <title ref="r4" lane="1" offset="21603600/6000s" name="Level1 - Text" start="21603800/6000s" duration="2700/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="265 -209"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts7">Level1</text-style>
+                                </text>
+                                <text-style-def id="ts7">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="21603600/6000s" name="Level2 - Text" start="21603800/6000s" duration="2700/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -856"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts8">Level2</text-style>
+                                </text>
+                                <text-style-def id="ts8">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="21603600/6000s" name="Level3 - Text" start="21603800/6000s" duration="2700/6000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-268 -1599"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts9">Level3</text-style>
+                                </text>
+                                <text-style-def id="ts9">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19" tabStops="1055.69L"/>
+                                </text-style-def>
+                                <adjust-transform>
+                                    <param name="position">
+                                        <keyframeAnimation>
+                                            <keyframe time="3600s" value="0 0" curve="linear"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                            </title>
+                            <title ref="r4" lane="1" offset="21606300/6000s" name="Level1 - Text" start="21606500/6000s" duration="6080000/768000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="265 -209"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts10">Level1</text-style>
+                                </text>
+                                <text-style-def id="ts10">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="2" offset="21606300/6000s" name="Level2 - Text" start="21606500/6000s" duration="6080000/768000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="0 -856"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts11">Level2</text-style>
+                                </text>
+                                <text-style-def id="ts11">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19"/>
+                                </text-style-def>
+                            </title>
+                            <title ref="r4" lane="3" offset="21606300/6000s" name="Level3 - Text" start="21606500/6000s" duration="6080000/768000s">
+                                <param name="Build In" key="9999/10000/2/101" value="0"/>
+                                <param name="Build Out" key="9999/10000/2/102" value="0"/>
+                                <param name="Position" key="9999/10003/13260/3296672360/1/100/101" value="-268 -1599"/>
+                                <param name="Layout Method" key="9999/10003/13260/3296672360/2/314" value="1 (Paragraph)"/>
+                                <param name="Left Margin" key="9999/10003/13260/3296672360/2/323" value="-1210"/>
+                                <param name="Right Margin" key="9999/10003/13260/3296672360/2/324" value="1210"/>
+                                <param name="Top Margin" key="9999/10003/13260/3296672360/2/325" value="2160"/>
+                                <param name="Bottom Margin" key="9999/10003/13260/3296672360/2/326" value="-2160"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/354/3296667315/401" value="1 (Center)"/>
+                                <param name="Line Spacing" key="9999/10003/13260/3296672360/2/354/3296667315/404" value="-19"/>
+                                <param name="Auto-Shrink" key="9999/10003/13260/3296672360/2/370" value="3 (To All Margins)"/>
+                                <param name="Alignment" key="9999/10003/13260/3296672360/2/373" value="0 (Left) 0 (Top)"/>
+                                <param name="Opacity" key="9999/10003/13260/3296672360/4/3296673134/1000/1044" value="0"/>
+                                <param name="Speed" key="9999/10003/13260/3296672360/4/3296673134/201/208" value="6 (Custom)"/>
+                                <param name="Custom Speed" key="9999/10003/13260/3296672360/4/3296673134/201/209">
+                                    <keyframeAnimation>
+                                        <keyframe time="-469658744/1000000000s" value="0"/>
+                                        <keyframe time="12328542033/1000000000s" value="1"/>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Apply Speed" key="9999/10003/13260/3296672360/4/3296673134/201/211" value="2 (Per Object)"/>
+                                <text>
+                                    <text-style ref="ts12">Level3</text-style>
+                                </text>
+                                <text-style-def id="ts12">
+                                    <text-style font="Avenir Next Condensed" fontSize="400" fontFace="Heavy Italic" fontColor="0.985542 0.00945318 0.999181 1" bold="1" italic="1" strokeColor="0.999995 1 1 1" strokeWidth="-15" alignment="center" lineSpacing="-19" tabStops="1055.69L"/>
+                                </text-style-def>
+                                <adjust-transform>
+                                    <param name="position">
+                                        <keyframeAnimation>
+                                            <keyframe time="3600s" value="0 0" curve="linear"/>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                            </title>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"/>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"/>
+            <match-media rule="is" type="videoWithAudio"/>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"/>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"/>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"/>
+        </smart-collection>
+    </library>
+</fcpxml>
