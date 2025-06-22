@@ -569,8 +569,8 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 	rand.Seed(time.Now().UnixNano())
 	
 	// Create blade-cut animated text elements for each word (following Info.fcpxml pattern)
-	totalBlades := 120 // Double the blade cuts for smoother movement
-	bladeDuration := 0.083 // Blade duration to ensure no gaps (9 seconds / 120 blades ≈ 0.075s each)
+	totalBlades := 240 // Quadruple the blade cuts for ultra-smooth movement
+	bladeDuration := 0.0375 // Blade duration to ensure no gaps (9 seconds / 240 blades ≈ 0.0375s each)
 	
 	textStyleCounter := 1 // Global counter for unique text style IDs
 	
@@ -607,12 +607,12 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 			continue
 		}
 		
-		// Calculate lane number (distribute across lanes, cycle if more words than lanes)
-		maxLanes := 4
-		laneNum := (maxLanes - (i % maxLanes)) // Lanes 4, 3, 2, 1, then cycle
+		// Calculate lane number (distribute across lanes, one lane per word)
+		laneNum := i + 1 // Lanes 1, 2, 3, ..., N for N words
 		
 		// Create multiple blade cuts for this word throughout the timeline
 		for bladeIndex := 0; bladeIndex < totalBlades; bladeIndex++ {
+			
 			// Calculate timing for this blade cut
 			bladeStartTime := float64(bladeIndex) * (durationSeconds / float64(totalBlades))
 			
