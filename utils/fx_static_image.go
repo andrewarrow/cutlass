@@ -580,7 +580,13 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 		directionX, directionY int
 	})
 	
-	// Initialize starting positions and directions for each word with better randomization
+	// Track occupied areas to prevent word overlap
+	type wordArea struct {
+		x, y, width, height int
+	}
+	occupiedAreas := make([]wordArea, 0, len(words))
+	
+	// Initialize starting positions and directions for each word with collision avoidance
 	for i, word := range words {
 		word = strings.TrimSpace(word)
 		if word == "" {
@@ -590,12 +596,45 @@ func createWordBounceEffect(fcpxml *fcp.FCPXML, durationSeconds float64, videoSt
 		// Add word index to seed for more variation between words
 		rand.Seed(time.Now().UnixNano() + int64(i*1000))
 		
+		// Estimate word size (approximate based on character count and font size)
+		// Using fontSize 400 from Info.fcpxml as reference
+		wordWidth := len(word) * 300  // Rough estimate: 300px per character
+		wordHeight := 500             // Rough estimate: 500px height for large text
+		
+		var newX, newY int
+		maxAttempts := 100
+		
+		// Try to find a non-overlapping position
+		for attempt := 0; attempt < maxAttempts; attempt++ {
+			newX = rand.Intn(2000) - 1000  // Full X range: -1000 to +1000
+			newY = -rand.Intn(4000)        // Full Y range: 0 to -4000
+			
+			// Check if this position overlaps with any existing word
+			overlaps := false
+			for _, area := range occupiedAreas {
+				if newX < area.x+area.width && newX+wordWidth > area.x &&
+				   newY < area.y+area.height && newY+wordHeight > area.y {
+					overlaps = true
+					break
+				}
+			}
+			
+			if !overlaps {
+				break // Found a good position
+			}
+		}
+		
+		// Record this word's occupied area
+		occupiedAreas = append(occupiedAreas, wordArea{
+			x: newX, y: newY, width: wordWidth, height: wordHeight,
+		})
+		
 		wordPositions[word] = struct {
 			x, y           int
 			directionX, directionY int
 		}{
-			x: rand.Intn(2000) - 1000,  // Start anywhere across full range: -1000 to +1000 (like Info.fcpxml)
-			y: -rand.Intn(4000),        // Start only in negative Y range: 0 to -4000 (like Info.fcpxml)
+			x: newX,
+			y: newY,
 			directionX: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
 			directionY: []int{-1, 1}[rand.Intn(2)], // Random initial direction: -1 or +1
 		}
