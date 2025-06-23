@@ -512,6 +512,8 @@ Examples:
 			return
 		}
 		
+		// Get original-text flag for manual conversation control
+		originalText, _ := cmd.Flags().GetString("original-text")
 		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
@@ -538,8 +540,14 @@ Examples:
            }
            fmt.Printf("Loaded existing FCPXML: %s\n", input)
 
-           // Append new text, alternating bubble patterns
-           err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
+           // Append new text using appropriate method
+           if originalText != "" {
+               // Manual control: use AddImessageReply with specific original text
+               err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
+           } else {
+               // Auto-detect: use AddImessageContinuation for automatic pattern detection
+               err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
+           }
            if err != nil {
                fmt.Printf("Error adding message: %v\n", err)
                return

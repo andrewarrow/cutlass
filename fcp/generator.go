@@ -1673,15 +1673,43 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 	replyTextStyleID := getNextUniqueTextStyleID(existingIDs)
 	originalTextStyleID := getNextUniqueTextStyleID(existingIDs)
 	
-	// Update sequence duration to accommodate second segment (like reference: 7200/6000s)
+	// Simple fix: Always append to the end by using current sequence duration as offset
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		sequence.Duration = "7200/6000s" // From reference
 		
-		// Create second video segment matching reference structure
+		// Use current sequence duration as the offset for new frame
+		currentDuration := sequence.Duration
+		fmt.Printf("DEBUG AddImessageReply: current sequence duration = '%s'\n", currentDuration)
+		if currentDuration == "" {
+			currentDuration = "0s"
+		}
+		
+		// Convert to /6000s format if needed
+		var nextOffset string
+		if strings.HasSuffix(currentDuration, "/6000s") {
+			nextOffset = currentDuration
+		} else {
+			// Convert other formats to /6000s (simplified)
+			nextOffset = "0/6000s"
+		}
+		
+		// Parse current duration to calculate new sequence duration
+		var currentSixthousandths int
+		if strings.HasSuffix(currentDuration, "/6000s") {
+			numeratorStr := strings.TrimSuffix(currentDuration, "/6000s")
+			if numerator, err := strconv.Atoi(numeratorStr); err == nil {
+				currentSixthousandths = numerator
+			}
+		}
+		
+		// Update sequence duration: current + new frame duration
+		newTotalSixthousandths := currentSixthousandths + 3900 // 3900/6000s
+		sequence.Duration = fmt.Sprintf("%d/6000s", newTotalSixthousandths)
+		
+		// Create video segment at end of timeline
 		secondVideo := Video{
 			Ref:      phoneAssetID,
-			Offset:   "3300/6000s",        // After first segment from reference
+			Offset:   nextOffset,        // Use current sequence duration as offset
 			Name:     "phone_blank001",
 			Start:    "21632800/6000s",    // From reference
 			Duration: "3900/6000s",        // From reference
