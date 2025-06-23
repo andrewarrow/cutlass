@@ -1913,19 +1913,15 @@ func analyzeConversationPattern(fcpxml *FCPXML) ConversationPattern {
 		pattern.NextDuration = "3900/6000s"     // From reference imessage002
 	} else {
 		// Calculate offset by summing durations of all previous segments
-		totalOffsetSeconds := 0.0
+		totalFrameUnits := 0
 		for _, video := range sequence.Spine.Videos {
 			durationStr := video.Duration
 			if durationStr != "" {
 				durationUnits := parseFCPDuration(durationStr)
-				// Convert FCP internal units back to seconds
-				// FCP uses 24000/1001 frames per second, each frame is 1001 units
-				framesPerSecond := 24000.0 / 1001.0
-				seconds := float64(durationUnits) / 1001.0 / framesPerSecond
-				totalOffsetSeconds += seconds
+				totalFrameUnits += durationUnits  // Add frame units directly
 			}
 		}
-		pattern.NextOffset = ConvertSecondsToFCPDuration(totalOffsetSeconds)
+		pattern.NextOffset = fmt.Sprintf("%d/24000s", totalFrameUnits)  // Direct frame output
 		pattern.NextDuration = "3900/6000s" // Standard continuation duration
 	}
 	
@@ -1934,15 +1930,8 @@ func analyzeConversationPattern(fcpxml *FCPXML) ConversationPattern {
 
 // addBlueBubbleContinuation adds a blue bubble message (sender)
 func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
-	// Get existing assets
-	var phoneAssetID, blueAssetID, effectID string
-	for _, asset := range fcpxml.Resources.Assets {
-		if asset.Name == "phone_blank001" {
-			phoneAssetID = asset.ID
-		} else if asset.Name == "blue_speech001" {
-			blueAssetID = asset.ID
-		}
-	}
+	// Get existing effect
+	var effectID string
 	for _, effect := range fcpxml.Resources.Effects {
 		if effect.Name == "Text" {
 			effectID = effect.ID
@@ -1950,70 +1939,58 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 		}
 	}
 	
-	if phoneAssetID == "" || blueAssetID == "" || effectID == "" {
-		return fmt.Errorf("required assets not found in existing FCPXML")
+	if effectID == "" {
+		return fmt.Errorf("text effect not found in existing FCPXML")
 	}
 	
 	// Generate unique text style ID
 	existingIDs := getAllExistingTextStyleIDs(fcpxml)
 	uniqueTextStyleID := getNextUniqueTextStyleID(existingIDs)
 	
-	// Update sequence duration
+	// Add to existing conversation (add to last video segment like in samples/imessage002.fcpxml)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		// Extend duration to accommodate new segment
-		newDurationSeconds := 0.55 * float64(pattern.VideoCount + 1) + 0.65 // Add some buffer
-		sequence.Duration = ConvertSecondsToFCPDuration(newDurationSeconds)
 		
-		// Create new video segment with blue bubble (like imessage001 pattern)
-		nextVideo := Video{
-			Ref:      phoneAssetID,
-			Offset:   pattern.NextOffset,
-			Name:     "phone_blank001",
-			Start:    "21632800/6000s",
-			Duration: pattern.NextDuration,
-			NestedVideos: []Video{{
-				Ref:      blueAssetID,
-				Lane:     "1",
-				Offset:   "21632800/6000s",
-				Name:     "blue_speech001",
-				Start:    "21632800/6000s",
-				Duration: pattern.NextDuration,
-				AdjustTransform: &AdjustTransform{
-					Position: "1.26755 -21.1954",
-					Scale:    "0.617236 0.617236",
-				},
-			}},
-			NestedTitles: []Title{{
-				Ref:      effectID,
-				Lane:     "2",
-				Offset:   "43220600/12000s",
-				Name:     newText + " - Text",
-				Start:    "21632100/6000s",
-				Duration: pattern.NextDuration,
-				Params: createStandardTextParams("0 -3071"), // Blue bubble position
-				Text: &TitleText{
-					TextStyles: []TextStyleRef{{
-						Ref:  uniqueTextStyleID,
-						Text: newText,
-					}},
-				},
-				TextStyleDefs: []TextStyleDef{{
-					ID: uniqueTextStyleID,
-					TextStyle: TextStyle{
-						Font:        "Arial",
-						FontSize:    "204",
-						FontFace:    "Regular",
-						FontColor:   "0.999995 1 1 1", // White text for blue bubble
-						Alignment:   "center",
-						LineSpacing: "-19",
-					},
+		if len(sequence.Spine.Videos) == 0 {
+			return fmt.Errorf("no existing video segments to continue")
+		}
+		
+		// Add to the last video segment (where the conversation is happening)
+		lastVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+		
+		// Find next available lane number
+		nextLane := fmt.Sprintf("%d", len(lastVideo.NestedTitles)+len(lastVideo.NestedVideos)+1)
+		
+		// Add new blue bubble text as another title in the existing video segment
+		newTitle := Title{
+			Ref:      effectID,
+			Lane:     nextLane,
+			Offset:   lastVideo.Offset, // Same offset as the video segment
+			Name:     newText + " - Text",
+			Start:    "21632100/6000s", // Standard text start time for blue bubbles
+			Duration: lastVideo.Duration, // Same duration as the video segment
+			Params: createStandardTextParams("0 -3071"), // Blue bubble position
+			Text: &TitleText{
+				TextStyles: []TextStyleRef{{
+					Ref:  uniqueTextStyleID,
+					Text: newText,
 				}},
+			},
+			TextStyleDefs: []TextStyleDef{{
+				ID: uniqueTextStyleID,
+				TextStyle: TextStyle{
+					Font:        "Arial",
+					FontSize:    "204",
+					FontFace:    "Regular",
+					FontColor:   "0.999995 1 1 1", // White text for blue bubble
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
 			}},
 		}
 		
-		// Add to spine
-		sequence.Spine.Videos = append(sequence.Spine.Videos, nextVideo)
+		// Add the new title to the existing video segment
+		lastVideo.NestedTitles = append(lastVideo.NestedTitles, newTitle)
 	}
 	
 	return nil
