@@ -530,33 +530,69 @@ Examples:
 		
 		var fcpxml *fcp.FCPXML
 		
-		// Handle appending vs creating new
-		if input != "" {
-			// Appending mode - check if manual or auto-detection
-			fcpxml, err = fcp.ReadFromFile(input)
-			if err != nil {
-				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
-				return
-			}
-			fmt.Printf("Loaded existing FCPXML: %s\n", input)
-			
-			// Choose manual or auto-detection mode
-			if originalText != "" {
-				// Manual mode - use specific original text (like imessage002.fcpxml)
-				err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
-				if err != nil {
-					fmt.Printf("Error adding reply: %v\n", err)
-					return
-				}
-			} else {
-				// Auto-detection mode - analyze conversation pattern
-				err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
-				if err != nil {
-					fmt.Printf("Error adding message: %v\n", err)
-					return
-				}
-			}
-		} else {
+       // Handle appending vs creating new
+       if input != "" {
+           // Appending mode - read existing FCPXML
+           fcpxml, err = fcp.ReadFromFile(input)
+           if err != nil {
+               fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+               return
+           }
+           fmt.Printf("Loaded existing FCPXML: %s\n", input)
+
+           // Toggle between new generation and append based on existing conversation length
+           if len(fcpxml.Library.Events) > 0 &&
+              len(fcpxml.Library.Events[0].Projects) > 0 &&
+              len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+               seq := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+               if len(seq.Spine.Videos) > 1 {
+                   // Reset to new conversation
+                   fcpxml, err = fcp.GenerateEmpty("")
+                   if err != nil {
+                       fmt.Printf("Error creating FCPXML structure: %v\n", err)
+                       return
+                   }
+                   err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
+                   if err != nil {
+                       fmt.Printf("Error adding text: %v\n", err)
+                       return
+                   }
+                   // Clear input so final print shows new generation
+                   input = ""
+               } else {
+                   // Choose manual or auto-detection mode
+                   if originalText != "" {
+                       // Manual mode - use specific original text (like imessage002.fcpxml)
+                       err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
+                       if err != nil {
+                           fmt.Printf("Error adding reply: %v\n", err)
+                           return
+                       }
+                   } else {
+                       // Auto-detection mode - analyze conversation pattern
+                       err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
+                       if err != nil {
+                           fmt.Printf("Error adding message: %v\n", err)
+                           return
+                       }
+                   }
+               }
+           } else {
+               // No existing sequence found, treat as new creation
+               fcpxml, err = fcp.GenerateEmpty("")
+               if err != nil {
+                   fmt.Printf("Error creating FCPXML structure: %v\n", err)
+                   return
+               }
+               err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
+               if err != nil {
+                   fmt.Printf("Error adding text: %v\n", err)
+                   return
+               }
+               // Clear input so final print shows new generation
+               input = ""
+           }
+       } else {
 			// Creating new mode
 			fcpxml, err = fcp.GenerateEmpty("")
 			if err != nil {
