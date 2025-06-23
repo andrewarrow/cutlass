@@ -512,6 +512,9 @@ Examples:
 			return
 		}
 		
+		// Get original text flag for manual control (optional)
+		originalText, _ := cmd.Flags().GetString("original-text")
+		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
@@ -529,7 +532,7 @@ Examples:
 		
 		// Handle appending vs creating new
 		if input != "" {
-			// Appending mode - auto-detect conversation pattern
+			// Appending mode - check if manual or auto-detection
 			fcpxml, err = fcp.ReadFromFile(input)
 			if err != nil {
 				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
@@ -537,11 +540,21 @@ Examples:
 			}
 			fmt.Printf("Loaded existing FCPXML: %s\n", input)
 			
-			// Add next message in conversation (auto-detects bubble type)
-			err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
-			if err != nil {
-				fmt.Printf("Error adding message: %v\n", err)
-				return
+			// Choose manual or auto-detection mode
+			if originalText != "" {
+				// Manual mode - use specific original text (like imessage002.fcpxml)
+				err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
+				if err != nil {
+					fmt.Printf("Error adding reply: %v\n", err)
+					return
+				}
+			} else {
+				// Auto-detection mode - analyze conversation pattern
+				err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
+				if err != nil {
+					fmt.Printf("Error adding message: %v\n", err)
+					return
+				}
 			}
 		} else {
 			// Creating new mode
@@ -612,6 +625,7 @@ func init() {
 	addTxtCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addTxtCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for text (default 1)")
 	addTxtCmd.Flags().StringP("duration", "d", "3", "Duration of text element in seconds (default 3)")
+	addTxtCmd.Flags().String("original-text", "", "Original bubble text for manual control (optional - auto-detects if not provided)")
 	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)

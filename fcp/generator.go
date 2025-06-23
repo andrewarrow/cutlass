@@ -1668,6 +1668,11 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 		return fmt.Errorf("required assets not found in existing FCPXML")
 	}
 	
+	// Generate unique text style IDs (need to do this properly to avoid conflicts)
+	existingIDs := getAllExistingTextStyleIDs(fcpxml)
+	replyTextStyleID := getNextUniqueTextStyleID(existingIDs)
+	originalTextStyleID := getNextUniqueTextStyleID(existingIDs)
+	
 	// Update sequence duration to accommodate second segment (like reference: 7200/6000s)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -1744,12 +1749,12 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 					},
 					Text: &TitleText{
 						TextStyles: []TextStyleRef{{
-							Ref:  "ts2", // New style ID
+							Ref:  replyTextStyleID,
 							Text: replyText,
 						}},
 					},
 					TextStyleDefs: []TextStyleDef{{
-						ID: "ts2",
+						ID: replyTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
 							FontSize:    "204",
@@ -1797,12 +1802,12 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 					},
 					Text: &TitleText{
 						TextStyles: []TextStyleRef{{
-							Ref:  "ts3", // Another style ID
+							Ref:  originalTextStyleID,
 							Text: originalText,
 						}},
 					},
 					TextStyleDefs: []TextStyleDef{{
-						ID: "ts3",
+						ID: originalTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
 							FontSize:    "204",
@@ -1939,6 +1944,10 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 		return fmt.Errorf("required assets not found in existing FCPXML")
 	}
 	
+	// Generate unique text style ID
+	existingIDs := getAllExistingTextStyleIDs(fcpxml)
+	uniqueTextStyleID := getNextUniqueTextStyleID(existingIDs)
+	
 	// Update sequence duration
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -1975,12 +1984,12 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 				Params: createStandardTextParams("0 -3071"), // Blue bubble position
 				Text: &TitleText{
 					TextStyles: []TextStyleRef{{
-						Ref:  fmt.Sprintf("ts%d", pattern.VideoCount+1),
+						Ref:  uniqueTextStyleID,
 						Text: newText,
 					}},
 				},
 				TextStyleDefs: []TextStyleDef{{
-					ID: fmt.Sprintf("ts%d", pattern.VideoCount+1),
+					ID: uniqueTextStyleID,
 					TextStyle: TextStyle{
 						Font:        "Arial",
 						FontSize:    "204",
@@ -2034,6 +2043,58 @@ func createStandardTextParams(position string) []Param {
 			},
 		},
 		{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+	}
+}
+
+// getAllExistingTextStyleIDs collects all existing text style IDs from the entire FCPXML
+func getAllExistingTextStyleIDs(fcpxml *FCPXML) map[string]bool {
+	existingIDs := make(map[string]bool)
+	
+	// Check all video segments for text style definitions
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		
+		// Check main spine titles
+		for _, title := range sequence.Spine.Titles {
+			for _, styleDef := range title.TextStyleDefs {
+				existingIDs[styleDef.ID] = true
+			}
+		}
+		
+		// Check asset-clips titles
+		for _, assetClip := range sequence.Spine.AssetClips {
+			for _, title := range assetClip.Titles {
+				for _, styleDef := range title.TextStyleDefs {
+					existingIDs[styleDef.ID] = true
+				}
+			}
+		}
+		
+		// Check video segments and their nested titles
+		for _, video := range sequence.Spine.Videos {
+			for _, title := range video.NestedTitles {
+				for _, styleDef := range title.TextStyleDefs {
+					existingIDs[styleDef.ID] = true
+				}
+			}
+		}
+	}
+	
+	return existingIDs
+}
+
+// getNextUniqueTextStyleID generates the next unique text style ID and marks it as used
+func getNextUniqueTextStyleID(existingIDs map[string]bool) string {
+	// Generate unique ID by trying ts1, ts2, ts3, etc.
+	counter := 1
+	for {
+		candidateID := fmt.Sprintf("ts%d", counter)
+		if !existingIDs[candidateID] {
+			// Mark this ID as used for subsequent calls
+			existingIDs[candidateID] = true
+			return candidateID
+		}
+		counter++
 	}
 }
 
