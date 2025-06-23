@@ -1616,6 +1616,213 @@ func AddImessageText(fcpxml *FCPXML, text string, offsetSeconds float64, duratio
 	return nil
 }
 
+// AddImessageReply adds a reply message like samples/imessage002.fcpxml.
+// This appends a second video segment with white speech bubble and black text.
+func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeconds float64, durationSeconds float64) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	
+	// Reserve IDs for white speech bubble asset and format
+	ids := tx.ReserveIDs(2)
+	whiteAssetID := ids[0]
+	whiteFormatID := ids[1]
+	
+	// Create white speech bubble format matching reference
+	_, err := tx.CreateFormat(whiteFormatID, "FFVideoFormatRateUndefined", "391", "207", "1-13-1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create white bubble format: %v", err)
+	}
+	
+	// Create white speech bubble asset matching reference
+	_, err = tx.CreateAsset(whiteAssetID, "/Users/aa/Movies/Untitled.fcpbundle/6-13-25/Original Media/white_speech001 (fcp1).png", "white_speech001", "0s", whiteFormatID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create white bubble asset: %v", err)
+	}
+	
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+	
+	// Get existing assets and effects
+	var phoneAssetID, blueAssetID, effectID string
+	for _, asset := range fcpxml.Resources.Assets {
+		if asset.Name == "phone_blank001" {
+			phoneAssetID = asset.ID
+		} else if asset.Name == "blue_speech001" {
+			blueAssetID = asset.ID
+		}
+	}
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.Name == "Text" {
+			effectID = effect.ID
+			break
+		}
+	}
+	
+	if phoneAssetID == "" || blueAssetID == "" || effectID == "" {
+		return fmt.Errorf("required assets not found in existing FCPXML")
+	}
+	
+	// Update sequence duration to accommodate second segment (like reference: 7200/6000s)
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Duration = "7200/6000s" // From reference
+		
+		// Create second video segment matching reference structure
+		secondVideo := Video{
+			Ref:      phoneAssetID,
+			Offset:   "3300/6000s",        // After first segment from reference
+			Name:     "phone_blank001",
+			Start:    "21632800/6000s",    // From reference
+			Duration: "3900/6000s",        // From reference
+			NestedVideos: []Video{
+				{
+					Ref:      blueAssetID,
+					Lane:     "1",
+					Offset:   "21632800/6000s",    // From reference
+					Name:     "blue_speech001",
+					Start:    "21632800/6000s",    // From reference
+					Duration: "3900/6000s",        // From reference
+					AdjustTransform: &AdjustTransform{
+						Position: "1.26755 -21.1954",   // From reference
+						Scale:    "0.617236 0.617236",  // From reference
+					},
+				},
+				{
+					Ref:      whiteAssetID,
+					Lane:     "2",
+					Offset:   "21632800/6000s",    // From reference
+					Name:     "white_speech001",
+					Start:    "21632800/6000s",    // From reference
+					Duration: "3900/6000s",        // From reference
+					AdjustTransform: &AdjustTransform{
+						Position: "0.635834 4.00864",   // From reference
+						Scale:    "0.653172 0.653172",  // From reference
+					},
+				},
+			},
+			NestedTitles: []Title{
+				{
+					// New reply text in white bubble (black text)
+					Ref:      effectID,
+					Lane:     "3",
+					Offset:   "86531200/24000s",   // From reference
+					Name:     replyText + " - Text",
+					Start:    "21654300/6000s",    // From reference
+					Duration: "3900/6000s",        // From reference
+					Params: []Param{
+						{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
+						{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
+						{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "0 -1807"}, // Different Y position
+						{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+						{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1210"},
+						{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1210"},
+						{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "2160"},
+						{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-2160"},
+						{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+						{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+						{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+						{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+						{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+						{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+						{
+							Name: "Custom Speed",
+							Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+							KeyframeAnimation: &KeyframeAnimation{
+								Keyframes: []Keyframe{
+									{Time: "-469658744/1000000000s", Value: "0"},
+									{Time: "12328542033/1000000000s", Value: "1"},
+								},
+							},
+						},
+						{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+					},
+					Text: &TitleText{
+						TextStyles: []TextStyleRef{{
+							Ref:  "ts2", // New style ID
+							Text: replyText,
+						}},
+					},
+					TextStyleDefs: []TextStyleDef{{
+						ID: "ts2",
+						TextStyle: TextStyle{
+							Font:        "Arial",
+							FontSize:    "204",
+							FontFace:    "Regular",
+							FontColor:   "0 0 0 1",      // Black text for white bubble
+							Alignment:   "center",
+							LineSpacing: "-19",
+						},
+					}},
+				},
+				{
+					// Original text continued in blue bubble
+					Ref:      effectID,
+					Lane:     "4",
+					Offset:   "21632800/6000s",   // From reference
+					Name:     originalText + " - Text",
+					Start:    "21654600/6000s",   // From reference
+					Duration: "3800/6000s",       // From reference
+					Params: []Param{
+						{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
+						{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
+						{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "0 -3071"}, // Original position
+						{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+						{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1210"},
+						{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1210"},
+						{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "2160"},
+						{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-2160"},
+						{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+						{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+						{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+						{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+						{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+						{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+						{
+							Name: "Custom Speed",
+							Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+							KeyframeAnimation: &KeyframeAnimation{
+								Keyframes: []Keyframe{
+									{Time: "-469658744/1000000000s", Value: "0"},
+									{Time: "12328542033/1000000000s", Value: "1"},
+								},
+							},
+						},
+						{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+					},
+					Text: &TitleText{
+						TextStyles: []TextStyleRef{{
+							Ref:  "ts3", // Another style ID
+							Text: originalText,
+						}},
+					},
+					TextStyleDefs: []TextStyleDef{{
+						ID: "ts3",
+						TextStyle: TextStyle{
+							Font:        "Arial",
+							FontSize:    "204",
+							FontFace:    "Regular",
+							FontColor:   "0.999995 1 1 1", // White text for blue bubble
+							Alignment:   "center",
+							LineSpacing: "-19",
+						},
+					}},
+				},
+			},
+		}
+		
+		// Add second video segment to spine
+		sequence.Spine.Videos = append(sequence.Spine.Videos, secondVideo)
+	}
+	
+	return nil
+}
+
 
 // AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
 //

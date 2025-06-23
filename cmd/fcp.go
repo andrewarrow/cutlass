@@ -468,18 +468,24 @@ Requires an existing FCPXML file with at least one video element to nest the PIP
 }
 
 var addTxtCmd = &cobra.Command{
-	Use:   "add-txt [text-content]",
-	Short: "Add a text message like samples/imessage001.fcpxml with phone/bubble background",
-	Long: `Add a text message to an FCPXML file recreating the complete structure from samples/imessage001.fcpxml.
-This includes:
-- Phone background image (phone_blank001.png)
-- Speech bubble image (blue_speech001.png) 
-- Text title with proper styling and positioning
-- All elements properly nested and positioned
+	Use:   "add-txt [new-text]",
+	Short: "Add a text message like samples/imessage001.fcpxml or append like imessage002.fcpxml",
+	Long: `Add a text message to an FCPXML file recreating structures from samples/imessage001.fcpxml or imessage002.fcpxml.
 
-If no text is provided, uses "Hey u there?" as default.
-If --input is specified, the text will be added to an existing FCPXML file.
-Otherwise, creates the complete imessage001 structure.`,
+For new files (no --input):
+- Creates complete imessage001 structure with phone background and blue speech bubble
+- Uses provided text or "Hey u there?" as default
+
+For appending to existing files (with --input):
+- Adds second video segment like imessage002.fcpxml
+- Requires --original-text flag (the blue bubble text from first segment)
+- Adds white speech bubble with new text (black text color)
+- Shows both bubbles with original blue text remaining visible
+
+Examples:
+  cutlass fcp add-txt                                    # Creates new with "Hey u there?"
+  cutlass fcp add-txt "Hello there"                      # Creates new with custom text
+  cutlass fcp add-txt "Yes, I'm here." -i existing.fcpxml --original-text "Hey u there?"  # Appends response`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var textContent string
@@ -505,6 +511,9 @@ Otherwise, creates the complete imessage001 structure.`,
 			return
 		}
 		
+		// Get original text flag for appending mode
+		originalText, _ := cmd.Flags().GetString("original-text")
+		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
@@ -520,28 +529,41 @@ Otherwise, creates the complete imessage001 structure.`,
 		
 		var fcpxml *fcp.FCPXML
 		
-		// Load existing FCPXML or create new one
+		// Handle appending vs creating new
 		if input != "" {
+			// Appending mode - validate original text is provided
+			if originalText == "" {
+				fmt.Printf("Error: --original-text is required when appending to existing FCPXML\n")
+				return
+			}
+			
 			fcpxml, err = fcp.ReadFromFile(input)
 			if err != nil {
 				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
 				return
 			}
 			fmt.Printf("Loaded existing FCPXML: %s\n", input)
+			
+			// Add second message like imessage002.fcpxml
+			err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
+			if err != nil {
+				fmt.Printf("Error adding reply: %v\n", err)
+				return
+			}
 		} else {
-			// Generate empty FCPXML structure
+			// Creating new mode
 			fcpxml, err = fcp.GenerateEmpty("")
 			if err != nil {
 				fmt.Printf("Error creating FCPXML structure: %v\n", err)
 				return
 			}
-		}
-		
-		// Add text to the structure (with complete imessage background if needed)
-		err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
-		if err != nil {
-			fmt.Printf("Error adding text: %v\n", err)
-			return
+			
+			// Add text to the structure (with complete imessage background if needed)
+			err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
+			if err != nil {
+				fmt.Printf("Error adding text: %v\n", err)
+				return
+			}
 		}
 		
 		// Write to file
@@ -597,6 +619,7 @@ func init() {
 	addTxtCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addTxtCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for text (default 1)")
 	addTxtCmd.Flags().StringP("duration", "d", "3", "Duration of text element in seconds (default 3)")
+	addTxtCmd.Flags().String("original-text", "", "Original blue bubble text (required when appending with --input)")
 	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
