@@ -894,6 +894,71 @@ func parseFCPDuration(duration string) int {
 	return 0
 }
 
+// formatFCPDurationFromUnits converts frame units back to FCP duration string format
+// Inverse of parseFCPDuration - maintains frame boundary alignment
+func formatFCPDurationFromUnits(units int) string {
+	if units == 0 {
+		return "0s"
+	}
+	
+	// Frame units are in multiples of 1001 (FCP's frame duration is 1001/24000s)
+	// So convert directly to proper fraction format
+	return fmt.Sprintf("%d/24000s", units)
+}
+
+// getSequenceFrameDuration extracts frame duration from sequence format
+func getSequenceFrameDuration(fcpxml *FCPXML) string {
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 {
+		return "1001/24000s" // Default to standard FCP frame rate
+	}
+	
+	sequence := fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	formatID := sequence.Format
+	
+	// Find the format with this ID
+	for _, format := range fcpxml.Resources.Formats {
+		if format.ID == formatID {
+			if format.FrameDuration != "" {
+				return format.FrameDuration
+			}
+		}
+	}
+	
+	return "1001/24000s" // Default fallback
+}
+
+// formatFCPDurationForSequence converts duration to frame-aligned format for specific sequence
+func formatFCPDurationForSequence(durationSeconds float64, fcpxml *FCPXML) string {
+	frameDurationStr := getSequenceFrameDuration(fcpxml)
+	
+	// Parse frame duration directly as rational number
+	var frameDurationSeconds float64
+	if strings.Contains(frameDurationStr, "/6000s") {
+		// 60fps: 100/6000s per frame
+		frameDurationSeconds = 100.0 / 6000.0
+	} else if strings.Contains(frameDurationStr, "/24000s") {
+		// 23.976fps: 1001/24000s per frame  
+		frameDurationSeconds = 1001.0 / 24000.0
+	} else {
+		// Fallback to standard
+		frameDurationSeconds = 1001.0 / 24000.0
+	}
+	
+	// Calculate number of frames and round to nearest
+	frames := int(durationSeconds/frameDurationSeconds + 0.5)
+	
+	// Convert back to duration format matching the frame duration denominator
+	if strings.Contains(frameDurationStr, "/6000s") {
+		// 60fps sequence: frame boundaries are multiples of 100/6000s
+		frameUnits := frames * 100
+		return fmt.Sprintf("%d/6000s", frameUnits)
+	} else {
+		// Standard 23.976fps: frame boundaries are multiples of 1001/24000s  
+		frameUnits := frames * 1001
+		return fmt.Sprintf("%d/24000s", frameUnits)
+	}
+}
+
 // addDurations adds two FCP duration strings and returns the result
 func addDurations(duration1, duration2 string) string {
 	frames1 := parseFCPDuration(duration1)
@@ -1716,7 +1781,7 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 					// New reply text in white bubble (black text)
 					Ref:      effectID,
 					Lane:     "3",
-					Offset:   "86531200/24000s",   // From reference
+					Offset:   formatFCPDurationForSequence(offsetSeconds, fcpxml), // Use sequence-aware frame alignment
 					Name:     replyText + " - Text",
 					Start:    "21654300/6000s",    // From reference
 					Duration: "3900/6000s",        // From reference
@@ -1912,20 +1977,20 @@ func analyzeConversationPattern(fcpxml *FCPXML) ConversationPattern {
 		pattern.NextOffset = "3300/6000s"       // From reference imessage002
 		pattern.NextDuration = "3900/6000s"     // From reference imessage002
 	} else {
-		// Calculate offset by summing durations of all previous segments
-		totalOffsetSeconds := 0.0
-		for _, video := range sequence.Spine.Videos {
-			durationStr := video.Duration
-			if durationStr != "" {
-				durationUnits := parseFCPDuration(durationStr)
-				// Convert FCP internal units back to seconds
-				// FCP uses 24000/1001 frames per second, each frame is 1001 units
-				framesPerSecond := 24000.0 / 1001.0
-				seconds := float64(durationUnits) / 1001.0 / framesPerSecond
-				totalOffsetSeconds += seconds
-			}
-		}
-		pattern.NextOffset = ConvertSecondsToFCPDuration(totalOffsetSeconds)
+		// Calculate offset by finding the end of the last video segment
+		// Use sequence-aware frame alignment based on actual frame rate
+		lastVideo := sequence.Spine.Videos[pattern.VideoCount-1]
+		
+		// Parse offset and duration of last video to find its end time
+		offsetUnits := parseFCPDuration(lastVideo.Offset)
+		durationUnits := parseFCPDuration(lastVideo.Duration)
+		endUnits := offsetUnits + durationUnits
+		
+		// Convert to seconds
+		endSeconds := float64(endUnits) / 24000.0
+		
+		// Convert to frame-aligned format for this sequence  
+		pattern.NextOffset = formatFCPDurationForSequence(endSeconds, fcpxml)
 		pattern.NextDuration = "3900/6000s" // Standard continuation duration
 	}
 	
@@ -2021,8 +2086,12 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 
 // addWhiteBubbleContinuation adds a white bubble message (reply)
 func addWhiteBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
-	// This is essentially the existing AddImessageReply logic but with auto-detected original text
-	return AddImessageReply(fcpxml, pattern.LastText, newText, offsetSeconds, durationSeconds)
+	// Convert calculated frame-aligned offset to seconds
+	nextOffsetUnits := parseFCPDuration(pattern.NextOffset)
+	calculatedOffsetSeconds := float64(nextOffsetUnits) / 24000.0
+	
+	// Use calculated frame-aligned offset instead of command-line offset
+	return AddImessageReply(fcpxml, pattern.LastText, newText, calculatedOffsetSeconds, durationSeconds)
 }
 
 // createStandardTextParams creates the standard text parameters with given position
