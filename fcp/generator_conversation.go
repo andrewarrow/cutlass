@@ -130,6 +130,49 @@ func readMessagesFromFile(messagesPath string) ([]string, error) {
 	return messages, nil
 }
 
+// calculateFontSize determines appropriate font size based on message length
+// Short messages (1-10 chars): 204 (original size)
+// Medium messages (11-30 chars): 180-150
+// Long messages (31+ chars): 120-90
+func calculateFontSize(message string) string {
+	length := len(message)
+	
+	if length <= 10 {
+		// Very short messages - keep original size
+		return "204"
+	} else if length <= 20 {
+		// Short messages - slightly smaller
+		return "180"
+	} else if length <= 35 {
+		// Medium messages - smaller
+		return "150"
+	} else if length <= 50 {
+		// Long messages - much smaller
+		return "120"
+	} else {
+		// Very long messages - smallest readable size
+		return "90"
+	}
+}
+
+// calculateLineSpacing adjusts line spacing based on font size for better readability
+func calculateLineSpacing(fontSize string) string {
+	switch fontSize {
+	case "204":
+		return "-19"  // Original spacing
+	case "180":
+		return "-15"
+	case "150":
+		return "-12"
+	case "120":
+		return "-8"
+	case "90":
+		return "-5"
+	default:
+		return "-19"
+	}
+}
+
 // addPhoneBackgroundSegment adds a phone background video segment directly to the spine
 func addPhoneBackgroundSegment(fcpxml *FCPXML, phoneBackgroundPath string, offsetSeconds, durationSeconds float64) error {
 	// Use existing AddImage logic but with specific offset and duration
@@ -405,6 +448,10 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 	// Generate unique text-style-def ID with index to avoid duplicates
 	baseName := fmt.Sprintf("conversation_%t_%d", isBlue, index)
 	textStyleID := GenerateTextStyleID(message, baseName)
+	
+	// Calculate dynamic font size and spacing based on message length
+	fontSize := calculateFontSize(message)
+	lineSpacing := calculateLineSpacing(fontSize)
 
 	// Calculate start time based on text color (from Info.fcpxml pattern)
 	var startTime string
@@ -471,7 +518,7 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 			{
 				Name:  "Line Spacing",
 				Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
-				Value: "-19",
+				Value: lineSpacing,
 			},
 			{
 				Name:  "Auto-Shrink",
@@ -528,11 +575,11 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 				ID: textStyleID,
 				TextStyle: TextStyle{
 					Font:        "Arial",
-					FontSize:    "204",
+					FontSize:    fontSize,
 					FontFace:    "Regular",
 					FontColor:   textColor,
 					Alignment:   "center",
-					LineSpacing: "-19",
+					LineSpacing: lineSpacing,
 				},
 			},
 		},
