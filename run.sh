@@ -1,10 +1,10 @@
 go build
 rm trip.fcpxml
 
-./cutlass fcp add-txt "hey u there?" -o trip.fcpxml
-./cutlass fcp add-txt -i trip.fcpxml "u know it!" --original-text "hey u there?" -o trip.fcpxml
-./cutlass fcp add-txt -i trip.fcpxml "teach me vibe coding" -o trip.fcpxml
-./cutlass fcp add-txt -i trip.fcpxml "ok no problem!" --original-text "teach me vibe coding" -o trip.fcpxml
+./cutlass fcp add-txt "Hey u there?" -o trip.fcpxml
+./cutlass fcp add-txt -i trip.fcpxml "Yes, I'm here." --original-text "hey u there?" -o trip.fcpxml
+#./cutlass fcp add-txt -i trip.fcpxml "teach me vibe coding" -o trip.fcpxml
+#./cutlass fcp add-txt -i trip.fcpxml "ok no problem!" --original-text "teach me vibe coding" -o trip.fcpxml
 
 
 
