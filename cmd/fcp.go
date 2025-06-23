@@ -477,15 +477,16 @@ For new files (no --input):
 - Uses provided text or "Hey u there?" as default
 
 For appending to existing files (with --input):
-- Adds second video segment like imessage002.fcpxml
-- Requires --original-text flag (the blue bubble text from first segment)
-- Adds white speech bubble with new text (black text color)
-- Shows both bubbles with original blue text remaining visible
+- Auto-detects conversation pattern and alternates bubble types
+- Blue bubble (white text) for sender messages
+- White bubble (black text) for reply messages  
+- Continues conversation naturally without requiring original text
 
 Examples:
   cutlass fcp add-txt                                    # Creates new with "Hey u there?"
   cutlass fcp add-txt "Hello there"                      # Creates new with custom text
-  cutlass fcp add-txt "Yes, I'm here." -i existing.fcpxml --original-text "Hey u there?"  # Appends response`,
+  cutlass fcp add-txt "Yes, I'm here." -i existing.fcpxml  # Appends reply (auto-detects pattern)
+  cutlass fcp add-txt "Got it!" -i conversation.fcpxml     # Continues alternating pattern`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var textContent string
@@ -511,9 +512,6 @@ Examples:
 			return
 		}
 		
-		// Get original text flag for appending mode
-		originalText, _ := cmd.Flags().GetString("original-text")
-		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
 		output, _ := cmd.Flags().GetString("output")
@@ -531,12 +529,7 @@ Examples:
 		
 		// Handle appending vs creating new
 		if input != "" {
-			// Appending mode - validate original text is provided
-			if originalText == "" {
-				fmt.Printf("Error: --original-text is required when appending to existing FCPXML\n")
-				return
-			}
-			
+			// Appending mode - auto-detect conversation pattern
 			fcpxml, err = fcp.ReadFromFile(input)
 			if err != nil {
 				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
@@ -544,10 +537,10 @@ Examples:
 			}
 			fmt.Printf("Loaded existing FCPXML: %s\n", input)
 			
-			// Add second message like imessage002.fcpxml
-			err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
+			// Add next message in conversation (auto-detects bubble type)
+			err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
 			if err != nil {
-				fmt.Printf("Error adding reply: %v\n", err)
+				fmt.Printf("Error adding message: %v\n", err)
 				return
 			}
 		} else {
@@ -619,7 +612,6 @@ func init() {
 	addTxtCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addTxtCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for text (default 1)")
 	addTxtCmd.Flags().StringP("duration", "d", "3", "Duration of text element in seconds (default 3)")
-	addTxtCmd.Flags().String("original-text", "", "Original blue bubble text (required when appending with --input)")
 	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)

@@ -1823,6 +1823,220 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 	return nil
 }
 
+// AddImessageContinuation automatically continues an existing imessage conversation.
+// Analyzes the current conversation pattern and adds the appropriate bubble type.
+func AddImessageContinuation(fcpxml *FCPXML, newText string, offsetSeconds float64, durationSeconds float64) error {
+	// Analyze existing conversation to determine next bubble type
+	pattern := analyzeConversationPattern(fcpxml)
+	
+	switch pattern.NextBubbleType {
+	case "blue":
+		// Add blue bubble (like original imessage001.fcpxml pattern)
+		return addBlueBubbleContinuation(fcpxml, newText, pattern, offsetSeconds, durationSeconds)
+	case "white":
+		// Add white bubble (like imessage002.fcpxml pattern)
+		return addWhiteBubbleContinuation(fcpxml, newText, pattern, offsetSeconds, durationSeconds)
+	default:
+		return fmt.Errorf("could not determine conversation pattern")
+	}
+}
+
+// ConversationPattern holds information about the current conversation state
+type ConversationPattern struct {
+	NextBubbleType string  // "blue" or "white"
+	LastText       string  // Text from the last bubble
+	VideoCount     int     // Number of video segments
+	NextOffset     string  // Where to place the next segment
+	NextDuration   string  // Duration for next segment
+}
+
+// analyzeConversationPattern examines existing FCPXML to determine conversation state
+func analyzeConversationPattern(fcpxml *FCPXML) ConversationPattern {
+	pattern := ConversationPattern{
+		NextBubbleType: "blue", // Default to blue if can't determine
+		VideoCount:     0,
+	}
+	
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || 
+	   len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+		return pattern
+	}
+	
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	pattern.VideoCount = len(sequence.Spine.Videos)
+	
+	if pattern.VideoCount == 0 {
+		return pattern
+	}
+	
+	// Look at the last video segment to determine pattern
+	lastVideo := sequence.Spine.Videos[pattern.VideoCount-1]
+	
+	// Check if last segment has white speech bubble (indicates white bubble was last)
+	hasWhiteBubble := false
+	lastBubbleText := ""
+	
+	for _, nestedVideo := range lastVideo.NestedVideos {
+		if nestedVideo.Name == "white_speech001" {
+			hasWhiteBubble = true
+			break
+		}
+	}
+	
+	// Extract the last text to continue conversation
+	for _, title := range lastVideo.NestedTitles {
+		if len(title.Text.TextStyles) > 0 {
+			lastBubbleText = title.Text.TextStyles[0].Text
+		}
+	}
+	
+	pattern.LastText = lastBubbleText
+	
+	// Determine next bubble type based on what was last
+	if hasWhiteBubble {
+		// Last was white bubble (reply), so next should be blue (sender)
+		pattern.NextBubbleType = "blue"
+	} else {
+		// Last was blue bubble (sender), so next should be white (reply)
+		pattern.NextBubbleType = "white"
+	}
+	
+	// Calculate next timing based on existing pattern
+	if pattern.VideoCount == 1 {
+		// First continuation after initial message
+		pattern.NextOffset = "3300/6000s"       // From reference imessage002
+		pattern.NextDuration = "3900/6000s"     // From reference imessage002
+	} else {
+		// Calculate offset based on previous segments
+		// Each segment is typically 3300/6000s duration, so add that for each segment
+		offsetSeconds := 0.55 * float64(pattern.VideoCount) // 3300/6000 ≈ 0.55 seconds
+		pattern.NextOffset = ConvertSecondsToFCPDuration(offsetSeconds)
+		pattern.NextDuration = "3900/6000s" // Standard continuation duration
+	}
+	
+	return pattern
+}
+
+// addBlueBubbleContinuation adds a blue bubble message (sender)
+func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
+	// Get existing assets
+	var phoneAssetID, blueAssetID, effectID string
+	for _, asset := range fcpxml.Resources.Assets {
+		if asset.Name == "phone_blank001" {
+			phoneAssetID = asset.ID
+		} else if asset.Name == "blue_speech001" {
+			blueAssetID = asset.ID
+		}
+	}
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.Name == "Text" {
+			effectID = effect.ID
+			break
+		}
+	}
+	
+	if phoneAssetID == "" || blueAssetID == "" || effectID == "" {
+		return fmt.Errorf("required assets not found in existing FCPXML")
+	}
+	
+	// Update sequence duration
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		// Extend duration to accommodate new segment
+		newDurationSeconds := 0.55 * float64(pattern.VideoCount + 1) + 0.65 // Add some buffer
+		sequence.Duration = ConvertSecondsToFCPDuration(newDurationSeconds)
+		
+		// Create new video segment with blue bubble (like imessage001 pattern)
+		nextVideo := Video{
+			Ref:      phoneAssetID,
+			Offset:   pattern.NextOffset,
+			Name:     "phone_blank001",
+			Start:    "21632800/6000s",
+			Duration: pattern.NextDuration,
+			NestedVideos: []Video{{
+				Ref:      blueAssetID,
+				Lane:     "1",
+				Offset:   "21632800/6000s",
+				Name:     "blue_speech001",
+				Start:    "21632800/6000s",
+				Duration: pattern.NextDuration,
+				AdjustTransform: &AdjustTransform{
+					Position: "1.26755 -21.1954",
+					Scale:    "0.617236 0.617236",
+				},
+			}},
+			NestedTitles: []Title{{
+				Ref:      effectID,
+				Lane:     "2",
+				Offset:   "43220600/12000s",
+				Name:     newText + " - Text",
+				Start:    "21632100/6000s",
+				Duration: pattern.NextDuration,
+				Params: createStandardTextParams("0 -3071"), // Blue bubble position
+				Text: &TitleText{
+					TextStyles: []TextStyleRef{{
+						Ref:  fmt.Sprintf("ts%d", pattern.VideoCount+1),
+						Text: newText,
+					}},
+				},
+				TextStyleDefs: []TextStyleDef{{
+					ID: fmt.Sprintf("ts%d", pattern.VideoCount+1),
+					TextStyle: TextStyle{
+						Font:        "Arial",
+						FontSize:    "204",
+						FontFace:    "Regular",
+						FontColor:   "0.999995 1 1 1", // White text for blue bubble
+						Alignment:   "center",
+						LineSpacing: "-19",
+					},
+				}},
+			}},
+		}
+		
+		// Add to spine
+		sequence.Spine.Videos = append(sequence.Spine.Videos, nextVideo)
+	}
+	
+	return nil
+}
+
+// addWhiteBubbleContinuation adds a white bubble message (reply)
+func addWhiteBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
+	// This is essentially the existing AddImessageReply logic but with auto-detected original text
+	return AddImessageReply(fcpxml, pattern.LastText, newText, offsetSeconds, durationSeconds)
+}
+
+// createStandardTextParams creates the standard text parameters with given position
+func createStandardTextParams(position string) []Param {
+	return []Param{
+		{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
+		{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
+		{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: position},
+		{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+		{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1210"},
+		{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1210"},
+		{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "2160"},
+		{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-2160"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+		{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+		{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+		{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+		{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+		{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+		{
+			Name: "Custom Speed",
+			Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+			KeyframeAnimation: &KeyframeAnimation{
+				Keyframes: []Keyframe{
+					{Time: "-469658744/1000000000s", Value: "0"},
+					{Time: "12328542033/1000000000s", Value: "1"},
+				},
+			},
+		},
+		{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+	}
+}
+
 
 // AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
 //
