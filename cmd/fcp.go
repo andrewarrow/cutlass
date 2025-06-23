@@ -74,7 +74,7 @@ Otherwise, a new FCPXML file is created.`,
 			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
 		}
 		
-		var fcpxml *fcp.FCPXML
+       var fcpxml *fcp.FCPXML
 		var err error
 		
 		// Load existing FCPXML or create new one
@@ -512,8 +512,6 @@ Examples:
 			return
 		}
 		
-		// Get original text flag for manual control (optional)
-		originalText, _ := cmd.Flags().GetString("original-text")
 		
 		// Get input and output filenames from flags
 		input, _ := cmd.Flags().GetString("input")
@@ -540,73 +538,27 @@ Examples:
            }
            fmt.Printf("Loaded existing FCPXML: %s\n", input)
 
-           // Toggle between new generation and append based on existing conversation length
-           if len(fcpxml.Library.Events) > 0 &&
-              len(fcpxml.Library.Events[0].Projects) > 0 &&
-              len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
-               seq := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-               if len(seq.Spine.Videos) > 1 {
-                   // Reset to new conversation
-                   fcpxml, err = fcp.GenerateEmpty("")
-                   if err != nil {
-                       fmt.Printf("Error creating FCPXML structure: %v\n", err)
-                       return
-                   }
-                   err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
-                   if err != nil {
-                       fmt.Printf("Error adding text: %v\n", err)
-                       return
-                   }
-                   // Clear input so final print shows new generation
-                   input = ""
-               } else {
-                   // Choose manual or auto-detection mode
-                   if originalText != "" {
-                       // Manual mode - use specific original text (like imessage002.fcpxml)
-                       err = fcp.AddImessageReply(fcpxml, originalText, textContent, offset, duration)
-                       if err != nil {
-                           fmt.Printf("Error adding reply: %v\n", err)
-                           return
-                       }
-                   } else {
-                       // Auto-detection mode - analyze conversation pattern
-                       err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
-                       if err != nil {
-                           fmt.Printf("Error adding message: %v\n", err)
-                           return
-                       }
-                   }
-               }
-           } else {
-               // No existing sequence found, treat as new creation
-               fcpxml, err = fcp.GenerateEmpty("")
-               if err != nil {
-                   fmt.Printf("Error creating FCPXML structure: %v\n", err)
-                   return
-               }
-               err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
-               if err != nil {
-                   fmt.Printf("Error adding text: %v\n", err)
-                   return
-               }
-               // Clear input so final print shows new generation
-               input = ""
+           // Append new text, alternating bubble patterns
+           err = fcp.AddImessageContinuation(fcpxml, textContent, offset, duration)
+           if err != nil {
+               fmt.Printf("Error adding message: %v\n", err)
+               return
            }
        } else {
-			// Creating new mode
-			fcpxml, err = fcp.GenerateEmpty("")
-			if err != nil {
-				fmt.Printf("Error creating FCPXML structure: %v\n", err)
-				return
-			}
-			
-			// Add text to the structure (with complete imessage background if needed)
-			err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
-			if err != nil {
-				fmt.Printf("Error adding text: %v\n", err)
-				return
-			}
-		}
+           // Creating new mode
+           fcpxml, err = fcp.GenerateEmpty("")
+           if err != nil {
+               fmt.Printf("Error creating FCPXML structure: %v\n", err)
+               return
+           }
+
+           // Add initial text to the structure
+           err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
+           if err != nil {
+               fmt.Printf("Error adding text: %v\n", err)
+               return
+           }
+       }
 		
 		// Write to file
 		err = fcp.WriteToFile(fcpxml, filename)
