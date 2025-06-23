@@ -47,41 +47,52 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		return fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
 
-	// Calculate conversation duration: 2 seconds per message + 2 seconds padding
-	totalDurationSeconds := float64(len(messages)*2 + 2)
+	// Calculate conversation duration: exact FCP timing like Info.fcpxml
+	// Info.fcpxml total duration is 30030/24000s for 2 pairs
+	totalDurationFCP := "30030/24000s"
 
 	// Update sequence duration
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		sequence.Duration = ConvertSecondsToFCPDuration(totalDurationSeconds)
+		sequence.Duration = totalDurationFCP
 	}
 
 	// Process messages in pairs (each pair gets its own phone background segment)
 	for i := 0; i < len(messages); i += 2 {
-		// Calculate offset for this phone background segment
-		segmentOffsetSeconds := float64(i)  // Each message = 2 seconds apart
-		segmentDurationSeconds := 2.0
+		// Calculate offset for this phone background segment (matching Info.fcpxml pattern)
+		// Info.fcpxml uses 0s, 15015/24000s (exactly 0.625625s intervals)
+		segmentDurationFCP := "15015/24000s"  // Use exact FCP duration from Info.fcpxml
+		segmentOffsetFCP := ""
+		pairIndex := i / 2  // 0 for first pair, 1 for second pair, etc.
+		if pairIndex == 0 {
+			segmentOffsetFCP = "0s"
+		} else if pairIndex == 1 {
+			segmentOffsetFCP = "15015/24000s"  // Second segment offset matches first segment duration
+		} else {
+			// For more pairs, multiply by the segment duration
+			segmentOffsetFCP = fmt.Sprintf("%d/24000s", 15015*pairIndex)
+		}
 
 		// Add phone background for this segment
-		err = addPhoneBackgroundSegment(fcpxml, phoneBackgroundPath, segmentOffsetSeconds, segmentDurationSeconds)
+		err = addPhoneBackgroundSegmentExact(fcpxml, phoneBackgroundPath, segmentOffsetFCP, segmentDurationFCP)
 		if err != nil {
 			return fmt.Errorf("failed to add phone background segment %d: %v", i/2, err)
 		}
 
-		// Add messages for this segment (blue and white pair)
-		if i < len(messages) {
-			// Add blue message (first message of pair)
-			err = addMessageToLastSegment(fcpxml, blueSpeechPath, messages[i], true)
+		// Add messages for this segment (white and blue pair, like Info.fcpxml)
+		if i+1 < len(messages) {
+			// Add white speech bubble only (no text for now to debug crash)
+			err = addSpeechBubbleToLastSegment(fcpxml, whiteSpeechPath, false)
 			if err != nil {
-				return fmt.Errorf("failed to add blue message %d: %v", i, err)
+				return fmt.Errorf("failed to add white speech bubble %d: %v", i+1, err)
 			}
 		}
 		
-		if i+1 < len(messages) {
-			// Add white message (second message of pair)
-			err = addMessageToLastSegment(fcpxml, whiteSpeechPath, messages[i+1], false)
+		if i < len(messages) {
+			// Add blue speech bubble only (no text for now to debug crash)
+			err = addSpeechBubbleToLastSegment(fcpxml, blueSpeechPath, true)
 			if err != nil {
-				return fmt.Errorf("failed to add white message %d: %v", i+1, err)
+				return fmt.Errorf("failed to add blue speech bubble %d: %v", i, err)
 			}
 		}
 	}
@@ -135,6 +146,92 @@ func addPhoneBackgroundSegment(fcpxml *FCPXML, phoneBackgroundPath string, offse
 			lastVideo.Offset = ConvertSecondsToFCPDuration(offsetSeconds)
 			lastVideo.Duration = ConvertSecondsToFCPDuration(durationSeconds)
 		}
+	}
+
+	return nil
+}
+
+// addPhoneBackgroundSegmentExact adds a phone background video segment directly to the spine with exact FCP timing
+func addPhoneBackgroundSegmentExact(fcpxml *FCPXML, phoneBackgroundPath string, offsetFCP, durationFCP string) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Check if asset already exists for this file
+	var phoneAsset *Asset
+	if asset, exists := registry.GetOrCreateAsset(phoneBackgroundPath); exists {
+		phoneAsset = asset
+	} else {
+		// Create transaction for atomic resource creation
+		tx := NewTransaction(registry)
+
+		// Reserve IDs atomically to prevent collisions (need 2: asset + format)
+		ids := tx.ReserveIDs(2)
+		assetID := ids[0]
+		formatID := ids[1]
+
+		// Generate unique asset name
+		phoneName := strings.TrimSuffix(strings.TrimSuffix(phoneBackgroundPath, ".png"), ".jpg")
+
+		// Create image-specific format using transaction
+		// 🚨 CRITICAL: Image formats must NOT have frameDuration (causes crashes)
+		_, err := tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1")
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create phone background format: %v", err)
+		}
+
+		// Create asset using transaction
+		asset, err := tx.CreateAsset(assetID, phoneBackgroundPath, phoneName, "0s", formatID)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("failed to create phone background asset: %v", err)
+		}
+
+		// Commit transaction
+		err = tx.Commit()
+		if err != nil {
+			return fmt.Errorf("failed to commit phone background transaction: %v", err)
+		}
+
+		phoneAsset = asset
+	}
+
+	// Create Video element with exact FCP timing (not using AddImage's timeline calculation)
+	video := Video{
+		Ref:      phoneAsset.ID,
+		Offset:   offsetFCP,           // Use exact offset instead of timeline calculation
+		Name:     phoneAsset.Name,
+		Start:    "86531445/24000s",   // Match Info.fcpxml start time exactly
+		Duration: durationFCP,         // Use exact duration
+	}
+
+	// Add Video element directly to spine
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Spine.Videos = append(sequence.Spine.Videos, video)
+	}
+
+	return nil
+}
+
+// addSpeechBubbleToLastSegment adds just a speech bubble to the most recently added phone background segment
+func addSpeechBubbleToLastSegment(fcpxml *FCPXML, speechBubblePath string, isBlue bool) error {
+	// Get the last phone background segment
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+		return fmt.Errorf("no sequence found")
+	}
+
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.Videos) == 0 {
+		return fmt.Errorf("no phone background found")
+	}
+
+	phoneVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+
+	// Add speech bubble as connected clip
+	err := addSpeechBubbleToSegment(fcpxml, phoneVideo, speechBubblePath, isBlue)
+	if err != nil {
+		return fmt.Errorf("failed to add speech bubble: %v", err)
 	}
 
 	return nil
@@ -231,7 +328,7 @@ func addSpeechBubbleToSegment(fcpxml *FCPXML, phoneVideo *Video, speechBubblePat
 	bubbleVideo := Video{
 		Ref:      bubbleAsset.ID,
 		Lane:     lane,
-		Offset:   "86531445/24000s", // Standard FCP offset for connected clips 
+		Offset:   "86531445/24000s", // Standard FCP offset for connected clips (matches Info.fcpxml)
 		Name:     bubbleAsset.Name,
 		Start:    "86531445/24000s", // Standard FCP start time
 		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
@@ -281,7 +378,7 @@ func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue 
 		}
 	}
 
-	// Calculate text positioning and color based on speech bubble type
+	// Calculate text positioning and color based on speech bubble type  
 	var textPosition string
 	var lane string
 	var textColor string
@@ -298,13 +395,21 @@ func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue 
 	// Generate unique text-style-def ID
 	textStyleID := GenerateTextStyleID(message, fmt.Sprintf("conversation_%t", isBlue))
 
+	// Calculate start time based on text color (from Info.fcpxml pattern)
+	var startTime string
+	if isBlue {
+		startTime = "86618532/24000s" // Blue text starts slightly later
+	} else {
+		startTime = "86617531/24000s" // White text starts first
+	}
+
 	// Create Title element matching Info.fcpxml pattern
 	title := Title{
 		Ref:      textEffectID,
 		Lane:     lane,
-		Offset:   "86531445/24000s", // Standard FCP offset for connected clips
+		Offset:   "86531445/24000s", // Standard FCP offset for connected clips (matches Info.fcpxml)
 		Name:     fmt.Sprintf("%s - Text", message),
-		Start:    "86617531/24000s", // Standard FCP start time for text
+		Start:    startTime,         // Different start times for blue vs white
 		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
 		Params: []Param{
 			{
