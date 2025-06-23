@@ -1862,6 +1862,8 @@ func AddImessageContinuation(fcpxml *FCPXML, newText string, offsetSeconds float
 	// Analyze existing conversation to determine next bubble type
 	pattern := analyzeConversationPattern(fcpxml)
 	
+	fmt.Printf("DEBUG AddImessageContinuation: next bubble type = '%s', video count = %d\n", pattern.NextBubbleType, pattern.VideoCount)
+	
 	switch pattern.NextBubbleType {
 	case "blue":
 		// Add blue bubble (like original imessage001.fcpxml pattern)
@@ -1978,11 +1980,9 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 		return fmt.Errorf("required assets not found in existing FCPXML")
 	}
 	
-	// Generate unique text style IDs (need two for the two text elements)
+	// Generate unique text style ID (need only one for single text element)
 	existingIDs := getAllExistingTextStyleIDs(fcpxml)
 	uniqueTextStyleID1 := getNextUniqueTextStyleID(existingIDs)
-	existingIDs[uniqueTextStyleID1] = true
-	uniqueTextStyleID2 := getNextUniqueTextStyleID(existingIDs)
 	
 	// Create new video segment for blue bubble continuation (like a new message in the conversation)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -2027,7 +2027,7 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 			}},
 			NestedTitles: []Title{
 				{
-					// First text element (pattern from Info.fcpxml line 154)
+					// Single text element for blue bubble continuation (no duplication)
 					Ref:      effectID,
 					Lane:     "1",
 					Offset:   "21610300/6000s",
@@ -2053,28 +2053,121 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 						},
 					}},
 				},
+			},
+		}
+		
+		// Add to spine
+		sequence.Spine.Videos = append(sequence.Spine.Videos, nextVideo)
+	}
+	
+	return nil
+}
+
+// addWhiteBubbleContinuation adds a white bubble message (reply) without duplicating previous messages
+func addWhiteBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
+	// Get existing assets
+	var phoneAssetID, blueAssetID, whiteAssetID, effectID string
+	for _, asset := range fcpxml.Resources.Assets {
+		if asset.Name == "phone_blank001" {
+			phoneAssetID = asset.ID
+		} else if asset.Name == "blue_speech001" {
+			blueAssetID = asset.ID
+		} else if asset.Name == "white_speech001" {
+			whiteAssetID = asset.ID
+		}
+	}
+	for _, effect := range fcpxml.Resources.Effects {
+		if effect.Name == "Text" {
+			effectID = effect.ID
+			break
+		}
+	}
+	
+	if phoneAssetID == "" || blueAssetID == "" || whiteAssetID == "" || effectID == "" {
+		return fmt.Errorf("required assets not found in existing FCPXML")
+	}
+	
+	// Generate unique text style ID
+	existingIDs := getAllExistingTextStyleIDs(fcpxml)
+	uniqueTextStyleID := getNextUniqueTextStyleID(existingIDs)
+	
+	// Create new video segment for white bubble continuation
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		
+		// Calculate proper offset using simple /6000s arithmetic
+		totalSixthousandths := 0
+		for _, video := range sequence.Spine.Videos {
+			durationStr := video.Duration
+			if durationStr != "" && strings.HasSuffix(durationStr, "/6000s") {
+				// Parse numerator from "nnnn/6000s" format
+				numeratorStr := strings.TrimSuffix(durationStr, "/6000s")
+				if numerator, err := strconv.Atoi(numeratorStr); err == nil {
+					totalSixthousandths += numerator
+				}
+			}
+		}
+		nextOffset := fmt.Sprintf("%d/6000s", totalSixthousandths)
+		
+		// Update sequence duration to accommodate new segment  
+		newTotalSixthousandths := totalSixthousandths + 3900 // 3900/6000s
+		sequence.Duration = fmt.Sprintf("%d/6000s", newTotalSixthousandths)
+		
+		// Create new video segment with white bubble only (no duplication)
+		nextVideo := Video{
+			Ref:      phoneAssetID,
+			Offset:   nextOffset,
+			Name:     "phone_blank001",
+			Start:    "21632800/6000s",
+			Duration: "3900/6000s",
+			NestedVideos: []Video{
 				{
-					// Second text element (pattern from Info.fcpxml line 186)
-					Ref:      effectID,
-					Lane:     "2", 
+					Ref:      blueAssetID,
+					Lane:     "1",
 					Offset:   "21632800/6000s",
-					Name:     newText + " - Text",
-					Start:    "21654600/6000s",
+					Name:     "blue_speech001",
+					Start:    "21632800/6000s",
 					Duration: "3900/6000s",
-					Params: createStandardTextParams("0 -3071"), // Blue bubble position
+					AdjustTransform: &AdjustTransform{
+						Position: "1.26755 -21.1954",
+						Scale:    "0.617236 0.617236",
+					},
+				},
+				{
+					Ref:      whiteAssetID,
+					Lane:     "2",
+					Offset:   "21632800/6000s",
+					Name:     "white_speech001",
+					Start:    "21632800/6000s",
+					Duration: "3900/6000s",
+					AdjustTransform: &AdjustTransform{
+						Position: "0.635834 4.00864",
+						Scale:    "0.653172 0.653172",
+					},
+				},
+			},
+			NestedTitles: []Title{
+				{
+					Ref:      effectID,
+					Lane:     "3",
+					Offset:   "86531200/24000s",
+					Name:     newText + " - Text",
+					Start:    "21654300/6000s",
+					Duration: "3900/6000s",
+					Params: createStandardTextParams("0 -1807"), // White bubble position
 					Text: &TitleText{
 						TextStyles: []TextStyleRef{{
-							Ref:  uniqueTextStyleID2,
+							Ref:  uniqueTextStyleID,
 							Text: newText,
 						}},
 					},
 					TextStyleDefs: []TextStyleDef{{
-						ID: uniqueTextStyleID2,
+						ID: uniqueTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
 							FontSize:    "204",
 							FontFace:    "Regular",
-							FontColor:   "0.999995 1 1 1", // White text for blue bubble
+							FontColor:   "0 0 0 1", // Black text for white bubble
 							Alignment:   "center",
 							LineSpacing: "-19",
 						},
@@ -2088,12 +2181,6 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 	}
 	
 	return nil
-}
-
-// addWhiteBubbleContinuation adds a white bubble message (reply)
-func addWhiteBubbleContinuation(fcpxml *FCPXML, newText string, pattern ConversationPattern, offsetSeconds float64, durationSeconds float64) error {
-	// This is essentially the existing AddImessageReply logic but with auto-detected original text
-	return AddImessageReply(fcpxml, pattern.LastText, newText, offsetSeconds, durationSeconds)
 }
 
 // createStandardTextParams creates the standard text parameters with given position

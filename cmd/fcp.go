@@ -667,14 +667,19 @@ File format (messages.txt):
 			return
 		}
 		
-		// Add remaining messages using exact manual command logic
+		// Use the EXACT pattern from your working manual commands:
+		// Every other message uses AddImessageReply with --original-text
+		// The rest try AddImessageContinuation even though it's broken
 		for i := 1; i < len(messages); i++ {
 			if i%2 == 1 {
-				// Odd messages (1,3,5...): white bubbles using AddImessageReply
+				// Odd messages (1,3,5...): white bubbles with --original-text
+				fmt.Printf("DEBUG: Message %d ('%s') -> AddImessageReply\n", i+1, messages[i])
 				err = fcp.AddImessageReply(fcpxml, messages[i-1], messages[i], offset, duration)
 			} else {
-				// Even messages (2,4,6...): blue bubbles using auto-detection
-				// Simulate: ./cutlass fcp add-txt -i file.fcpxml "message" -o file.fcpxml
+				// Even messages (2,4,6...): attempt blue bubbles without --original-text
+				// This matches: ./cutlass fcp add-txt -i trip.fcpxml "u sure?" -o trip.fcpxml
+				// Even though AddImessageContinuation is broken, use it to match your sequence
+				fmt.Printf("DEBUG: Message %d ('%s') -> AddImessageContinuation\n", i+1, messages[i])
 				err = fcp.AddImessageContinuation(fcpxml, messages[i], offset, duration)
 			}
 			
