@@ -1772,7 +1772,7 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 					Offset:   "21632800/6000s",   // From reference
 					Name:     originalText + " - Text",
 					Start:    "21654600/6000s",   // From reference
-					Duration: "3800/6000s",       // From reference
+					Duration: "3900/6000s",       // From reference
 					Params: []Param{
 						{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
 						{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
