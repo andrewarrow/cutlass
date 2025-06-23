@@ -83,6 +83,38 @@ AdjustTransform: &AdjustTransform{...}   // ✅ Built-in, crash-safe
 AdjustCrop: &AdjustCrop{...}            // ✅ Built-in, crash-safe
 ```
 
+## 🚨 CRITICAL: Timeline Positioning & Connected Clips 🚨
+
+**#2 cause of crashes: Wrong timeline timing patterns causing elements to appear at wrong times or crash FCP**
+
+### ✅ SPINE ELEMENT TIMING:
+```xml
+<!-- Sequential spine elements with exact FCP timing -->
+<video ref="r2" offset="0s" duration="15015/24000s" start="86531445/24000s"/>
+<video ref="r2" offset="15015/24000s" duration="15015/24000s" start="86531445/24000s"/>
+```
+
+### ✅ CONNECTED CLIP TIMING:
+```xml
+<!-- Connected clips appear immediately with parent when offset matches -->
+<video ref="r2" offset="0s" start="86531445/24000s">
+    <video lane="1" offset="86531445/24000s" start="86531445/24000s"/>  <!-- Appears immediately -->
+    <title lane="2" offset="86531445/24000s" start="86617531/24000s"/>  <!-- Appears immediately -->
+</video>
+```
+
+### ❌ CRASH PATTERNS:
+1. **Using AddImage() timeline calculation** → Elements appear at 3600+ seconds instead of 0s
+2. **Wrong start times on spine elements** → Connected clips appear at wrong timeline positions  
+3. **Manual duration calculation instead of exact FCP fractions** → Frame boundary errors
+4. **Text layout parameters causing TextFramework crashes** → `TXTextLayout::doLayoutForParagraphs` crash
+
+### 🔧 CRITICAL FIXES:
+1. **Never use AddImage() for timeline-specific positioning** - it calculates cumulative offsets
+2. **Always use exact FCP timing from working references** - `15015/24000s`, `86531445/24000s`
+3. **Spine elements control timeline position, connected clips appear immediately with parent**
+4. **Text elements are crash-prone** - test without text first, then add incrementally
+
 ## MANDATORY: Testing and Validation
 
 ### Required Tests (ALWAYS run):
