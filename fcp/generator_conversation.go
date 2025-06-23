@@ -10,17 +10,17 @@ import (
 // GenerateConversation creates an FCPXML file with an iMessage-style conversation using alternating speech bubbles.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
-// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management  
 // - Uses STRUCTS ONLY - no string templates → proper XML marshaling via struct fields
 // - Atomic ID reservation prevents race conditions and ID collisions
 // - Frame-aligned durations → ConvertSecondsToFCPDuration() function
 // - Images use Video elements, not AssetClip elements (CRITICAL to prevent crashes)
 //
-// Conversation Pattern (from samples/imessage.fcpxml):
-// 1. Phone background as base image (Video element, duration spans entire conversation)
-// 2. Alternating speech bubbles: blue (user question), white (response)
-// 3. Text overlays positioned within speech bubbles with proper FCP timing
-// 4. Each message appears 2 seconds apart for readability
+// Conversation Pattern (based on Info.fcpxml analysis):
+// 1. Multiple phone background segments on spine (each segment = 2 seconds)
+// 2. Each phone background has connected speech bubbles and text (all appear simultaneously)
+// 3. Sequential conversation created by sequential spine segments, not connected clip timing
+// 4. Each segment contains one blue+white message pair with proper positioning
 //
 // Required Files:
 // - phoneBackgroundPath: PNG of phone background (e.g., phone_blank001.png)
@@ -47,43 +47,42 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		return fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
 
-	// Calculate total conversation duration: 2 seconds per message + 2 seconds padding
+	// Calculate conversation duration: 2 seconds per message + 2 seconds padding
 	totalDurationSeconds := float64(len(messages)*2 + 2)
 
-	// Add phone background as base layer (spans entire conversation)
-	err = AddImage(fcpxml, phoneBackgroundPath, totalDurationSeconds)
-	if err != nil {
-		return fmt.Errorf("failed to add phone background: %v", err)
+	// Update sequence duration
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Duration = ConvertSecondsToFCPDuration(totalDurationSeconds)
 	}
 
-	// Process each message with alternating speech bubbles
-	for i, message := range messages {
-		// Determine which speech bubble to use (odd = blue, even = white)
-		var speechBubblePath string
-		var textColor string
-		if i%2 == 0 {
-			// First message (index 0) and every other = blue (user)
-			speechBubblePath = blueSpeechPath
-			textColor = "0 0 0 1" // Black text for blue bubble
-		} else {
-			// Second message (index 1) and every other = white (response)
-			speechBubblePath = whiteSpeechPath
-			textColor = "0.999995 1 1 1" // White text for white bubble
+	// Process messages in pairs (each pair gets its own phone background segment)
+	for i := 0; i < len(messages); i += 2 {
+		// Calculate offset for this phone background segment
+		segmentOffsetSeconds := float64(i)  // Each message = 2 seconds apart
+		segmentDurationSeconds := 2.0
+
+		// Add phone background for this segment
+		err = addPhoneBackgroundSegment(fcpxml, phoneBackgroundPath, segmentOffsetSeconds, segmentDurationSeconds)
+		if err != nil {
+			return fmt.Errorf("failed to add phone background segment %d: %v", i/2, err)
 		}
 
-		// Calculate message timing: each message appears 2 seconds after the previous
-		messageOffsetSeconds := float64(i * 2)
-
-		// Add speech bubble image for this message (2 second duration)
-		err = addConversationBubble(fcpxml, speechBubblePath, messageOffsetSeconds, 2.0, i%2 == 0)
-		if err != nil {
-			return fmt.Errorf("failed to add speech bubble %d: %v", i, err)
+		// Add messages for this segment (blue and white pair)
+		if i < len(messages) {
+			// Add blue message (first message of pair)
+			err = addMessageToLastSegment(fcpxml, blueSpeechPath, messages[i], true)
+			if err != nil {
+				return fmt.Errorf("failed to add blue message %d: %v", i, err)
+			}
 		}
-
-		// Add text overlay for this message
-		err = addConversationText(fcpxml, message, messageOffsetSeconds, 2.0, textColor, i%2 == 0)
-		if err != nil {
-			return fmt.Errorf("failed to add text for message %d: %v", i, err)
+		
+		if i+1 < len(messages) {
+			// Add white message (second message of pair)
+			err = addMessageToLastSegment(fcpxml, whiteSpeechPath, messages[i+1], false)
+			if err != nil {
+				return fmt.Errorf("failed to add white message %d: %v", i+1, err)
+			}
 		}
 	}
 
@@ -120,9 +119,58 @@ func readMessagesFromFile(messagesPath string) ([]string, error) {
 	return messages, nil
 }
 
-// addConversationBubble adds a speech bubble image as a Video element to the conversation
-// Based on samples/imessage.fcpxml positioning and scaling patterns
-func addConversationBubble(fcpxml *FCPXML, speechBubblePath string, offsetSeconds, durationSeconds float64, isBlue bool) error {
+// addPhoneBackgroundSegment adds a phone background video segment directly to the spine
+func addPhoneBackgroundSegment(fcpxml *FCPXML, phoneBackgroundPath string, offsetSeconds, durationSeconds float64) error {
+	// Use existing AddImage logic but with specific offset and duration
+	err := AddImage(fcpxml, phoneBackgroundPath, durationSeconds)
+	if err != nil {
+		return fmt.Errorf("failed to add phone background: %v", err)
+	}
+
+	// Update the last added phone background with correct offset
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		if len(sequence.Spine.Videos) > 0 {
+			lastVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+			lastVideo.Offset = ConvertSecondsToFCPDuration(offsetSeconds)
+			lastVideo.Duration = ConvertSecondsToFCPDuration(durationSeconds)
+		}
+	}
+
+	return nil
+}
+
+// addMessageToLastSegment adds a speech bubble and text to the most recently added phone background segment
+func addMessageToLastSegment(fcpxml *FCPXML, speechBubblePath, message string, isBlue bool) error {
+	// Get the last phone background segment
+	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
+		return fmt.Errorf("no sequence found")
+	}
+
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	if len(sequence.Spine.Videos) == 0 {
+		return fmt.Errorf("no phone background found")
+	}
+
+	phoneVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
+
+	// Add speech bubble as connected clip
+	err := addSpeechBubbleToSegment(fcpxml, phoneVideo, speechBubblePath, isBlue)
+	if err != nil {
+		return fmt.Errorf("failed to add speech bubble: %v", err)
+	}
+
+	// Add text as connected clip
+	err = addTextToSegment(fcpxml, phoneVideo, message, isBlue)
+	if err != nil {
+		return fmt.Errorf("failed to add text: %v", err)
+	}
+
+	return nil
+}
+
+// addSpeechBubbleToSegment adds a speech bubble as a connected clip to a phone background video
+func addSpeechBubbleToSegment(fcpxml *FCPXML, phoneVideo *Video, speechBubblePath string, isBlue bool) error {
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
@@ -166,59 +214,41 @@ func addConversationBubble(fcpxml *FCPXML, speechBubblePath string, offsetSecond
 		bubbleAsset = asset
 	}
 
-	// Add speech bubble as Video element to spine (images use Video, not AssetClip)
-	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
-		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-
-		// Calculate offset in FCP format
-		offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
-		bubbleDuration := ConvertSecondsToFCPDuration(durationSeconds)
-
-		// Create Video element for speech bubble
-		// Positioning based on samples/imessage.fcpxml:
-		// - Blue bubble: position="1.26755 -21.1954" scale="0.617236 0.617236"
-		// - White bubble: position="0.635834 4.00864" scale="0.653172 0.653172"
-		var position, scale string
-		var lane string
-		if isBlue {
-			position = "1.26755 -21.1954"
-			scale = "0.617236 0.617236"
-			lane = "1"
-		} else {
-			position = "0.635834 4.00864"
-			scale = "0.653172 0.653172"
-			lane = "2"
-		}
-
-		// Find the phone background video to nest the speech bubble inside
-		if len(sequence.Spine.Videos) > 0 {
-			phoneVideo := &sequence.Spine.Videos[0]
-
-			// Create nested video for speech bubble (following samples/imessage.fcpxml pattern)
-			bubbleVideo := Video{
-				Ref:      bubbleAsset.ID,
-				Lane:     lane,
-				Offset:   offsetDuration,
-				Name:     bubbleAsset.Name,
-				Start:    offsetDuration, // Start time matches offset for nested elements
-				Duration: bubbleDuration,
-				AdjustTransform: &AdjustTransform{
-					Position: position,
-					Scale:    scale,
-				},
-			}
-
-			// Add as nested video inside phone background
-			phoneVideo.NestedVideos = append(phoneVideo.NestedVideos, bubbleVideo)
-		}
+	// Create speech bubble video element with proper positioning
+	var position, scale string
+	var lane string
+	if isBlue {
+		position = "1.26755 -21.1954"
+		scale = "0.617236 0.617236"
+		lane = "1"
+	} else {
+		position = "0.635834 4.00864"
+		scale = "0.653172 0.653172"
+		lane = "2"
 	}
+
+	// Create connected video element (based on Info.fcpxml pattern)
+	bubbleVideo := Video{
+		Ref:      bubbleAsset.ID,
+		Lane:     lane,
+		Offset:   "86531445/24000s", // Standard FCP offset for connected clips 
+		Name:     bubbleAsset.Name,
+		Start:    "86531445/24000s", // Standard FCP start time
+		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
+		AdjustTransform: &AdjustTransform{
+			Position: position,
+			Scale:    scale,
+		},
+	}
+
+	// Add as connected clip to phone background
+	phoneVideo.NestedVideos = append(phoneVideo.NestedVideos, bubbleVideo)
 
 	return nil
 }
 
-// addConversationText adds text overlay positioned within a speech bubble
-// Based on samples/imessage.fcpxml text positioning patterns
-func addConversationText(fcpxml *FCPXML, message string, offsetSeconds, durationSeconds float64, textColor string, isBlue bool) error {
+// addTextToSegment adds text as a connected clip to a phone background video
+func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue bool) error {
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
@@ -251,162 +281,149 @@ func addConversationText(fcpxml *FCPXML, message string, offsetSeconds, duration
 		}
 	}
 
-	// Add text as Title element nested within phone background video
-	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
-		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-
-		if len(sequence.Spine.Videos) > 0 {
-			phoneVideo := &sequence.Spine.Videos[0]
-
-			// Calculate text positioning based on speech bubble type
-			// From samples/imessage.fcpxml:
-			// - Blue text: Position "0 -3071" (higher up)
-			// - White text: Position "0 -1807" (lower down)
-			var textPosition string
-			var lane string
-			if isBlue {
-				textPosition = "0 -3071"
-				lane = "4"
-			} else {
-				textPosition = "0 -1807"
-				lane = "3"
-			}
-
-			// Calculate timing
-			offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
-			textDuration := ConvertSecondsToFCPDuration(durationSeconds)
-
-			// Generate unique text-style-def ID
-			textStyleID := GenerateTextStyleID(message, fmt.Sprintf("conversation_%.1f_%t", offsetSeconds, isBlue))
-
-			// Create Title element matching samples/imessage.fcpxml pattern
-			title := Title{
-				Ref:      textEffectID,
-				Lane:     lane,
-				Offset:   offsetDuration,
-				Name:     fmt.Sprintf("%s - Text", message),
-				Start:    "86617531/24000s", // Standard FCP start time for conversation text
-				Duration: textDuration,
-				Params: []Param{
-					{
-						Name:  "Build In",
-						Key:   "9999/10000/2/101",
-						Value: "0",
-					},
-					{
-						Name:  "Build Out",
-						Key:   "9999/10000/2/102",
-						Value: "0",
-					},
-					{
-						Name:  "Position",
-						Key:   "9999/10003/13260/3296672360/1/100/101",
-						Value: textPosition,
-					},
-					{
-						Name:  "Layout Method",
-						Key:   "9999/10003/13260/3296672360/2/314",
-						Value: "1 (Paragraph)",
-					},
-					{
-						Name:  "Left Margin",
-						Key:   "9999/10003/13260/3296672360/2/323",
-						Value: "-1210",
-					},
-					{
-						Name:  "Right Margin",
-						Key:   "9999/10003/13260/3296672360/2/324",
-						Value: "1210",
-					},
-					{
-						Name:  "Top Margin",
-						Key:   "9999/10003/13260/3296672360/2/325",
-						Value: "2160",
-					},
-					{
-						Name:  "Bottom Margin",
-						Key:   "9999/10003/13260/3296672360/2/326",
-						Value: "-2160",
-					},
-					{
-						Name:  "Alignment",
-						Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
-						Value: "1 (Center)",
-					},
-					{
-						Name:  "Line Spacing",
-						Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
-						Value: "-19",
-					},
-					{
-						Name:  "Auto-Shrink",
-						Key:   "9999/10003/13260/3296672360/2/370",
-						Value: "3 (To All Margins)",
-					},
-					{
-						Name:  "Alignment",
-						Key:   "9999/10003/13260/3296672360/2/373",
-						Value: "0 (Left) 0 (Top)",
-					},
-					{
-						Name:  "Opacity",
-						Key:   "9999/10003/13260/3296672360/4/3296673134/1000/1044",
-						Value: "0",
-					},
-					{
-						Name:  "Speed",
-						Key:   "9999/10003/13260/3296672360/4/3296673134/201/208",
-						Value: "6 (Custom)",
-					},
-					{
-						Name: "Custom Speed",
-						Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
-						KeyframeAnimation: &KeyframeAnimation{
-							Keyframes: []Keyframe{
-								{
-									Time:  "-469658744/1000000000s",
-									Value: "0",
-								},
-								{
-									Time:  "12328542033/1000000000s",
-									Value: "1",
-								},
-							},
-						},
-					},
-					{
-						Name:  "Apply Speed",
-						Key:   "9999/10003/13260/3296672360/4/3296673134/201/211",
-						Value: "2 (Per Object)",
-					},
-				},
-				Text: &TitleText{
-					TextStyles: []TextStyleRef{
-						{
-							Ref:  textStyleID,
-							Text: message,
-						},
-					},
-				},
-				TextStyleDefs: []TextStyleDef{
-					{
-						ID: textStyleID,
-						TextStyle: TextStyle{
-							Font:        "Arial",
-							FontSize:    "204",
-							FontFace:    "Regular",
-							FontColor:   textColor,
-							Alignment:   "center",
-							LineSpacing: "-19",
-						},
-					},
-				},
-			}
-
-			// Add title as nested element within phone background video
-			phoneVideo.NestedTitles = append(phoneVideo.NestedTitles, title)
-		}
+	// Calculate text positioning and color based on speech bubble type
+	var textPosition string
+	var lane string
+	var textColor string
+	if isBlue {
+		textPosition = "0 -3071"
+		lane = "4"
+		textColor = "0.999995 1 1 1" // White text for blue bubble
+	} else {
+		textPosition = "0 -1807"
+		lane = "3"
+		textColor = "0 0 0 1" // Black text for white bubble
 	}
+
+	// Generate unique text-style-def ID
+	textStyleID := GenerateTextStyleID(message, fmt.Sprintf("conversation_%t", isBlue))
+
+	// Create Title element matching Info.fcpxml pattern
+	title := Title{
+		Ref:      textEffectID,
+		Lane:     lane,
+		Offset:   "86531445/24000s", // Standard FCP offset for connected clips
+		Name:     fmt.Sprintf("%s - Text", message),
+		Start:    "86617531/24000s", // Standard FCP start time for text
+		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
+		Params: []Param{
+			{
+				Name:  "Build In",
+				Key:   "9999/10000/2/101",
+				Value: "0",
+			},
+			{
+				Name:  "Build Out",
+				Key:   "9999/10000/2/102",
+				Value: "0",
+			},
+			{
+				Name:  "Position",
+				Key:   "9999/10003/13260/3296672360/1/100/101",
+				Value: textPosition,
+			},
+			{
+				Name:  "Layout Method",
+				Key:   "9999/10003/13260/3296672360/2/314",
+				Value: "1 (Paragraph)",
+			},
+			{
+				Name:  "Left Margin",
+				Key:   "9999/10003/13260/3296672360/2/323",
+				Value: "-1210",
+			},
+			{
+				Name:  "Right Margin",
+				Key:   "9999/10003/13260/3296672360/2/324",
+				Value: "1210",
+			},
+			{
+				Name:  "Top Margin",
+				Key:   "9999/10003/13260/3296672360/2/325",
+				Value: "2160",
+			},
+			{
+				Name:  "Bottom Margin",
+				Key:   "9999/10003/13260/3296672360/2/326",
+				Value: "-2160",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
+				Value: "1 (Center)",
+			},
+			{
+				Name:  "Line Spacing",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
+				Value: "-19",
+			},
+			{
+				Name:  "Auto-Shrink",
+				Key:   "9999/10003/13260/3296672360/2/370",
+				Value: "3 (To All Margins)",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/373",
+				Value: "0 (Left) 0 (Top)",
+			},
+			{
+				Name:  "Opacity",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/1000/1044",
+				Value: "0",
+			},
+			{
+				Name:  "Speed",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/201/208",
+				Value: "6 (Custom)",
+			},
+			{
+				Name: "Custom Speed",
+				Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  "-469658744/1000000000s",
+							Value: "0",
+						},
+						{
+							Time:  "12328542033/1000000000s",
+							Value: "1",
+						},
+					},
+				},
+			},
+			{
+				Name:  "Apply Speed",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/201/211",
+				Value: "2 (Per Object)",
+			},
+		},
+		Text: &TitleText{
+			TextStyles: []TextStyleRef{
+				{
+					Ref:  textStyleID,
+					Text: message,
+				},
+			},
+		},
+		TextStyleDefs: []TextStyleDef{
+			{
+				ID: textStyleID,
+				TextStyle: TextStyle{
+					Font:        "Arial",
+					FontSize:    "204",
+					FontFace:    "Regular",
+					FontColor:   textColor,
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
+			},
+		},
+	}
+
+	// Add as connected clip to phone background
+	phoneVideo.NestedTitles = append(phoneVideo.NestedTitles, title)
 
 	return nil
 }

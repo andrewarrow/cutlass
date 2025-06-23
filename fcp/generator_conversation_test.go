@@ -77,24 +77,24 @@ Ok.`
 		t.Errorf("Expected phone background duration %d frames, got %d frames", expectedDurationFrames, actualDurationFrames)
 	}
 
-	// Test 3: Verify speech bubbles (4 messages = 4 nested videos)
+	// Test 3: Verify speech bubbles (4 messages = 4 connected videos)
 	if len(phoneVideo.NestedVideos) != 4 {
-		t.Errorf("Expected 4 nested speech bubble videos, got %d", len(phoneVideo.NestedVideos))
+		t.Errorf("Expected 4 connected speech bubble videos, got %d", len(phoneVideo.NestedVideos))
 	}
 
 	// Test 4: Verify speech bubble alternation (blue, white, blue, white)
 	expectedBubbles := []string{"blue_speech001", "white_speech001", "blue_speech001", "white_speech001"}
-	for i, nestedVideo := range phoneVideo.NestedVideos {
-		if !strings.Contains(nestedVideo.Name, expectedBubbles[i]) {
-			t.Errorf("Expected speech bubble %s at index %d, got %s", expectedBubbles[i], i, nestedVideo.Name)
+	for i, video := range phoneVideo.NestedVideos {
+		if !strings.Contains(video.Name, expectedBubbles[i]) {
+			t.Errorf("Expected speech bubble %s at index %d, got %s", expectedBubbles[i], i, video.Name)
 		}
 	}
 
 	// Test 5: Verify speech bubble timing (0s, 2s, 4s, 6s)
-	for i, nestedVideo := range phoneVideo.NestedVideos {
+	for i, video := range phoneVideo.NestedVideos {
 		expectedOffsetSeconds := float64(i * 2)
 		expectedOffsetFrames := parseFCPDuration(ConvertSecondsToFCPDuration(expectedOffsetSeconds))
-		actualOffsetFrames := parseFCPDuration(nestedVideo.Offset)
+		actualOffsetFrames := parseFCPDuration(video.Offset)
 		
 		if actualOffsetFrames != expectedOffsetFrames {
 			t.Errorf("Expected speech bubble %d offset %d frames, got %d frames", i, expectedOffsetFrames, actualOffsetFrames)
@@ -102,29 +102,29 @@ Ok.`
 	}
 
 	// Test 6: Verify speech bubble positioning (blue vs white)
-	for i, nestedVideo := range phoneVideo.NestedVideos {
+	for i, video := range phoneVideo.NestedVideos {
 		if i%2 == 0 {
 			// Blue bubbles: position="1.26755 -21.1954" scale="0.617236 0.617236" lane="1"
-			if nestedVideo.AdjustTransform == nil || nestedVideo.AdjustTransform.Position != "1.26755 -21.1954" {
-				t.Errorf("Expected blue bubble position '1.26755 -21.1954', got %v", getPositionFromTransform(nestedVideo.AdjustTransform))
+			if video.AdjustTransform == nil || video.AdjustTransform.Position != "1.26755 -21.1954" {
+				t.Errorf("Expected blue bubble position '1.26755 -21.1954', got %v", getPositionFromTransform(video.AdjustTransform))
 			}
-			if nestedVideo.Lane != "1" {
-				t.Errorf("Expected blue bubble lane '1', got '%s'", nestedVideo.Lane)
+			if video.Lane != "1" {
+				t.Errorf("Expected blue bubble lane '1', got '%s'", video.Lane)
 			}
 		} else {
 			// White bubbles: position="0.635834 4.00864" scale="0.653172 0.653172" lane="2"
-			if nestedVideo.AdjustTransform == nil || nestedVideo.AdjustTransform.Position != "0.635834 4.00864" {
-				t.Errorf("Expected white bubble position '0.635834 4.00864', got %v", getPositionFromTransform(nestedVideo.AdjustTransform))
+			if video.AdjustTransform == nil || video.AdjustTransform.Position != "0.635834 4.00864" {
+				t.Errorf("Expected white bubble position '0.635834 4.00864', got %v", getPositionFromTransform(video.AdjustTransform))
 			}
-			if nestedVideo.Lane != "2" {
-				t.Errorf("Expected white bubble lane '2', got '%s'", nestedVideo.Lane)
+			if video.Lane != "2" {
+				t.Errorf("Expected white bubble lane '2', got '%s'", video.Lane)
 			}
 		}
 	}
 
-	// Test 7: Verify text overlays (4 messages = 4 nested titles)
+	// Test 7: Verify text overlays (4 messages = 4 connected titles)
 	if len(phoneVideo.NestedTitles) != 4 {
-		t.Errorf("Expected 4 nested text titles, got %d", len(phoneVideo.NestedTitles))
+		t.Errorf("Expected 4 connected text titles, got %d", len(phoneVideo.NestedTitles))
 	}
 
 	// Test 8: Verify text content matches messages
@@ -192,7 +192,7 @@ Ok.`
 	if !strings.Contains(xmlString, "Hey u there?") {
 		t.Error("Expected first message not found in XML")
 	}
-	if !strings.Contains(xmlString, "Yes, I'm here.") {
+	if !strings.Contains(xmlString, "Yes, I&#39;m here.") {
 		t.Error("Expected second message not found in XML")
 	}
 	if !strings.Contains(xmlString, "adjust-transform") {
