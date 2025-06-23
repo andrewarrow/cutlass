@@ -469,18 +469,25 @@ Requires an existing FCPXML file with at least one video element to nest the PIP
 
 var addTxtCmd = &cobra.Command{
 	Use:   "add-txt [text-content]",
-	Short: "Add a single text message like in samples/imessage001.fcpxml",
-	Long: `Add a single text message to an FCPXML file using the same styling and animation as samples/imessage001.fcpxml.
-The text will be added as a title element with:
-- Arial font, size 204, white color, center alignment
-- Custom speed animation and layout parameters matching the sample
-- Lane 2 positioning like in the original sample
+	Short: "Add a text message like samples/imessage001.fcpxml with phone/bubble background",
+	Long: `Add a text message to an FCPXML file recreating the complete structure from samples/imessage001.fcpxml.
+This includes:
+- Phone background image (phone_blank001.png)
+- Speech bubble image (blue_speech001.png) 
+- Text title with proper styling and positioning
+- All elements properly nested and positioned
 
+If no text is provided, uses "Hey u there?" as default.
 If --input is specified, the text will be added to an existing FCPXML file.
-Otherwise, a new FCPXML file is created.`,
-	Args: cobra.ExactArgs(1),
+Otherwise, creates the complete imessage001 structure.`,
+	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		textContent := args[0]
+		var textContent string
+		if len(args) > 0 {
+			textContent = args[0]
+		} else {
+			textContent = "Hey u there?" // Default from samples/imessage001.fcpxml
+		}
 		
 		// Get offset from flag (default 1 second)
 		offsetStr, _ := cmd.Flags().GetString("offset")
@@ -530,8 +537,8 @@ Otherwise, a new FCPXML file is created.`,
 			}
 		}
 		
-		// Add text to the structure
-		err = fcp.AddSingleText(fcpxml, textContent, offset, duration)
+		// Add text to the structure (with complete imessage background if needed)
+		err = fcp.AddImessageText(fcpxml, textContent, offset, duration)
 		if err != nil {
 			fmt.Printf("Error adding text: %v\n", err)
 			return

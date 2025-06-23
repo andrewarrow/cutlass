@@ -1444,12 +1444,175 @@ func AddSingleText(fcpxml *FCPXML, text string, offsetSeconds float64, durationS
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	// Add title to the spine if there's a sequence
+	// Add title to the spine or nest within existing video content
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-		sequence.Spine.Titles = append(sequence.Spine.Titles, title)
+		
+		// Check if there are existing video elements to nest the title within
+		if len(sequence.Spine.Videos) > 0 {
+			// Add as nested title within the first video element (like samples/imessage001.fcpxml)
+			sequence.Spine.Videos[0].NestedTitles = append(sequence.Spine.Videos[0].NestedTitles, title)
+		} else if len(sequence.Spine.AssetClips) > 0 {
+			// Add as nested title within the first asset clip
+			sequence.Spine.AssetClips[0].Titles = append(sequence.Spine.AssetClips[0].Titles, title)
+		} else {
+			// No existing video content - add title directly to spine for standalone text
+			sequence.Spine.Titles = append(sequence.Spine.Titles, title)
+		}
 	}
 
+	return nil
+}
+
+// AddImessageText creates a complete imessage structure exactly like samples/imessage001.fcpxml.
+// This creates the EXACT structure with matching format, durations, and timing.
+func AddImessageText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSeconds float64) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	
+	// Reserve IDs (need 5: format, 2 assets, 2 formats for assets, 1 effect)
+	ids := tx.ReserveIDs(6)
+	formatID := ids[0]
+	phoneAssetID := ids[1]
+	phoneFormatID := ids[2]
+	bubbleAssetID := ids[3]
+	bubbleFormatID := ids[4]
+	effectID := ids[5]
+	
+	// Create main sequence format matching reference exactly
+	_, err := tx.CreateFormatWithFrameDuration(formatID, "100/6000s", "1080", "1920", "1-1-1 (Rec. 709)")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create main format: %v", err)
+	}
+	
+	// Create phone asset format matching reference
+	_, err = tx.CreateFormat(phoneFormatID, "FFVideoFormatRateUndefined", "452", "910", "1-13-1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create phone format: %v", err)
+	}
+	
+	// Create phone asset matching reference
+	_, err = tx.CreateAsset(phoneAssetID, "/Users/aa/Movies/Untitled.fcpbundle/6-13-25/Original Media/phone_blank001 (fcp1).png", "phone_blank001", "0s", phoneFormatID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create phone asset: %v", err)
+	}
+	
+	// Create bubble asset format matching reference
+	_, err = tx.CreateFormat(bubbleFormatID, "FFVideoFormatRateUndefined", "392", "206", "1-13-1")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create bubble format: %v", err)
+	}
+	
+	// Create bubble asset matching reference
+	_, err = tx.CreateAsset(bubbleAssetID, "/Users/aa/Movies/Untitled.fcpbundle/6-13-25/Original Media/blue_speech001 (fcp1).png", "blue_speech001", "0s", bubbleFormatID)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create bubble asset: %v", err)
+	}
+	
+	// Create text effect
+	_, err = tx.CreateEffect(effectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create text effect: %v", err)
+	}
+	
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+	
+	// Set sequence format and duration to match reference exactly
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Format = formatID
+		sequence.Duration = "3300/6000s" // From reference
+		
+		// Create the exact structure from reference
+		phoneVideo := Video{
+			Ref:      phoneAssetID,
+			Offset:   "0s",
+			Name:     "phone_blank001",
+			Start:    "21610300/6000s", // From reference
+			Duration: "3300/6000s",     // From reference
+			NestedVideos: []Video{{
+				Ref:      bubbleAssetID,
+				Lane:     "1",
+				Offset:   "21610300/6000s", // From reference
+				Name:     "blue_speech001",
+				Start:    "21610300/6000s", // From reference
+				Duration: "3300/6000s",     // From reference
+				AdjustTransform: &AdjustTransform{
+					Position: "1.26755 -21.1954", // From reference
+					Scale:    "0.617236 0.617236", // From reference
+				},
+			}},
+			NestedTitles: []Title{{
+				Ref:      effectID,
+				Lane:     "2",
+				Offset:   "43220600/12000s", // From reference
+				Name:     text + " - Text",
+				Start:    "21632100/6000s", // From reference
+				Duration: "3300/6000s",     // From reference
+				Params: []Param{
+					{Name: "Build In", Key: "9999/10000/2/101", Value: "0"},
+					{Name: "Build Out", Key: "9999/10000/2/102", Value: "0"},
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: "0 -3071"},
+					{Name: "Layout Method", Key: "9999/10003/13260/3296672360/2/314", Value: "1 (Paragraph)"},
+					{Name: "Left Margin", Key: "9999/10003/13260/3296672360/2/323", Value: "-1210"},
+					{Name: "Right Margin", Key: "9999/10003/13260/3296672360/2/324", Value: "1210"},
+					{Name: "Top Margin", Key: "9999/10003/13260/3296672360/2/325", Value: "2160"},
+					{Name: "Bottom Margin", Key: "9999/10003/13260/3296672360/2/326", Value: "-2160"},
+					{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/354/3296667315/401", Value: "1 (Center)"},
+					{Name: "Line Spacing", Key: "9999/10003/13260/3296672360/2/354/3296667315/404", Value: "-19"},
+					{Name: "Auto-Shrink", Key: "9999/10003/13260/3296672360/2/370", Value: "3 (To All Margins)"},
+					{Name: "Alignment", Key: "9999/10003/13260/3296672360/2/373", Value: "0 (Left) 0 (Top)"},
+					{Name: "Opacity", Key: "9999/10003/13260/3296672360/4/3296673134/1000/1044", Value: "0"},
+					{Name: "Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/208", Value: "6 (Custom)"},
+					{
+						Name: "Custom Speed",
+						Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{Time: "-469658744/1000000000s", Value: "0"},
+								{Time: "12328542033/1000000000s", Value: "1"},
+							},
+						},
+					},
+					{Name: "Apply Speed", Key: "9999/10003/13260/3296672360/4/3296673134/201/211", Value: "2 (Per Object)"},
+				},
+				Text: &TitleText{
+					TextStyles: []TextStyleRef{{
+						Ref:  "ts1", // Use simple ID like reference
+						Text: text,
+					}},
+				},
+				TextStyleDefs: []TextStyleDef{{
+					ID: "ts1",
+					TextStyle: TextStyle{
+						Font:        "Arial",
+						FontSize:    "204",
+						FontFace:    "Regular",
+						FontColor:   "0.999995 1 1 1",
+						Alignment:   "center",
+						LineSpacing: "-19",
+					},
+				}},
+			}},
+		}
+		
+		// Replace spine with exact structure
+		sequence.Spine.Videos = []Video{phoneVideo}
+		sequence.Spine.AssetClips = nil
+		sequence.Spine.Titles = nil
+	}
+	
 	return nil
 }
 
