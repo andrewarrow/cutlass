@@ -1912,10 +1912,20 @@ func analyzeConversationPattern(fcpxml *FCPXML) ConversationPattern {
 		pattern.NextOffset = "3300/6000s"       // From reference imessage002
 		pattern.NextDuration = "3900/6000s"     // From reference imessage002
 	} else {
-		// Calculate offset based on previous segments
-		// Each segment is typically 3300/6000s duration, so add that for each segment
-		offsetSeconds := 0.55 * float64(pattern.VideoCount) // 3300/6000 ≈ 0.55 seconds
-		pattern.NextOffset = ConvertSecondsToFCPDuration(offsetSeconds)
+		// Calculate offset by summing durations of all previous segments
+		totalOffsetSeconds := 0.0
+		for _, video := range sequence.Spine.Videos {
+			durationStr := video.Duration
+			if durationStr != "" {
+				durationUnits := parseFCPDuration(durationStr)
+				// Convert FCP internal units back to seconds
+				// FCP uses 24000/1001 frames per second, each frame is 1001 units
+				framesPerSecond := 24000.0 / 1001.0
+				seconds := float64(durationUnits) / 1001.0 / framesPerSecond
+				totalOffsetSeconds += seconds
+			}
+		}
+		pattern.NextOffset = ConvertSecondsToFCPDuration(totalOffsetSeconds)
 		pattern.NextDuration = "3900/6000s" // Standard continuation duration
 	}
 	
