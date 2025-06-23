@@ -467,6 +467,68 @@ Requires an existing FCPXML file with at least one video element to nest the PIP
 	},
 }
 
+var generateConversationCmd = &cobra.Command{
+	Use:   "generate-conversation [messages-file]",
+	Short: "Generate an iMessage-style conversation FCPXML from a text file",
+	Long: `Generate a complete iMessage-style conversation FCPXML from a text file.
+Each line in the messages file becomes a conversation bubble:
+- Odd lines (1st, 3rd, 5th...) appear in blue speech bubbles (1st person)
+- Even lines (2nd, 4th, 6th...) appear in white speech bubbles (2nd person)
+- Messages appear every 2 seconds for readability
+- Text is positioned within speech bubbles with proper colors
+
+Required image files (use --phone, --blue-speech, --white-speech flags):
+- Phone background image (e.g., phone_blank001.png)
+- Blue speech bubble image (e.g., blue_speech001.png)  
+- White speech bubble image (e.g., white_speech001.png)`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		messagesFile := args[0]
+		
+		// Get image file paths from flags
+		phoneBackground, _ := cmd.Flags().GetString("phone")
+		blueSpeech, _ := cmd.Flags().GetString("blue-speech")
+		whiteSpeech, _ := cmd.Flags().GetString("white-speech")
+		
+		// Default to Pictures directory if not specified
+		if phoneBackground == "" {
+			phoneBackground = "/Users/aa/Pictures/phone_blank001.png"
+		}
+		if blueSpeech == "" {
+			blueSpeech = "/Users/aa/Pictures/blue_speech001.png"
+		}
+		if whiteSpeech == "" {
+			whiteSpeech = "/Users/aa/Pictures/white_speech001.png"
+		}
+		
+		// Get output filename from flag
+		output, _ := cmd.Flags().GetString("output")
+		var filename string
+		
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("conversation_%d.fcpxml", timestamp)
+		}
+		
+		// Generate conversation
+		err := fcp.GenerateConversation(phoneBackground, blueSpeech, whiteSpeech, messagesFile, filename)
+		if err != nil {
+			fmt.Printf("Error generating conversation: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated iMessage conversation: %s\n", filename)
+		fmt.Printf("  - Phone background: %s\n", phoneBackground)
+		fmt.Printf("  - Blue speech bubbles: %s\n", blueSpeech)
+		fmt.Printf("  - White speech bubbles: %s\n", whiteSpeech)
+		fmt.Printf("  - Messages file: %s\n", messagesFile)
+		fmt.Printf("Ready to import into Final Cut Pro!\n")
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -500,6 +562,12 @@ func init() {
 	addPipVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addPipVideoCmd.Flags().StringP("offset", "t", "0", "Start offset in seconds for PIP video (default 0)")
 	
+	// Add flags to generate-conversation subcommand
+	generateConversationCmd.Flags().StringP("output", "o", "", "Output filename (defaults to conversation_unixtime.fcpxml)")
+	generateConversationCmd.Flags().String("phone", "", "Phone background image (defaults to /Users/aa/Pictures/phone_blank001.png)")
+	generateConversationCmd.Flags().String("blue-speech", "", "Blue speech bubble image (defaults to /Users/aa/Pictures/blue_speech001.png)")
+	generateConversationCmd.Flags().String("white-speech", "", "White speech bubble image (defaults to /Users/aa/Pictures/white_speech001.png)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
@@ -507,4 +575,5 @@ func init() {
 	fcpCmd.AddCommand(addSlideCmd)
 	fcpCmd.AddCommand(addAudioCmd)
 	fcpCmd.AddCommand(addPipVideoCmd)
+	fcpCmd.AddCommand(generateConversationCmd)
 }
