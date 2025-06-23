@@ -1,4 +1,7 @@
 cutlass
+
+go.sum
+.DS_Store
 data
 assets
 scripts/token.pickle

@@ -1278,6 +1278,181 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64,
 	return nil
 }
 
+// AddSingleText adds a single text element like in samples/imessage001.fcpxml to an FCPXML file.
+//
+// 🚨 CLAUDE.md Rules Applied Here:
+// - Uses ResourceRegistry/Transaction system for crash-safe resource management
+// - Uses STRUCTS ONLY - no string templates → append to fcpxml.Resources.Effects, sequence.Spine.Titles
+// - Atomic ID reservation prevents race conditions and ID collisions
+// - Uses frame-aligned durations → ConvertSecondsToFCPDuration() function 
+// - Uses verified Text effect UID from samples/imessage001.fcpxml → ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"
+//
+// ❌ NEVER: fmt.Sprintf("<title ref='%s'...") - CRITICAL VIOLATION!
+// ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
+func AddSingleText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSeconds float64) error {
+	// Initialize ResourceRegistry for this FCPXML
+	registry := NewResourceRegistry(fcpxml)
+
+	// Create transaction for atomic resource creation
+	tx := NewTransaction(registry)
+
+	// Reserve IDs atomically to prevent collisions (need 1: effect for text)
+	ids := tx.ReserveIDs(1)
+	effectID := ids[0]
+
+	// Create text effect with verified UID from samples/imessage001.fcpxml
+	_, err := tx.CreateEffect(effectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("failed to create text effect: %v", err)
+	}
+
+	// Generate unique text style ID using existing function
+	textStyleID := GenerateTextStyleID(text, fmt.Sprintf("single_text_offset_%.1f", offsetSeconds))
+
+	// Convert times to frame-aligned format
+	offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
+	titleDuration := ConvertSecondsToFCPDuration(durationSeconds)
+
+	// Create Title element matching samples/imessage001.fcpxml pattern
+	title := Title{
+		Ref:      effectID,
+		Lane:     "2", // Lane 2 like in the sample
+		Offset:   offsetDuration,
+		Name:     text + " - Text",
+		Start:    "21632100/6000s", // Start time from sample
+		Duration: titleDuration,
+		Params: []Param{
+			{
+				Name:  "Build In",
+				Key:   "9999/10000/2/101",
+				Value: "0",
+			},
+			{
+				Name:  "Build Out",
+				Key:   "9999/10000/2/102",
+				Value: "0",
+			},
+			{
+				Name:  "Position",
+				Key:   "9999/10003/13260/3296672360/1/100/101",
+				Value: "0 -3071",
+			},
+			{
+				Name:  "Layout Method",
+				Key:   "9999/10003/13260/3296672360/2/314",
+				Value: "1 (Paragraph)",
+			},
+			{
+				Name:  "Left Margin",
+				Key:   "9999/10003/13260/3296672360/2/323",
+				Value: "-1210",
+			},
+			{
+				Name:  "Right Margin",
+				Key:   "9999/10003/13260/3296672360/2/324",
+				Value: "1210",
+			},
+			{
+				Name:  "Top Margin",
+				Key:   "9999/10003/13260/3296672360/2/325",
+				Value: "2160",
+			},
+			{
+				Name:  "Bottom Margin",
+				Key:   "9999/10003/13260/3296672360/2/326",
+				Value: "-2160",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
+				Value: "1 (Center)",
+			},
+			{
+				Name:  "Line Spacing",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
+				Value: "-19",
+			},
+			{
+				Name:  "Auto-Shrink",
+				Key:   "9999/10003/13260/3296672360/2/370",
+				Value: "3 (To All Margins)",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/373",
+				Value: "0 (Left) 0 (Top)",
+			},
+			{
+				Name:  "Opacity",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/1000/1044",
+				Value: "0",
+			},
+			{
+				Name:  "Speed",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/201/208",
+				Value: "6 (Custom)",
+			},
+			{
+				Name: "Custom Speed",
+				Key:  "9999/10003/13260/3296672360/4/3296673134/201/209",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  "-469658744/1000000000s",
+							Value: "0",
+						},
+						{
+							Time:  "12328542033/1000000000s",
+							Value: "1",
+						},
+					},
+				},
+			},
+			{
+				Name:  "Apply Speed",
+				Key:   "9999/10003/13260/3296672360/4/3296673134/201/211",
+				Value: "2 (Per Object)",
+			},
+		},
+		Text: &TitleText{
+			TextStyles: []TextStyleRef{
+				{
+					Ref:  textStyleID,
+					Text: text,
+				},
+			},
+		},
+		TextStyleDefs: []TextStyleDef{
+			{
+				ID: textStyleID,
+				TextStyle: TextStyle{
+					Font:        "Arial",
+					FontSize:    "204",
+					FontFace:    "Regular",
+					FontColor:   "0.999995 1 1 1",
+					Alignment:   "center",
+					LineSpacing: "-19",
+				},
+			},
+		},
+	}
+
+	// Commit transaction
+	err = tx.Commit()
+	if err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Add title to the spine if there's a sequence
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Spine.Titles = append(sequence.Spine.Titles, title)
+	}
+
+	return nil
+}
+
 
 // AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
 //

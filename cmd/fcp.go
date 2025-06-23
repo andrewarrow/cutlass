@@ -467,6 +467,91 @@ Requires an existing FCPXML file with at least one video element to nest the PIP
 	},
 }
 
+var addTxtCmd = &cobra.Command{
+	Use:   "add-txt [text-content]",
+	Short: "Add a single text message like in samples/imessage001.fcpxml",
+	Long: `Add a single text message to an FCPXML file using the same styling and animation as samples/imessage001.fcpxml.
+The text will be added as a title element with:
+- Arial font, size 204, white color, center alignment
+- Custom speed animation and layout parameters matching the sample
+- Lane 2 positioning like in the original sample
+
+If --input is specified, the text will be added to an existing FCPXML file.
+Otherwise, a new FCPXML file is created.`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		textContent := args[0]
+		
+		// Get offset from flag (default 1 second)
+		offsetStr, _ := cmd.Flags().GetString("offset")
+		offset, err := strconv.ParseFloat(offsetStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing offset '%s': %v\n", offsetStr, err)
+			return
+		}
+		
+		// Get duration from flag (default 3 seconds)
+		durationStr, _ := cmd.Flags().GetString("duration")
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Get input and output filenames from flags
+		input, _ := cmd.Flags().GetString("input")
+		output, _ := cmd.Flags().GetString("output")
+		var filename string
+		
+		if output != "" {
+			filename = output
+		} else {
+			// Generate default filename with unix timestamp
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("cutlass_%d.fcpxml", timestamp)
+		}
+		
+		var fcpxml *fcp.FCPXML
+		
+		// Load existing FCPXML or create new one
+		if input != "" {
+			fcpxml, err = fcp.ReadFromFile(input)
+			if err != nil {
+				fmt.Printf("Error reading FCPXML file '%s': %v\n", input, err)
+				return
+			}
+			fmt.Printf("Loaded existing FCPXML: %s\n", input)
+		} else {
+			// Generate empty FCPXML structure
+			fcpxml, err = fcp.GenerateEmpty("")
+			if err != nil {
+				fmt.Printf("Error creating FCPXML structure: %v\n", err)
+				return
+			}
+		}
+		
+		// Add text to the structure
+		err = fcp.AddSingleText(fcpxml, textContent, offset, duration)
+		if err != nil {
+			fmt.Printf("Error adding text: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		if input != "" {
+			fmt.Printf("Added text to existing FCPXML and saved to: %s (offset: %.1fs, duration: %.1fs)\n", filename, offset, duration)
+		} else {
+			fmt.Printf("Generated FCPXML with text: %s (offset: %.1fs, duration: %.1fs)\n", filename, offset, duration)
+		}
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -500,6 +585,12 @@ func init() {
 	addPipVideoCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
 	addPipVideoCmd.Flags().StringP("offset", "t", "0", "Start offset in seconds for PIP video (default 0)")
 	
+	// Add flags to add-txt subcommand
+	addTxtCmd.Flags().StringP("input", "i", "", "Input FCPXML file to append to (optional)")
+	addTxtCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
+	addTxtCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for text (default 1)")
+	addTxtCmd.Flags().StringP("duration", "d", "3", "Duration of text element in seconds (default 3)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
@@ -507,4 +598,5 @@ func init() {
 	fcpCmd.AddCommand(addSlideCmd)
 	fcpCmd.AddCommand(addAudioCmd)
 	fcpCmd.AddCommand(addPipVideoCmd)
+	fcpCmd.AddCommand(addTxtCmd)
 }
