@@ -197,13 +197,13 @@ func calculateYPosition(message string, isBlue bool) string {
 	if isBlue {
 		// Blue text (bottom bubble)
 		if isMultiLine {
-			return "0 -3200"  // Move up slightly for 2-line text
+			return "0 -2700"  // Move UP for 2-line text to center in bubble (less negative = up)
 		}
 		return "0 -3071"  // Original position for single line
 	} else {
 		// White text (top bubble)  
 		if isMultiLine {
-			return "0 -1950"  // Move up slightly for 2-line text
+			return "0 -1400"  // Move UP for 2-line text to center in bubble (less negative = up)
 		}
 		return "0 -1807"  // Original position for single line
 	}
