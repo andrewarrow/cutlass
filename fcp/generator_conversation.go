@@ -173,6 +173,42 @@ func calculateLineSpacing(fontSize string) string {
 	}
 }
 
+// formatMessageWithLineBreaks adds line breaks after the 2nd word for messages with 3+ words
+func formatMessageWithLineBreaks(message string) string {
+	words := strings.Fields(message)
+	
+	// If 3 or more words, insert line break after 2nd word
+	if len(words) >= 3 {
+		// Join first 2 words, add newline, then join remaining words
+		firstLine := strings.Join(words[:2], " ")
+		secondLine := strings.Join(words[2:], " ")
+		return firstLine + "\n" + secondLine
+	}
+	
+	// For 1-2 words, return as-is
+	return message
+}
+
+// calculateYPosition adjusts Y position based on whether text is multi-line
+func calculateYPosition(message string, isBlue bool) string {
+	words := strings.Fields(message)
+	isMultiLine := len(words) >= 3
+	
+	if isBlue {
+		// Blue text (bottom bubble)
+		if isMultiLine {
+			return "0 -3200"  // Move up slightly for 2-line text
+		}
+		return "0 -3071"  // Original position for single line
+	} else {
+		// White text (top bubble)  
+		if isMultiLine {
+			return "0 -1950"  // Move up slightly for 2-line text
+		}
+		return "0 -1807"  // Original position for single line
+	}
+}
+
 // addPhoneBackgroundSegment adds a phone background video segment directly to the spine
 func addPhoneBackgroundSegment(fcpxml *FCPXML, phoneBackgroundPath string, offsetSeconds, durationSeconds float64) error {
 	// Use existing AddImage logic but with specific offset and duration
@@ -431,19 +467,22 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 		}
 	}
 
+	// Format message with line breaks if needed
+	formattedMessage := formatMessageWithLineBreaks(message)
+	
 	// Calculate text positioning and color based on speech bubble type  
-	var textPosition string
 	var lane string
 	var textColor string
 	if isBlue {
-		textPosition = "0 -3071"
 		lane = "4"
 		textColor = "0.999995 1 1 1" // White text for blue bubble
 	} else {
-		textPosition = "0 -1807"
 		lane = "3"
 		textColor = "0 0 0 1" // Black text for white bubble
 	}
+	
+	// Calculate Y position based on whether text is multi-line
+	textPosition := calculateYPosition(message, isBlue)
 
 	// Generate unique text-style-def ID with index to avoid duplicates
 	baseName := fmt.Sprintf("conversation_%t_%d", isBlue, index)
@@ -566,7 +605,7 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 			TextStyles: []TextStyleRef{
 				{
 					Ref:  textStyleID,
-					Text: message,
+					Text: formattedMessage,
 				},
 			},
 		},
