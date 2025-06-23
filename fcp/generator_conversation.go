@@ -82,7 +82,7 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		// Add messages for this segment (white and blue pair, like Info.fcpxml)
 		if i+1 < len(messages) {
 			// Add white speech bubble with text
-			err = addMessageToLastSegment(fcpxml, whiteSpeechPath, messages[i+1], false)
+			err = addMessageToLastSegmentWithIndex(fcpxml, whiteSpeechPath, messages[i+1], false, i+1)
 			if err != nil {
 				return fmt.Errorf("failed to add white message %d: %v", i+1, err)
 			}
@@ -90,7 +90,7 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		
 		if i < len(messages) {
 			// Add blue speech bubble with text
-			err = addMessageToLastSegment(fcpxml, blueSpeechPath, messages[i], true)
+			err = addMessageToLastSegmentWithIndex(fcpxml, blueSpeechPath, messages[i], true, i)
 			if err != nil {
 				return fmt.Errorf("failed to add blue message %d: %v", i, err)
 			}
@@ -239,6 +239,11 @@ func addSpeechBubbleToLastSegment(fcpxml *FCPXML, speechBubblePath string, isBlu
 
 // addMessageToLastSegment adds a speech bubble and text to the most recently added phone background segment
 func addMessageToLastSegment(fcpxml *FCPXML, speechBubblePath, message string, isBlue bool) error {
+	return addMessageToLastSegmentWithIndex(fcpxml, speechBubblePath, message, isBlue, 0)
+}
+
+// addMessageToLastSegmentWithIndex adds a speech bubble and text to the most recently added phone background segment with a unique index
+func addMessageToLastSegmentWithIndex(fcpxml *FCPXML, speechBubblePath, message string, isBlue bool, index int) error {
 	// Get the last phone background segment
 	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
 		return fmt.Errorf("no sequence found")
@@ -258,7 +263,7 @@ func addMessageToLastSegment(fcpxml *FCPXML, speechBubblePath, message string, i
 	}
 
 	// Add text as connected clip
-	err = addTextToSegment(fcpxml, phoneVideo, message, isBlue)
+	err = addTextToSegmentWithIndex(fcpxml, phoneVideo, message, isBlue, index)
 	if err != nil {
 		return fmt.Errorf("failed to add text: %v", err)
 	}
@@ -346,6 +351,11 @@ func addSpeechBubbleToSegment(fcpxml *FCPXML, phoneVideo *Video, speechBubblePat
 
 // addTextToSegment adds text as a connected clip to a phone background video
 func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue bool) error {
+	return addTextToSegmentWithIndex(fcpxml, phoneVideo, message, isBlue, 0)
+}
+
+// addTextToSegmentWithIndex adds text as a connected clip to a phone background video with a unique index
+func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue bool, index int) error {
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
@@ -392,8 +402,9 @@ func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue 
 		textColor = "0 0 0 1" // Black text for white bubble
 	}
 
-	// Generate unique text-style-def ID
-	textStyleID := GenerateTextStyleID(message, fmt.Sprintf("conversation_%t", isBlue))
+	// Generate unique text-style-def ID with index to avoid duplicates
+	baseName := fmt.Sprintf("conversation_%t_%d", isBlue, index)
+	textStyleID := GenerateTextStyleID(message, baseName)
 
 	// Calculate start time based on text color (from Info.fcpxml pattern)
 	var startTime string

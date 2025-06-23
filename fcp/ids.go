@@ -38,6 +38,7 @@ func GenerateUID(filePath string) string {
 // when multiple text overlays are added to the same project.
 func GenerateTextStyleID(text, baseName string) string {
 	// Use the existing generateUID function to create a hash-based ID
+	// Include baseName which should contain unique index information
 	fullText := "text_" + baseName + "_" + text
 	uid := generateUID(fullText)
 	// Return a shorter, more readable ID using the first 8 characters
