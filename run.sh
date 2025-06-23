@@ -4,7 +4,9 @@ rm trip.fcpxml
 ./cutlass fcp add-txt "Hey u there?" -o trip.fcpxml
 ./cutlass fcp add-txt -i trip.fcpxml "Yes, I'm here." --original-text "hey u there?" -o trip.fcpxml
 ./cutlass fcp add-txt -i trip.fcpxml "u sure?" -o trip.fcpxml
-./cutlass fcp add-txt -i trip.fcpxml "ok no problem!" --original-text "u sure?" -o trip.fcpxml
+./cutlass fcp add-txt -i trip.fcpxml "i am very sure." --original-text "u sure?" -o trip.fcpxml
+./cutlass fcp add-txt -i trip.fcpxml "dance" -o trip.fcpxml
+./cutlass fcp add-txt -i trip.fcpxml "i don't dance." --original-text "dance" -o trip.fcpxml
 
 
 

@@ -3,7 +3,9 @@ package cmd
 import (
 	"cutlass/fcp"
 	"fmt"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -583,6 +585,116 @@ Examples:
 	},
 }
 
+var addConversationCmd = &cobra.Command{
+	Use:   "add-conversation [conversation-file]",
+	Short: "Create a conversation from a text file with one message per line",
+	Long: `Create an iMessage-style conversation from a text file.
+
+Each line becomes a message in the conversation.
+Messages automatically alternate between blue (sender) and white (reply) bubbles.
+Empty lines are ignored.
+
+Examples:
+  cutlass fcp add-conversation messages.txt -o conversation.fcpxml
+
+File format (messages.txt):
+  Hey u there?
+  Yes, I'm here.
+  u sure?
+  i am very sure.`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		conversationFile := args[0]
+		
+		// Get flags
+		output, _ := cmd.Flags().GetString("output")
+		offsetStr, _ := cmd.Flags().GetString("offset")
+		durationStr, _ := cmd.Flags().GetString("duration")
+		
+		// Parse offset and duration
+		offset, err := strconv.ParseFloat(offsetStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing offset '%s': %v\n", offsetStr, err)
+			return
+		}
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Read conversation file
+		content, err := os.ReadFile(conversationFile)
+		if err != nil {
+			fmt.Printf("Error reading conversation file '%s': %v\n", conversationFile, err)
+			return
+		}
+		
+		// Parse messages (one per line, skip empty lines)
+		lines := strings.Split(string(content), "\n")
+		var messages []string
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" {
+				messages = append(messages, line)
+			}
+		}
+		
+		if len(messages) == 0 {
+			fmt.Printf("No messages found in conversation file '%s'\n", conversationFile)
+			return
+		}
+		
+		// Generate output filename if not provided
+		var filename string
+		if output != "" {
+			filename = output
+		} else {
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("conversation_%d.fcpxml", timestamp)
+		}
+		
+		// Create first message (blue bubble)
+		fcpxml, err := fcp.GenerateEmpty("")
+		if err != nil {
+			fmt.Printf("Error creating FCPXML structure: %v\n", err)
+			return
+		}
+		
+		err = fcp.AddImessageText(fcpxml, messages[0], offset, duration)
+		if err != nil {
+			fmt.Printf("Error adding first message: %v\n", err)
+			return
+		}
+		
+		// Add remaining messages using exact manual command logic
+		for i := 1; i < len(messages); i++ {
+			if i%2 == 1 {
+				// Odd messages (1,3,5...): white bubbles using AddImessageReply
+				err = fcp.AddImessageReply(fcpxml, messages[i-1], messages[i], offset, duration)
+			} else {
+				// Even messages (2,4,6...): blue bubbles using auto-detection
+				// Simulate: ./cutlass fcp add-txt -i file.fcpxml "message" -o file.fcpxml
+				err = fcp.AddImessageContinuation(fcpxml, messages[i], offset, duration)
+			}
+			
+			if err != nil {
+				fmt.Printf("Error adding message %d ('%s'): %v\n", i+1, messages[i], err)
+				return
+			}
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated conversation FCPXML with %d messages: %s\n", len(messages), filename)
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -623,6 +735,11 @@ func init() {
 	addTxtCmd.Flags().StringP("duration", "d", "3", "Duration of text element in seconds (default 3)")
 	addTxtCmd.Flags().String("original-text", "", "Original bubble text for manual control (optional - auto-detects if not provided)")
 	
+	// Add flags to add-conversation subcommand
+	addConversationCmd.Flags().StringP("output", "o", "", "Output filename (defaults to conversation_unixtime.fcpxml)")
+	addConversationCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for each message (default 1)")
+	addConversationCmd.Flags().StringP("duration", "d", "3", "Duration of each message in seconds (default 3)")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
@@ -631,4 +748,5 @@ func init() {
 	fcpCmd.AddCommand(addAudioCmd)
 	fcpCmd.AddCommand(addPipVideoCmd)
 	fcpCmd.AddCommand(addTxtCmd)
+	fcpCmd.AddCommand(addConversationCmd)
 }
