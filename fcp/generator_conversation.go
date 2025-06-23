@@ -47,9 +47,8 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		return fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
 
-	// Calculate conversation duration: exact FCP timing like Info.fcpxml
-	// Info.fcpxml total duration is 30030/24000s for 2 pairs
-	totalDurationFCP := "30030/24000s"
+	// Calculate dynamic conversation duration based on message lengths
+	totalDurationFCP := calculateTotalDuration(messages)
 
 	// Update sequence duration
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -58,19 +57,33 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 	}
 
 	// Process messages in pairs (each pair gets its own phone background segment)
+	var cumulativeOffsetFrames int64 = 0
+	
 	for i := 0; i < len(messages); i += 2 {
-		// Calculate offset for this phone background segment (matching Info.fcpxml pattern)
-		// Info.fcpxml uses 0s, 15015/24000s (exactly 0.625625s intervals)
-		segmentDurationFCP := "15015/24000s"  // Use exact FCP duration from Info.fcpxml
-		segmentOffsetFCP := ""
-		pairIndex := i / 2  // 0 for first pair, 1 for second pair, etc.
-		if pairIndex == 0 {
+		// Get messages for this pair
+		var message1, message2 string
+		if i < len(messages) {
+			message1 = messages[i]
+		}
+		if i+1 < len(messages) {
+			message2 = messages[i+1]
+		}
+		
+		// Calculate dynamic duration for this segment based on message lengths
+		segmentDurationFCP := calculateSegmentDuration(message1, message2)
+		
+		// Calculate offset for this segment
+		var segmentOffsetFCP string
+		if cumulativeOffsetFrames == 0 {
 			segmentOffsetFCP = "0s"
-		} else if pairIndex == 1 {
-			segmentOffsetFCP = "15015/24000s"  // Second segment offset matches first segment duration
 		} else {
-			// For more pairs, multiply by the segment duration
-			segmentOffsetFCP = fmt.Sprintf("%d/24000s", 15015*pairIndex)
+			segmentOffsetFCP = fmt.Sprintf("%d/24000s", cumulativeOffsetFrames)
+		}
+		
+		// Parse segment duration to add to cumulative offset for next iteration
+		var segmentFrames int64
+		if n, err := fmt.Sscanf(segmentDurationFCP, "%d/24000s", &segmentFrames); n == 1 && err == nil {
+			// We'll add this to cumulative offset at the end of the loop
 		}
 
 		// Add phone background for this segment
@@ -80,21 +93,25 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 		}
 
 		// Add messages for this segment (white and blue pair, like Info.fcpxml)
+		// All elements in this segment will use the same segmentDurationFCP for sync
 		if i+1 < len(messages) {
-			// Add white speech bubble with text
-			err = addMessageToLastSegmentWithIndex(fcpxml, whiteSpeechPath, messages[i+1], false, i+1)
+			// Add white speech bubble with text using segment duration
+			err = addMessageToLastSegmentWithIndexAndDuration(fcpxml, whiteSpeechPath, messages[i+1], false, i+1, segmentDurationFCP)
 			if err != nil {
 				return fmt.Errorf("failed to add white message %d: %v", i+1, err)
 			}
 		}
 		
 		if i < len(messages) {
-			// Add blue speech bubble with text
-			err = addMessageToLastSegmentWithIndex(fcpxml, blueSpeechPath, messages[i], true, i)
+			// Add blue speech bubble with text using segment duration
+			err = addMessageToLastSegmentWithIndexAndDuration(fcpxml, blueSpeechPath, messages[i], true, i, segmentDurationFCP)
 			if err != nil {
 				return fmt.Errorf("failed to add blue message %d: %v", i, err)
 			}
 		}
+		
+		// Update cumulative offset for next segment
+		cumulativeOffsetFrames += segmentFrames
 	}
 
 	// Write FCPXML to output file
@@ -197,15 +214,93 @@ func calculateYPosition(message string, isBlue bool) string {
 	if isBlue {
 		// Blue text (bottom bubble)
 		if isMultiLine {
-			return "0 -2700"  // Move UP for 2-line text to center in bubble (less negative = up)
+			return "0 -3000"  // Move UP for 2-line text to center in bubble (less negative = up)
 		}
 		return "0 -3071"  // Original position for single line
 	} else {
 		// White text (top bubble)  
 		if isMultiLine {
-			return "0 -1400"  // Move UP for 2-line text to center in bubble (less negative = up)
+			return "0 -1800"  // Move UP for 2-line text to center in bubble (less negative = up)
 		}
 		return "0 -1807"  // Original position for single line
+	}
+}
+
+// calculateSegmentDuration determines how long to display each message pair based on the longest message
+// All elements in the segment (phone, bubbles, text) need to use this same duration
+func calculateSegmentDuration(message1, message2 string) string {
+	// Calculate duration needed for each message individually
+	duration1 := calculateTextDuration(message1)
+	duration2 := calculateTextDuration(message2)
+	
+	// Use the longer of the two durations for the entire segment
+	frames1 := parseDurationToFrames(duration1)
+	frames2 := parseDurationToFrames(duration2)
+	
+	maxFrames := frames1
+	if frames2 > maxFrames {
+		maxFrames = frames2
+	}
+	
+	return fmt.Sprintf("%d/24000s", maxFrames)
+}
+
+// parseDurationToFrames converts duration string to frame count
+func parseDurationToFrames(duration string) int64 {
+	var frames int64
+	if n, err := fmt.Sscanf(duration, "%d/24000s", &frames); n == 1 && err == nil {
+		return frames
+	}
+	return 15015 // fallback to default
+}
+
+// calculateTotalDuration calculates the total sequence duration based on all message pairs
+func calculateTotalDuration(messages []string) string {
+	var totalDurationFrames int64 = 0
+	
+	// Process messages in pairs
+	for i := 0; i < len(messages); i += 2 {
+		var message1, message2 string
+		
+		if i < len(messages) {
+			message1 = messages[i]
+		}
+		if i+1 < len(messages) {
+			message2 = messages[i+1]
+		}
+		
+		// Get duration for this pair and convert to frame count
+		durationStr := calculateSegmentDuration(message1, message2)
+		
+		// Parse the fraction (e.g., "24024/24000s" -> 24024 frames)
+		var frames int64
+		if n, err := fmt.Sscanf(durationStr, "%d/24000s", &frames); n == 1 && err == nil {
+			totalDurationFrames += frames
+		}
+	}
+	
+	return fmt.Sprintf("%d/24000s", totalDurationFrames)
+}
+
+// calculateTextDuration determines how long individual text should stay on screen based on message length
+func calculateTextDuration(message string) string {
+	length := len(message)
+	
+	if length <= 5 {
+		// Very short text - quick display
+		return "15015/24000s"  // ~0.625s
+	} else if length <= 15 {
+		// Short text - normal display
+		return "24024/24000s"  // ~1.0s
+	} else if length <= 30 {
+		// Medium text - longer display
+		return "36036/24000s"  // ~1.5s
+	} else if length <= 50 {
+		// Long text - much longer display
+		return "48048/24000s"  // ~2.0s
+	} else {
+		// Very long text - longest display for readability
+		return "60060/24000s"  // ~2.5s
 	}
 }
 
@@ -323,6 +418,11 @@ func addMessageToLastSegment(fcpxml *FCPXML, speechBubblePath, message string, i
 
 // addMessageToLastSegmentWithIndex adds a speech bubble and text to the most recently added phone background segment with a unique index
 func addMessageToLastSegmentWithIndex(fcpxml *FCPXML, speechBubblePath, message string, isBlue bool, index int) error {
+	return addMessageToLastSegmentWithIndexAndDuration(fcpxml, speechBubblePath, message, isBlue, index, "15015/24000s")
+}
+
+// addMessageToLastSegmentWithIndexAndDuration adds a speech bubble and text with segment duration for sync
+func addMessageToLastSegmentWithIndexAndDuration(fcpxml *FCPXML, speechBubblePath, message string, isBlue bool, index int, segmentDuration string) error {
 	// Get the last phone background segment
 	if len(fcpxml.Library.Events) == 0 || len(fcpxml.Library.Events[0].Projects) == 0 || len(fcpxml.Library.Events[0].Projects[0].Sequences) == 0 {
 		return fmt.Errorf("no sequence found")
@@ -335,14 +435,17 @@ func addMessageToLastSegmentWithIndex(fcpxml *FCPXML, speechBubblePath, message 
 
 	phoneVideo := &sequence.Spine.Videos[len(sequence.Spine.Videos)-1]
 
-	// Add speech bubble as connected clip
-	err := addSpeechBubbleToSegment(fcpxml, phoneVideo, speechBubblePath, isBlue)
+	// Use the segment duration for both bubble and text to keep all elements in sync
+	// segmentDuration is calculated based on the longest message in this segment pair
+	
+	// Add speech bubble as connected clip with segment duration
+	err := addSpeechBubbleToSegmentWithDuration(fcpxml, phoneVideo, speechBubblePath, isBlue, segmentDuration)
 	if err != nil {
 		return fmt.Errorf("failed to add speech bubble: %v", err)
 	}
 
-	// Add text as connected clip
-	err = addTextToSegmentWithIndex(fcpxml, phoneVideo, message, isBlue, index)
+	// Add text as connected clip with same segment duration
+	err = addTextToSegmentWithIndexAndDuration(fcpxml, phoneVideo, message, isBlue, index, segmentDuration)
 	if err != nil {
 		return fmt.Errorf("failed to add text: %v", err)
 	}
@@ -352,6 +455,11 @@ func addMessageToLastSegmentWithIndex(fcpxml *FCPXML, speechBubblePath, message 
 
 // addSpeechBubbleToSegment adds a speech bubble as a connected clip to a phone background video
 func addSpeechBubbleToSegment(fcpxml *FCPXML, phoneVideo *Video, speechBubblePath string, isBlue bool) error {
+	return addSpeechBubbleToSegmentWithDuration(fcpxml, phoneVideo, speechBubblePath, isBlue, "15015/24000s")
+}
+
+// addSpeechBubbleToSegmentWithDuration adds a speech bubble with custom duration
+func addSpeechBubbleToSegmentWithDuration(fcpxml *FCPXML, phoneVideo *Video, speechBubblePath string, isBlue bool, duration string) error {
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
@@ -415,7 +523,7 @@ func addSpeechBubbleToSegment(fcpxml *FCPXML, phoneVideo *Video, speechBubblePat
 		Offset:   "86531445/24000s", // Standard FCP offset for connected clips (matches Info.fcpxml)
 		Name:     bubbleAsset.Name,
 		Start:    "86531445/24000s", // Standard FCP start time
-		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
+		Duration: duration,          // Dynamic duration based on message length
 		AdjustTransform: &AdjustTransform{
 			Position: position,
 			Scale:    scale,
@@ -435,6 +543,11 @@ func addTextToSegment(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue 
 
 // addTextToSegmentWithIndex adds text as a connected clip to a phone background video with a unique index
 func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue bool, index int) error {
+	return addTextToSegmentWithIndexAndDuration(fcpxml, phoneVideo, message, isBlue, index, "15015/24000s")
+}
+
+// addTextToSegmentWithIndexAndDuration adds text as a connected clip with specified segment duration
+func addTextToSegmentWithIndexAndDuration(fcpxml *FCPXML, phoneVideo *Video, message string, isBlue bool, index int, segmentDuration string) error {
 	// Initialize ResourceRegistry for this FCPXML
 	registry := NewResourceRegistry(fcpxml)
 
@@ -507,7 +620,7 @@ func addTextToSegmentWithIndex(fcpxml *FCPXML, phoneVideo *Video, message string
 		Offset:   "86531445/24000s", // Standard FCP offset for connected clips (matches Info.fcpxml)
 		Name:     fmt.Sprintf("%s - Text", message),
 		Start:    startTime,         // Different start times for blue vs white
-		Duration: "15015/24000s",    // Standard FCP duration (~0.6s)
+		Duration: segmentDuration,   // Segment duration for sync with all elements
 		Params: []Param{
 			{
 				Name:  "Build In",
