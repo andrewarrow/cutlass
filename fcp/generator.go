@@ -1950,9 +1950,11 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 		return fmt.Errorf("required assets not found in existing FCPXML")
 	}
 	
-	// Generate unique text style ID
+	// Generate unique text style IDs (need two for the two text elements)
 	existingIDs := getAllExistingTextStyleIDs(fcpxml)
-	uniqueTextStyleID := getNextUniqueTextStyleID(existingIDs)
+	uniqueTextStyleID1 := getNextUniqueTextStyleID(existingIDs)
+	existingIDs[uniqueTextStyleID1] = true
+	uniqueTextStyleID2 := getNextUniqueTextStyleID(existingIDs)
 	
 	// Create new video segment for blue bubble continuation (like a new message in the conversation)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
@@ -1995,32 +1997,62 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 					Scale:    "0.617236 0.617236",
 				},
 			}},
-			NestedTitles: []Title{{
-				Ref:      effectID,
-				Lane:     "2",
-				Offset:   "43220600/12000s",
-				Name:     newText + " - Text",
-				Start:    "21632100/6000s",
-				Duration: "3900/6000s",
-				Params: createStandardTextParams("0 -3071"), // Blue bubble position
-				Text: &TitleText{
-					TextStyles: []TextStyleRef{{
-						Ref:  uniqueTextStyleID,
-						Text: newText,
+			NestedTitles: []Title{
+				{
+					// First text element (pattern from Info.fcpxml line 154)
+					Ref:      effectID,
+					Lane:     "1",
+					Offset:   "21610300/6000s",
+					Name:     newText + " - Text",
+					Start:    "21632100/6000s",
+					Duration: "3900/6000s",
+					Params: createStandardTextParams("0 -3071"), // Blue bubble position
+					Text: &TitleText{
+						TextStyles: []TextStyleRef{{
+							Ref:  uniqueTextStyleID1,
+							Text: newText,
+						}},
+					},
+					TextStyleDefs: []TextStyleDef{{
+						ID: uniqueTextStyleID1,
+						TextStyle: TextStyle{
+							Font:        "Arial",
+							FontSize:    "204",
+							FontFace:    "Regular",
+							FontColor:   "0.999995 1 1 1", // White text for blue bubble
+							Alignment:   "center",
+							LineSpacing: "-19",
+						},
 					}},
 				},
-				TextStyleDefs: []TextStyleDef{{
-					ID: uniqueTextStyleID,
-					TextStyle: TextStyle{
-						Font:        "Arial",
-						FontSize:    "204",
-						FontFace:    "Regular",
-						FontColor:   "0.999995 1 1 1", // White text for blue bubble
-						Alignment:   "center",
-						LineSpacing: "-19",
+				{
+					// Second text element (pattern from Info.fcpxml line 186)
+					Ref:      effectID,
+					Lane:     "2", 
+					Offset:   "21632800/6000s",
+					Name:     newText + " - Text",
+					Start:    "21654600/6000s",
+					Duration: "3900/6000s",
+					Params: createStandardTextParams("0 -3071"), // Blue bubble position
+					Text: &TitleText{
+						TextStyles: []TextStyleRef{{
+							Ref:  uniqueTextStyleID2,
+							Text: newText,
+						}},
 					},
-				}},
-			}},
+					TextStyleDefs: []TextStyleDef{{
+						ID: uniqueTextStyleID2,
+						TextStyle: TextStyle{
+							Font:        "Arial",
+							FontSize:    "204",
+							FontFace:    "Regular",
+							FontColor:   "0.999995 1 1 1", // White text for blue bubble
+							Alignment:   "center",
+							LineSpacing: "-19",
+						},
+					}},
+				},
+			},
 		}
 		
 		// Add to spine
