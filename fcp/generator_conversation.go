@@ -81,18 +81,18 @@ func GenerateConversation(phoneBackgroundPath, blueSpeechPath, whiteSpeechPath, 
 
 		// Add messages for this segment (white and blue pair, like Info.fcpxml)
 		if i+1 < len(messages) {
-			// Add white speech bubble only (no text for now to debug crash)
-			err = addSpeechBubbleToLastSegment(fcpxml, whiteSpeechPath, false)
+			// Add white speech bubble with text
+			err = addMessageToLastSegment(fcpxml, whiteSpeechPath, messages[i+1], false)
 			if err != nil {
-				return fmt.Errorf("failed to add white speech bubble %d: %v", i+1, err)
+				return fmt.Errorf("failed to add white message %d: %v", i+1, err)
 			}
 		}
 		
 		if i < len(messages) {
-			// Add blue speech bubble only (no text for now to debug crash)
-			err = addSpeechBubbleToLastSegment(fcpxml, blueSpeechPath, true)
+			// Add blue speech bubble with text
+			err = addMessageToLastSegment(fcpxml, blueSpeechPath, messages[i], true)
 			if err != nil {
-				return fmt.Errorf("failed to add blue speech bubble %d: %v", i, err)
+				return fmt.Errorf("failed to add blue message %d: %v", i, err)
 			}
 		}
 	}
