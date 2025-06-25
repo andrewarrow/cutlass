@@ -149,10 +149,10 @@ func GenerateEmpty(filename string) (*FCPXML, error) {
 			Formats: []Format{
 				{
 					ID:            "r1",
-					Name:          "FFVideoFormat1080x1920p2398",
+					Name:          "FFVideoFormat720p2398",
 					FrameDuration: "1001/24000s",
-					Width:         "1080",
-					Height:        "1920",
+					Width:         "1280",
+					Height:        "720",
 					ColorSpace:    "1-1-1 (Rec. 709)",
 				},
 			},
@@ -315,17 +315,29 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 	defaultDurationSeconds := 10.0
 	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 
-	// Create asset using transaction
-	asset, err := tx.CreateAsset(assetID, absPath, videoName, frameDuration, "r1")
+	// Create asset with video detection using transaction
+	err = tx.CreateVideoAssetWithDetection(assetID, absPath, videoName, frameDuration, "r1")
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("failed to create asset: %v", err)
+		return fmt.Errorf("failed to create video asset with detection: %v", err)
 	}
 
 	// Commit transaction - adds resources to registry and FCPXML
 	err = tx.Commit()
 	if err != nil {
 		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Find the created asset in resources for spine addition
+	var asset *Asset
+	for i := range fcpxml.Resources.Assets {
+		if fcpxml.Resources.Assets[i].ID == assetID {
+			asset = &fcpxml.Resources.Assets[i]
+			break
+		}
+	}
+	if asset == nil {
+		return fmt.Errorf("created asset not found in resources")
 	}
 
 	// Add asset-clip to spine
