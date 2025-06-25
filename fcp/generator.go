@@ -3081,14 +3081,12 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 	
 	// Random effects
 	if rand.Float32() < 0.4 { // 40% chance of effects
-		// Add blur effect
+		// Add blur effect using proper transaction method
 		effectID := tx.ReserveIDs(1)[0]
-		effect := Effect{
-			ID:   effectID,
-			Name: "Gaussian Blur",
-			UID:  "FFGaussianBlur",
+		_, err := tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
+		if err != nil {
+			return fmt.Errorf("failed to create effect: %v", err)
 		}
-		fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
 		
 		video.FilterVideos = []FilterVideo{{
 			Ref:  effectID,
@@ -3189,13 +3187,11 @@ func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 	// Reserve IDs for effect
 	effectID := tx.ReserveIDs(1)[0]
 	
-	// Add text effect to resources
-	effect := Effect{
-		ID:   effectID,
-		Name: "Text",
-		UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+	// Add text effect using proper transaction method
+	_, err := tx.CreateEffect(effectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+	if err != nil {
+		return fmt.Errorf("failed to create text effect: %v", err)
 	}
-	fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
 	
 	// Generate style ID
 	styleID := fmt.Sprintf("ts_baffle_%d", elementIndex)
