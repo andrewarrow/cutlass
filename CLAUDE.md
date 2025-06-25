@@ -151,6 +151,28 @@ func GenerateMyFeature(inputFile, outputFile string) error {
 ✅ GOOD: ids := tx.ReserveIDs(1); assetID := ids[0]  // Thread-safe
 ```
 
+## Asset Reuse to Prevent UID Collisions
+
+**Same media file used multiple times MUST reuse same asset:**
+```go
+❌ BAD: Create new asset for each use (causes UID collisions)
+// Multiple assets with same UID = FCP import crash
+asset1 := Asset{ID: "r2", UID: "ABC-123", Src: "file.mp4"} 
+asset2 := Asset{ID: "r5", UID: "ABC-123", Src: "file.mp4"} // Same UID!
+
+✅ GOOD: Reuse asset, create multiple timeline references
+createdAssets := make(map[string]string) // filepath -> assetID
+if existingID, exists := createdAssets[filepath]; exists {
+    assetID = existingID  // Reuse existing asset
+} else {
+    assetID = tx.ReserveIDs(1)[0]
+    tx.CreateAsset(assetID, filepath, ...)
+    createdAssets[filepath] = assetID  // Remember for reuse
+}
+// Multiple timeline elements can reference same asset:
+// <asset-clip ref="r2"... /> and <asset-clip ref="r2"... />
+```
+
 ## 🚨 CRITICAL: Transaction Resource Creation 🚨
 
 **ALWAYS use transaction methods to create resources:**
@@ -173,6 +195,49 @@ tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
 - Transaction manages resource lifecycle
 - Only tx.Commit() adds resources to final FCPXML
 - Direct append bypasses validation and registration
+
+## 🚨 CRITICAL: Asset File Paths 🚨
+
+**Final Cut Pro requires absolute file paths in MediaRep src attributes:**
+
+```go
+❌ BAD: Relative paths cause "missing media" errors
+MediaRep{
+    Src: "file://./assets/video.mp4",  // Relative path
+}
+
+✅ GOOD: Always use absolute paths
+absPath, err := filepath.Abs(videoPath)
+MediaRep{
+    Src: "file://" + absPath,  // Absolute path
+}
+```
+
+**BAFFLE Lesson:** Test imports in Final Cut Pro to catch path issues!
+
+## 🚨 CRITICAL: Media Type Properties 🚨
+
+**Use transaction methods - they handle media type detection automatically:**
+
+```go
+❌ BAD: Manual asset creation loses audio properties
+asset := Asset{
+    HasVideo: "1",
+    HasAudio: "1",  // Will be lost if not handled properly
+    // ... other properties
+}
+fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+
+✅ GOOD: Transaction methods detect media types automatically
+tx.CreateAsset(assetID, videoPath, baseName, duration, formatID)
+// Automatically sets HasAudio="1" for videos, omits for images
+```
+
+**Why Transaction Methods Work:**
+- `isImageFile()` detection sets correct properties for images (duration="0s", no audio)
+- `isAudioFile()` detection sets audio-only properties  
+- Video files get both video and audio properties automatically
+- Proper absolute path handling built-in
 
 ## Unique ID Requirements
 

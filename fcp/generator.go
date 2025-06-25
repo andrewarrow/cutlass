@@ -2942,13 +2942,19 @@ func scanAssetsDirectory(assetsDir string) (*AssetCollection, error) {
 		Videos: []string{},
 	}
 	
+	// Get absolute path of assets directory
+	absAssetsDir, err := filepath.Abs(assetsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path for assets directory: %v", err)
+	}
+	
 	// Check if assets directory exists
-	if _, err := os.Stat(assetsDir); os.IsNotExist(err) {
+	if _, err := os.Stat(absAssetsDir); os.IsNotExist(err) {
 		return assets, nil // Return empty collection if directory doesn't exist
 	}
 	
 	// Read directory contents
-	entries, err := os.ReadDir(assetsDir)
+	entries, err := os.ReadDir(absAssetsDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read assets directory: %v", err)
 	}
@@ -2960,13 +2966,14 @@ func scanAssetsDirectory(assetsDir string) (*AssetCollection, error) {
 		
 		filename := entry.Name()
 		ext := strings.ToLower(filepath.Ext(filename))
-		fullPath := filepath.Join(assetsDir, filename)
+		// Create absolute path for Final Cut Pro
+		absolutePath := filepath.Join(absAssetsDir, filename)
 		
 		switch ext {
 		case ".png", ".jpg", ".jpeg", ".gif":
-			assets.Images = append(assets.Images, fullPath)
+			assets.Images = append(assets.Images, absolutePath)
 		case ".mp4", ".mov", ".avi", ".mkv":
-			assets.Videos = append(assets.Videos, fullPath)
+			assets.Videos = append(assets.Videos, absolutePath)
 		}
 	}
 	
@@ -2975,6 +2982,10 @@ func scanAssetsDirectory(assetsDir string) (*AssetCollection, error) {
 
 // generateRandomTimelineElements fills the timeline with random elements
 func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, assets *AssetCollection, totalDuration float64, verbose bool) error {
+	// Pre-create all unique assets to avoid UID collisions
+	createdAssets := make(map[string]string) // filepath -> assetID
+	createdFormats := make(map[string]string) // filepath -> formatID
+	
 	// Generate 10-20 random elements
 	numElements := 10 + rand.Intn(11) // 10-20 elements
 	
@@ -2994,7 +3005,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		case 0: // Image
 			if len(assets.Images) > 0 {
 				imagePath := assets.Images[rand.Intn(len(assets.Images))]
-				err := addRandomImageElement(fcpxml, tx, imagePath, startTime, duration, i, verbose)
+				err := addRandomImageElement(fcpxml, tx, imagePath, startTime, duration, i, verbose, createdAssets, createdFormats)
 				if err != nil && verbose {
 					fmt.Printf("Warning: Failed to add image element: %v\n", err)
 				}
@@ -3003,7 +3014,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		case 1: // Video
 			if len(assets.Videos) > 0 {
 				videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
-				err := addRandomVideoElement(fcpxml, tx, videoPath, startTime, duration, i, verbose)
+				err := addRandomVideoElement(fcpxml, tx, videoPath, startTime, duration, i, verbose, createdAssets, createdFormats)
 				if err != nil && verbose {
 					fmt.Printf("Warning: Failed to add video element: %v\n", err)
 				}
@@ -3021,45 +3032,39 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 }
 
 // addRandomImageElement adds an image with random effects and animations
-func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, elementIndex int, verbose bool) error {
+func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, elementIndex int, verbose bool, createdAssets, createdFormats map[string]string) error {
 	if verbose {
 		fmt.Printf("  Adding image: %s (%.1fs @ %.1fs)\n", filepath.Base(imagePath), duration, startTime)
 	}
 	
-	// Reserve IDs for asset and format
-	ids := tx.ReserveIDs(2)
-	assetID := ids[0]
-	formatID := ids[1]
+	// Reuse existing asset if already created, otherwise create new one
+	var assetID, formatID string
+	var err error
 	
-	// Create image asset and format
-	asset := Asset{
-		ID:           assetID,
-		Name:         filepath.Base(imagePath),
-		UID:          generateUID(imagePath),
-		Start:        "0s",
-		Duration:     "0s", // Images are timeless
-		HasVideo:     "1",
-		Format:       formatID,
-		VideoSources: "1",
-		MediaRep: MediaRep{
-			Kind: "original-media",
-			Sig:  generateUID(imagePath + "_sig"),
-			Src:  "file://" + imagePath,
-		},
+	if existingAssetID, exists := createdAssets[imagePath]; exists {
+		// Reuse existing asset
+		assetID = existingAssetID
+		formatID = createdFormats[imagePath]
+	} else {
+		// Create new asset and format
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+		
+		_, err = tx.CreateAsset(assetID, imagePath, filepath.Base(imagePath), ConvertSecondsToFCPDuration(duration), formatID)
+		if err != nil {
+			return fmt.Errorf("failed to create image asset: %v", err)
+		}
+		
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1920", "1080", "1-13-1")
+		if err != nil {
+			return fmt.Errorf("failed to create image format: %v", err)
+		}
+		
+		// Remember this asset for reuse
+		createdAssets[imagePath] = assetID
+		createdFormats[imagePath] = formatID
 	}
-	
-	format := Format{
-		ID:         formatID,
-		Name:       "FFVideoFormatRateUndefined",
-		Width:      "1920", // Default dimensions
-		Height:     "1080",
-		ColorSpace: "1-13-1",
-		// No frameDuration for images
-	}
-	
-	// Add to resources
-	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
-	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, format)
 	
 	// Create video element for timeline
 	video := Video{
@@ -3106,49 +3111,40 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 }
 
 // addRandomVideoElement adds a video with random effects
-func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, elementIndex int, verbose bool) error {
+func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, elementIndex int, verbose bool, createdAssets, createdFormats map[string]string) error {
 	if verbose {
 		fmt.Printf("  Adding video: %s (%.1fs @ %.1fs)\n", filepath.Base(videoPath), duration, startTime)
 	}
 	
-	// Reserve IDs for asset and format
-	ids := tx.ReserveIDs(2)
-	assetID := ids[0]
-	formatID := ids[1]
+	// Reuse existing asset if already created, otherwise create new one
+	var assetID, formatID string
+	var err error
 	
-	// Create video asset and format
-	asset := Asset{
-		ID:            assetID,
-		Name:          filepath.Base(videoPath),
-		UID:           generateUID(videoPath),
-		Start:         "0s",
-		Duration:      ConvertSecondsToFCPDuration(duration + 30), // Longer than clip duration
-		HasVideo:      "1",
-		HasAudio:      "1",
-		AudioSources:  "1",
-		AudioChannels: "2",
-		AudioRate:     "48000",
-		Format:        formatID,
-		VideoSources:  "1",
-		MediaRep: MediaRep{
-			Kind: "original-media",
-			Sig:  generateUID(videoPath + "_sig"),
-			Src:  "file://" + videoPath,
-		},
+	if existingAssetID, exists := createdAssets[videoPath]; exists {
+		// Reuse existing asset
+		assetID = existingAssetID
+		formatID = createdFormats[videoPath]
+	} else {
+		// Create new asset and format
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+		
+		// Use transaction methods to create asset and format properly
+		_, err = tx.CreateAsset(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration + 30), formatID)
+		if err != nil {
+			return fmt.Errorf("failed to create video asset: %v", err)
+		}
+		
+		_, err = tx.CreateFormatWithFrameDuration(formatID, "1001/30000s", "1920", "1080", "1-1-1 (Rec. 709)")
+		if err != nil {
+			return fmt.Errorf("failed to create video format: %v", err)
+		}
+		
+		// Remember this asset for reuse
+		createdAssets[videoPath] = assetID
+		createdFormats[videoPath] = formatID
 	}
-	
-	format := Format{
-		ID:            formatID,
-		Name:          "FFVideoFormat1080p30",
-		FrameDuration: "1001/30000s", // 29.97 fps
-		Width:         "1920",
-		Height:        "1080",
-		ColorSpace:    "1-1-1 (Rec. 709)",
-	}
-	
-	// Add to resources
-	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
-	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, format)
 	
 	// Create asset-clip element for timeline
 	assetClip := AssetClip{
