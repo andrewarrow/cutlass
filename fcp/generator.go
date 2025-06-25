@@ -14,11 +14,13 @@ import (
 	"encoding/xml"
 	"fmt"
 	"math"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type TemplateVideo struct {
@@ -2864,4 +2866,445 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 	mainClip.NestedAssetClips = append(mainClip.NestedAssetClips, pipClip)
 
 	return nil
+}
+
+// GenerateBaffleTimeline creates a random complex timeline for stress testing
+func GenerateBaffleTimeline(minDuration, maxDuration float64, verbose bool) (*FCPXML, error) {
+	// Create base FCPXML structure
+	fcpxml, err := GenerateEmpty("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+	
+	// Set up resource management
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+	
+	if verbose {
+		fmt.Printf("Starting baffle timeline generation...\n")
+	}
+	
+	// Get available assets from ./assets directory
+	assetsDir := "./assets"
+	assets, err := scanAssetsDirectory(assetsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan assets directory: %v", err)
+	}
+	
+	if len(assets.Images) == 0 && len(assets.Videos) == 0 {
+		return nil, fmt.Errorf("no assets found in %s directory", assetsDir)
+	}
+	
+	if verbose {
+		fmt.Printf("Found %d images and %d videos in assets directory\n", len(assets.Images), len(assets.Videos))
+	}
+	
+	// Generate random timeline duration
+	rand.Seed(time.Now().UnixNano())
+	totalDuration := minDuration + rand.Float64()*(maxDuration-minDuration)
+	
+	if verbose {
+		fmt.Printf("Target timeline duration: %.1f seconds (%.1f minutes)\n", totalDuration, totalDuration/60)
+	}
+	
+	// Generate complex multi-element timeline
+	err = generateRandomTimelineElements(fcpxml, tx, assets, totalDuration, verbose)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate timeline elements: %v", err)
+	}
+	
+	// Update sequence duration to match content
+	updateSequenceDuration(fcpxml, totalDuration)
+	
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+	
+	if verbose {
+		fmt.Printf("Baffle timeline generation completed successfully\n")
+	}
+	
+	return fcpxml, nil
+}
+
+// AssetCollection holds categorized assets
+type AssetCollection struct {
+	Images []string
+	Videos []string
+}
+
+// scanAssetsDirectory scans ./assets for available media files
+func scanAssetsDirectory(assetsDir string) (*AssetCollection, error) {
+	assets := &AssetCollection{
+		Images: []string{},
+		Videos: []string{},
+	}
+	
+	// Check if assets directory exists
+	if _, err := os.Stat(assetsDir); os.IsNotExist(err) {
+		return assets, nil // Return empty collection if directory doesn't exist
+	}
+	
+	// Read directory contents
+	entries, err := os.ReadDir(assetsDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read assets directory: %v", err)
+	}
+	
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		
+		filename := entry.Name()
+		ext := strings.ToLower(filepath.Ext(filename))
+		fullPath := filepath.Join(assetsDir, filename)
+		
+		switch ext {
+		case ".png", ".jpg", ".jpeg", ".gif":
+			assets.Images = append(assets.Images, fullPath)
+		case ".mp4", ".mov", ".avi", ".mkv":
+			assets.Videos = append(assets.Videos, fullPath)
+		}
+	}
+	
+	return assets, nil
+}
+
+// generateRandomTimelineElements fills the timeline with random elements
+func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, assets *AssetCollection, totalDuration float64, verbose bool) error {
+	// Generate 10-20 random elements
+	numElements := 10 + rand.Intn(11) // 10-20 elements
+	
+	if verbose {
+		fmt.Printf("Generating %d random timeline elements...\n", numElements)
+	}
+	
+	for i := 0; i < numElements; i++ {
+		// Random placement within timeline
+		startTime := rand.Float64() * (totalDuration * 0.8) // Don't go to the very end
+		duration := 2.0 + rand.Float64()*8.0 // 2-10 second elements
+		
+		// Randomly choose between images, videos, and text
+		elementType := rand.Intn(3)
+		
+		switch elementType {
+		case 0: // Image
+			if len(assets.Images) > 0 {
+				imagePath := assets.Images[rand.Intn(len(assets.Images))]
+				err := addRandomImageElement(fcpxml, tx, imagePath, startTime, duration, i, verbose)
+				if err != nil && verbose {
+					fmt.Printf("Warning: Failed to add image element: %v\n", err)
+				}
+			}
+			
+		case 1: // Video
+			if len(assets.Videos) > 0 {
+				videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
+				err := addRandomVideoElement(fcpxml, tx, videoPath, startTime, duration, i, verbose)
+				if err != nil && verbose {
+					fmt.Printf("Warning: Failed to add video element: %v\n", err)
+				}
+			}
+			
+		case 2: // Text
+			err := addRandomTextElement(fcpxml, tx, startTime, duration, i, verbose)
+			if err != nil && verbose {
+				fmt.Printf("Warning: Failed to add text element: %v\n", err)
+			}
+		}
+	}
+	
+	return nil
+}
+
+// addRandomImageElement adds an image with random effects and animations
+func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, elementIndex int, verbose bool) error {
+	if verbose {
+		fmt.Printf("  Adding image: %s (%.1fs @ %.1fs)\n", filepath.Base(imagePath), duration, startTime)
+	}
+	
+	// Reserve IDs for asset and format
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+	
+	// Create image asset and format
+	asset := Asset{
+		ID:           assetID,
+		Name:         filepath.Base(imagePath),
+		UID:          generateUID(imagePath),
+		Start:        "0s",
+		Duration:     "0s", // Images are timeless
+		HasVideo:     "1",
+		Format:       formatID,
+		VideoSources: "1",
+		MediaRep: MediaRep{
+			Kind: "original-media",
+			Sig:  generateUID(imagePath + "_sig"),
+			Src:  "file://" + imagePath,
+		},
+	}
+	
+	format := Format{
+		ID:         formatID,
+		Name:       "FFVideoFormatRateUndefined",
+		Width:      "1920", // Default dimensions
+		Height:     "1080",
+		ColorSpace: "1-13-1",
+		// No frameDuration for images
+	}
+	
+	// Add to resources
+	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, format)
+	
+	// Create video element for timeline
+	video := Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Image_%d", elementIndex),
+	}
+	
+	// Random lane assignment (1-5)
+	if rand.Float32() < 0.7 { // 70% chance of being in a lane
+		video.Lane = fmt.Sprintf("%d", 1+rand.Intn(5))
+	}
+	
+	// Random animations
+	if rand.Float32() < 0.6 { // 60% chance of animation
+		video.AdjustTransform = createRandomAnimation(startTime, duration)
+	}
+	
+	// Random effects
+	if rand.Float32() < 0.4 { // 40% chance of effects
+		// Add blur effect
+		effectID := tx.ReserveIDs(1)[0]
+		effect := Effect{
+			ID:   effectID,
+			Name: "Gaussian Blur",
+			UID:  "FFGaussianBlur",
+		}
+		fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
+		
+		video.FilterVideos = []FilterVideo{{
+			Ref:  effectID,
+			Name: "Blur",
+			Params: []Param{{
+				Name:  "amount",
+				Value: fmt.Sprintf("%.1f", 2.0+rand.Float64()*8.0), // 2-10 blur amount
+			}},
+		}}
+	}
+	
+	// Add to timeline (main spine)
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.Videos = append(spine.Videos, video)
+	
+	return nil
+}
+
+// addRandomVideoElement adds a video with random effects
+func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, elementIndex int, verbose bool) error {
+	if verbose {
+		fmt.Printf("  Adding video: %s (%.1fs @ %.1fs)\n", filepath.Base(videoPath), duration, startTime)
+	}
+	
+	// Reserve IDs for asset and format
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+	
+	// Create video asset and format
+	asset := Asset{
+		ID:            assetID,
+		Name:          filepath.Base(videoPath),
+		UID:           generateUID(videoPath),
+		Start:         "0s",
+		Duration:      ConvertSecondsToFCPDuration(duration + 30), // Longer than clip duration
+		HasVideo:      "1",
+		HasAudio:      "1",
+		AudioSources:  "1",
+		AudioChannels: "2",
+		AudioRate:     "48000",
+		Format:        formatID,
+		VideoSources:  "1",
+		MediaRep: MediaRep{
+			Kind: "original-media",
+			Sig:  generateUID(videoPath + "_sig"),
+			Src:  "file://" + videoPath,
+		},
+	}
+	
+	format := Format{
+		ID:            formatID,
+		Name:          "FFVideoFormat1080p30",
+		FrameDuration: "1001/30000s", // 29.97 fps
+		Width:         "1920",
+		Height:        "1080",
+		ColorSpace:    "1-1-1 (Rec. 709)",
+	}
+	
+	// Add to resources
+	fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+	fcpxml.Resources.Formats = append(fcpxml.Resources.Formats, format)
+	
+	// Create asset-clip element for timeline
+	assetClip := AssetClip{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Video_%d", elementIndex),
+		Start:    "0s",
+	}
+	
+	// Random lane assignment (1-4)
+	if rand.Float32() < 0.5 { // 50% chance of being in a lane
+		assetClip.Lane = fmt.Sprintf("%d", 1+rand.Intn(4))
+	}
+	
+	// Random animations
+	if rand.Float32() < 0.7 { // 70% chance of animation
+		assetClip.AdjustTransform = createRandomAnimation(startTime, duration)
+	}
+	
+	// Add to timeline
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.AssetClips = append(spine.AssetClips, assetClip)
+	
+	return nil
+}
+
+// addRandomTextElement adds a text title with random styling
+func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, duration float64, elementIndex int, verbose bool) error {
+	textContent := generateRandomText()
+	
+	if verbose {
+		fmt.Printf("  Adding text: \"%s\" (%.1fs @ %.1fs)\n", textContent, duration, startTime)
+	}
+	
+	// Reserve IDs for effect
+	effectID := tx.ReserveIDs(1)[0]
+	
+	// Add text effect to resources
+	effect := Effect{
+		ID:   effectID,
+		Name: "Text",
+		UID:  ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti",
+	}
+	fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
+	
+	// Generate style ID
+	styleID := fmt.Sprintf("ts_baffle_%d", elementIndex)
+	
+	// Create title element
+	title := Title{
+		Ref:      effectID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Text_%d", elementIndex),
+		Text: &TitleText{
+			TextStyles: []TextStyleRef{{
+				Ref:  styleID,
+				Text: textContent,
+			}},
+		},
+		TextStyleDefs: []TextStyleDef{{
+			ID: styleID,
+			TextStyle: TextStyle{
+				Font:         randomFont(),
+				FontSize:     fmt.Sprintf("%.0f", 36+rand.Float64()*48), // 36-84pt
+				FontColor:    randomColor(),
+				Alignment:    randomAlignment(),
+				LineSpacing:  fmt.Sprintf("%.1f", 1.0+rand.Float64()*0.5), // 1.0-1.5
+			},
+		}},
+	}
+	
+	// Random lane assignment (2-6 for text overlay)
+	if rand.Float32() < 0.8 { // 80% chance of being in a lane
+		title.Lane = fmt.Sprintf("%d", 2+rand.Intn(5))
+	}
+	
+	// Add to timeline
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.Titles = append(spine.Titles, title)
+	
+	return nil
+}
+
+// createRandomAnimation creates random keyframe animation
+func createRandomAnimation(startTime, duration float64) *AdjustTransform {
+	endTime := startTime + duration
+	
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: fmt.Sprintf("%.0f %.0f", -200+rand.Float64()*400, -100+rand.Float64()*200),
+						},
+						{
+							Time:  ConvertSecondsToFCPDuration(endTime),
+							Value: fmt.Sprintf("%.0f %.0f", -200+rand.Float64()*400, -100+rand.Float64()*200),
+						},
+					},
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: fmt.Sprintf("%.2f %.2f", 0.5+rand.Float64()*1.0, 0.5+rand.Float64()*1.0),
+							Curve: "smooth",
+						},
+						{
+							Time:  ConvertSecondsToFCPDuration(endTime),
+							Value: fmt.Sprintf("%.2f %.2f", 0.5+rand.Float64()*1.0, 0.5+rand.Float64()*1.0),
+							Curve: "linear",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// Helper functions for random content generation
+func generateRandomText() string {
+	texts := []string{
+		"BAFFLE TEST", "Random Text", "Complex Timeline", "Stress Test",
+		"FCPXML Generation", "Multi-Lane Test", "Animation Check",
+		"Effect Validation", "Resource Test", "Lane Assignment",
+		"Keyframe Test", "Timeline Stress", "Generation Check",
+	}
+	return texts[rand.Intn(len(texts))]
+}
+
+func randomFont() string {
+	fonts := []string{"Helvetica", "Arial", "Times", "Courier", "Georgia", "Verdana"}
+	return fonts[rand.Intn(len(fonts))]
+}
+
+func randomColor() string {
+	return fmt.Sprintf("%.2f %.2f %.2f 1", rand.Float64(), rand.Float64(), rand.Float64())
+}
+
+func randomAlignment() string {
+	alignments := []string{"left", "center", "right"}
+	return alignments[rand.Intn(len(alignments))]
+}
+
+// updateSequenceDuration updates the sequence duration to match content
+func updateSequenceDuration(fcpxml *FCPXML, totalDuration float64) {
+	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+	sequence.Duration = ConvertSecondsToFCPDuration(totalDuration)
 }

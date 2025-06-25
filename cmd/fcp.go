@@ -700,6 +700,83 @@ File format (messages.txt):
 	},
 }
 
+var baffleCmd = &cobra.Command{
+	Use:   "baffle [output-filename]",
+	Short: "Generate a random complex 3-9 minute timeline to stress-test FCPXML generation",
+	Long: `Generate a random complex timeline between 3-9 minutes containing:
+- Multiple PNG and video assets from ./assets directory
+- Multi-lane composition with 3-8 lanes
+- Text elements with various fonts and styles
+- Complex animations and transforms
+- Multiple effects and filters
+- Crop adjustments and spatial transformations
+
+This command is designed to stress-test the FCPXML generation system and discover
+edge cases. Each run generates a completely different timeline with random:
+- Duration between 180-540 seconds (3-9 minutes)
+- Asset selection and placement
+- Animation timing and parameters
+- Effect combinations
+- Lane assignments and nesting
+
+Use this to find and fix FCPXML generation bugs by creating complex scenarios
+that might not occur in normal usage.`,
+	Args: cobra.RangeArgs(0, 1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get output filename
+		var filename string
+		if len(args) > 0 {
+			filename = args[0]
+		} else {
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("baffle_%d.fcpxml", timestamp)
+		}
+		
+		// Get duration range from flags
+		minDurationStr, _ := cmd.Flags().GetString("min-duration")
+		maxDurationStr, _ := cmd.Flags().GetString("max-duration")
+		
+		minDuration, err := strconv.ParseFloat(minDurationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing min-duration '%s': %v\n", minDurationStr, err)
+			return
+		}
+		
+		maxDuration, err := strconv.ParseFloat(maxDurationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing max-duration '%s': %v\n", maxDurationStr, err)
+			return
+		}
+		
+		if minDuration >= maxDuration {
+			fmt.Printf("Error: min-duration (%.1f) must be less than max-duration (%.1f)\n", minDuration, maxDuration)
+			return
+		}
+		
+		// Get verbose flag
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		
+		// Generate random complex timeline
+		fmt.Printf("Generating random complex timeline (%.1f-%.1f minutes)...\n", minDuration/60, maxDuration/60)
+		
+		fcpxml, err := fcp.GenerateBaffleTimeline(minDuration, maxDuration, verbose)
+		if err != nil {
+			fmt.Printf("Error generating baffle timeline: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated complex baffle timeline: %s\n", filename)
+		fmt.Printf("Import this into Final Cut Pro to test for crashes and issues.\n")
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -745,6 +822,11 @@ func init() {
 	addConversationCmd.Flags().StringP("offset", "t", "1", "Start offset in seconds for each message (default 1)")
 	addConversationCmd.Flags().StringP("duration", "d", "3", "Duration of each message in seconds (default 3)")
 	
+	// Add flags to baffle subcommand
+	baffleCmd.Flags().String("min-duration", "180", "Minimum timeline duration in seconds (default 180 = 3 minutes)")
+	baffleCmd.Flags().String("max-duration", "540", "Maximum timeline duration in seconds (default 540 = 9 minutes)")
+	baffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
@@ -754,4 +836,5 @@ func init() {
 	fcpCmd.AddCommand(addPipVideoCmd)
 	fcpCmd.AddCommand(addTxtCmd)
 	fcpCmd.AddCommand(addConversationCmd)
+	fcpCmd.AddCommand(baffleCmd)
 }
