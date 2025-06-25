@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
 	"os"
@@ -2998,16 +2999,50 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 	createdAssets := make(map[string]string) // filepath -> assetID
 	createdFormats := make(map[string]string) // filepath -> formatID
 	
-	// Generate 10-20 random elements
+	// CRITICAL FIX: Always add a background element starting at 0s to prevent black screen
+	// Add a long-duration background video or image that covers the entire timeline
+	if len(assets.Videos) > 0 {
+		backgroundVideo := assets.Videos[rand.Intn(len(assets.Videos))]
+		// Create unique copy for BAFFLE to avoid FCP UID cache conflicts
+		uniqueVideo, err := createUniqueMediaCopy(backgroundVideo, "background")
+		if err != nil && verbose {
+			fmt.Printf("Warning: Failed to create unique background copy: %v\n", err)
+			uniqueVideo = backgroundVideo // Fallback to original
+		}
+		
+		err = addRandomVideoElement(fcpxml, tx, uniqueVideo, 0.0, totalDuration, 0, verbose, createdAssets, createdFormats)
+		if err != nil && verbose {
+			fmt.Printf("Warning: Failed to add background video: %v\n", err)
+		} else if verbose {
+			fmt.Printf("  Added background video: %s (%.1fs @ 0s)\n", filepath.Base(uniqueVideo), totalDuration)
+		}
+	} else if len(assets.Images) > 0 {
+		backgroundImage := assets.Images[rand.Intn(len(assets.Images))]
+		// Create unique copy for BAFFLE to avoid FCP UID cache conflicts  
+		uniqueImage, err := createUniqueMediaCopy(backgroundImage, "background")
+		if err != nil && verbose {
+			fmt.Printf("Warning: Failed to create unique background copy: %v\n", err)
+			uniqueImage = backgroundImage // Fallback to original
+		}
+		
+		err = addRandomImageElement(fcpxml, tx, uniqueImage, 0.0, totalDuration, 0, verbose, createdAssets, createdFormats)
+		if err != nil && verbose {
+			fmt.Printf("Warning: Failed to add background image: %v\n", err)
+		} else if verbose {
+			fmt.Printf("  Added background image: %s (%.1fs @ 0s)\n", filepath.Base(uniqueImage), totalDuration)
+		}
+	}
+	
+	// Generate 10-20 additional random elements for overlay/variety
 	numElements := 10 + rand.Intn(11) // 10-20 elements
 	
 	if verbose {
-		fmt.Printf("Generating %d random timeline elements...\n", numElements)
+		fmt.Printf("Generating %d additional timeline elements...\n", numElements)
 	}
 	
-	for i := 0; i < numElements; i++ {
-		// Random placement within timeline
-		startTime := rand.Float64() * (totalDuration * 0.8) // Don't go to the very end
+	for i := 1; i <= numElements; i++ { // Start from i=1 since i=0 was used for background
+		// Random placement within timeline (but not at the very end)
+		startTime := rand.Float64() * (totalDuration * 0.8)
 		duration := 2.0 + rand.Float64()*8.0 // 2-10 second elements
 		
 		// Randomly choose between images, videos, and text
@@ -3017,7 +3052,14 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		case 0: // Image
 			if len(assets.Images) > 0 {
 				imagePath := assets.Images[rand.Intn(len(assets.Images))]
-				err := addRandomImageElement(fcpxml, tx, imagePath, startTime, duration, i, verbose, createdAssets, createdFormats)
+				// Create unique copy for BAFFLE to avoid FCP UID cache conflicts
+				uniqueImage, err := createUniqueMediaCopy(imagePath, fmt.Sprintf("img_%d", i))
+				if err != nil && verbose {
+					fmt.Printf("Warning: Failed to create unique image copy: %v\n", err)
+					uniqueImage = imagePath // Fallback to original
+				}
+				
+				err = addRandomImageElement(fcpxml, tx, uniqueImage, startTime, duration, i, verbose, createdAssets, createdFormats)
 				if err != nil && verbose {
 					fmt.Printf("Warning: Failed to add image element: %v\n", err)
 				}
@@ -3026,7 +3068,14 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		case 1: // Video
 			if len(assets.Videos) > 0 {
 				videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
-				err := addRandomVideoElement(fcpxml, tx, videoPath, startTime, duration, i, verbose, createdAssets, createdFormats)
+				// Create unique copy for BAFFLE to avoid FCP UID cache conflicts
+				uniqueVideo, err := createUniqueMediaCopy(videoPath, fmt.Sprintf("vid_%d", i))
+				if err != nil && verbose {
+					fmt.Printf("Warning: Failed to create unique video copy: %v\n", err)
+					uniqueVideo = videoPath // Fallback to original
+				}
+				
+				err = addRandomVideoElement(fcpxml, tx, uniqueVideo, startTime, duration, i, verbose, createdAssets, createdFormats)
 				if err != nil && verbose {
 					fmt.Printf("Warning: Failed to add video element: %v\n", err)
 				}
@@ -3241,11 +3290,11 @@ func createRandomAnimation(startTime, duration float64) *AdjustTransform {
 					Keyframes: []Keyframe{
 						{
 							Time:  ConvertSecondsToFCPDuration(startTime),
-							Value: fmt.Sprintf("%.0f %.0f", -200+rand.Float64()*400, -100+rand.Float64()*200),
+							Value: fmt.Sprintf("%.0f %.0f", -100+rand.Float64()*200, -50+rand.Float64()*100),
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(endTime),
-							Value: fmt.Sprintf("%.0f %.0f", -200+rand.Float64()*400, -100+rand.Float64()*200),
+							Value: fmt.Sprintf("%.0f %.0f", -100+rand.Float64()*200, -50+rand.Float64()*100),
 						},
 					},
 				},
@@ -3300,4 +3349,47 @@ func randomAlignment() string {
 func updateSequenceDuration(fcpxml *FCPXML, totalDuration float64) {
 	sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 	sequence.Duration = ConvertSecondsToFCPDuration(totalDuration)
+}
+
+// createUniqueMediaCopy creates a temporary copy of a media file with a unique name
+// This prevents FCP UID cache conflicts by ensuring each BAFFLE run uses truly unique files
+func createUniqueMediaCopy(originalPath, prefix string) (string, error) {
+	// Create unique filename with timestamp and random component
+	timestamp := time.Now().UnixNano()
+	randomNum := rand.Int63()
+	ext := filepath.Ext(originalPath)
+	baseName := strings.TrimSuffix(filepath.Base(originalPath), ext)
+	
+	// Create unique filename: prefix_basename_timestamp_random.ext
+	uniqueName := fmt.Sprintf("%s_%s_%d_%d%s", prefix, baseName, timestamp, randomNum, ext)
+	
+	// Create temp directory in system temp
+	tempDir := filepath.Join(os.TempDir(), "cutlass_baffle")
+	if err := os.MkdirAll(tempDir, 0755); err != nil {
+		return originalPath, fmt.Errorf("failed to create temp directory: %v", err)
+	}
+	
+	// Full path for unique copy
+	uniquePath := filepath.Join(tempDir, uniqueName)
+	
+	// Copy file to new location
+	sourceFile, err := os.Open(originalPath)
+	if err != nil {
+		return originalPath, fmt.Errorf("failed to open source file: %v", err)
+	}
+	defer sourceFile.Close()
+	
+	destFile, err := os.Create(uniquePath)
+	if err != nil {
+		return originalPath, fmt.Errorf("failed to create destination file: %v", err)
+	}
+	defer destFile.Close()
+	
+	// Copy file contents
+	_, err = io.Copy(destFile, sourceFile)
+	if err != nil {
+		return originalPath, fmt.Errorf("failed to copy file contents: %v", err)
+	}
+	
+	return uniquePath, nil
 }

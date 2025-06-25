@@ -4,8 +4,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // generateUID creates a consistent UID from a file path using MD5 hash
@@ -20,6 +22,42 @@ func generateUID(filePath string) string {
 	filename := filepath.Base(filePath)
 	hasher := md5.New()
 	hasher.Write([]byte("cutlass_video_" + filename))
+	hash := hasher.Sum(nil)
+	// Convert to uppercase hex string and format as UID
+	hexStr := strings.ToUpper(hex.EncodeToString(hash))
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		hexStr[0:8], hexStr[8:12], hexStr[12:16], hexStr[16:20], hexStr[20:32])
+}
+
+// generateUIDWithProperties creates a UID that includes media properties
+// This ensures video-only vs video-with-audio files get different UIDs
+// preventing FCP cache conflicts when audio properties are corrected
+func generateUIDWithProperties(filePath string, hasAudio bool) string {
+	filename := filepath.Base(filePath)
+	hasher := md5.New()
+	audioSuffix := ""
+	if hasAudio {
+		audioSuffix = "_with_audio"
+	} else {
+		audioSuffix = "_video_only"
+	}
+	hasher.Write([]byte("cutlass_v2_" + filename + audioSuffix))
+	hash := hasher.Sum(nil)
+	// Convert to uppercase hex string and format as UID
+	hexStr := strings.ToUpper(hex.EncodeToString(hash))
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		hexStr[0:8], hexStr[8:12], hexStr[12:16], hexStr[16:20], hexStr[20:32])
+}
+
+// generateRandomUID creates a truly random UID for each generation
+// This prevents FCP library cache conflicts by ensuring different UIDs each time
+// Perfect for BAFFLE stress testing where we want fresh imports every time
+func generateRandomUID() string {
+	hasher := md5.New()
+	// Use current timestamp in nanoseconds + random number for uniqueness
+	timestamp := time.Now().UnixNano()
+	randomNum := rand.Int63()
+	hasher.Write([]byte(fmt.Sprintf("cutlass_random_%d_%d", timestamp, randomNum)))
 	hash := hasher.Sum(nil)
 	// Convert to uppercase hex string and format as UID
 	hexStr := strings.ToUpper(hex.EncodeToString(hash))

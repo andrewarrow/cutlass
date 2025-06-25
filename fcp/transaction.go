@@ -1,8 +1,6 @@
 package fcp
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -61,8 +59,10 @@ func (tx *ResourceTransaction) CreateVideoAssetWithDetection(id, filePath, baseN
 		return fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
-	// Generate consistent UID based on filename (production ready)
-	uid := tx.registry.GenerateConsistentUID(filepath.Base(filePath))
+	// Generate completely random UID to prevent FCP cache conflicts
+	// This allows importing the same file multiple times with different UIDs
+	// Perfect for BAFFLE stress testing where we want fresh imports every time
+	uid := generateRandomUID()
 
 	// Generate security bookmark for file access
 	bookmark, err := generateBookmark(absPath)
@@ -206,10 +206,9 @@ func (tx *ResourceTransaction) CreateVideoOnlyAsset(id, filePath, baseName, dura
 		return nil, fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
-	// Generate unique UID for PIP videos to avoid collisions with main video
-	// Modify the filename to ensure different UID even for same file used as main video
-	pipPath := filepath.Dir(absPath) + "/pip_" + filepath.Base(absPath)
-	uid := GenerateUID(pipPath)
+	// Generate random UID for PIP videos to avoid collisions
+	// This ensures each PIP import gets a unique UID
+	uid := generateRandomUID()
 
 	// Create asset with ONLY video properties (no audio properties)
 	// This matches samples/pip.fcpxml pattern: hasVideo="1" format="r5" videoSources="1" (no audio)
@@ -552,18 +551,3 @@ func convertFrameRateToFCP(frameRateStr string) string {
 	}
 }
 
-// generateRandomUID creates a truly random UID for testing to avoid FCP caching issues
-func generateRandomUID() string {
-	// Generate 16 random bytes (128 bits)
-	bytes := make([]byte, 16)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		// Fallback to deterministic method if random fails
-		return "TEST-1234-5678-9ABC-DEF123456789"
-	}
-	
-	// Format as standard UID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
-	hex := strings.ToUpper(hex.EncodeToString(bytes))
-	return fmt.Sprintf("%s-%s-%s-%s-%s",
-		hex[0:8], hex[8:12], hex[12:16], hex[16:20], hex[20:32])
-}
