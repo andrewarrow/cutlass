@@ -188,6 +188,45 @@ nextID := fmt.Sprintf("r%d", resourceCount+1)
 ❌ id := fmt.Sprintf("r%d", time.Now().Unix())  // Time-based IDs
 ```
 
+## 🚨 CRITICAL: Transaction Resource Creation 🚨
+
+**ALWAYS use transaction methods to create resources - NEVER direct append:**
+
+```go
+❌ BAD: Direct manipulation bypasses transaction
+effectID := tx.ReserveIDs(1)[0]
+effect := Effect{ID: effectID, Name: "Blur", UID: "FFGaussianBlur"}
+fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
+// Result: "Effect ID is invalid" - resource never committed!
+
+✅ GOOD: Use transaction creation methods
+effectID := tx.ReserveIDs(1)[0]
+tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
+// Resource properly managed and committed with tx.Commit()
+```
+
+**Transaction Creation Methods:**
+```go
+// For assets
+tx.CreateAsset(assetID, filePath, baseName, duration, formatID)
+
+// For formats  
+tx.CreateFormat(formatID, name, width, height, colorSpace)
+tx.CreateFormatWithFrameDuration(formatID, frameDuration, width, height, colorSpace)
+
+// For effects
+tx.CreateEffect(effectID, name, uid)
+```
+
+**Why Direct Append Fails:**
+- Reserved IDs don't automatically create resources
+- Transaction manages complete resource lifecycle
+- Only tx.Commit() adds resources to final FCPXML
+- Direct append bypasses validation and registration
+- Missing resources cause "Effect ID is invalid" errors in Final Cut Pro
+
+**BAFFLE Lesson:** Complex timelines reveal transaction bugs that simple cases miss!
+
 ## 🚨 CRITICAL: Text and Title Architecture 🚨
 
 **Text elements have complex nesting requirements:**

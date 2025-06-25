@@ -151,6 +151,29 @@ func GenerateMyFeature(inputFile, outputFile string) error {
 ✅ GOOD: ids := tx.ReserveIDs(1); assetID := ids[0]  // Thread-safe
 ```
 
+## 🚨 CRITICAL: Transaction Resource Creation 🚨
+
+**ALWAYS use transaction methods to create resources:**
+
+```go
+❌ BAD: Direct manipulation bypasses transaction
+effectID := tx.ReserveIDs(1)[0]
+effect := Effect{ID: effectID, Name: "Blur", UID: "FFGaussianBlur"}
+fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
+// Result: "Effect ID is invalid" - resource never committed!
+
+✅ GOOD: Use transaction creation methods
+effectID := tx.ReserveIDs(1)[0]
+tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
+// Resource properly managed and committed with tx.Commit()
+```
+
+**Why Direct Append Fails:**
+- Reserved IDs don't automatically create resources
+- Transaction manages resource lifecycle
+- Only tx.Commit() adds resources to final FCPXML
+- Direct append bypasses validation and registration
+
 ## Unique ID Requirements
 
 **All IDs must be unique within document:**
