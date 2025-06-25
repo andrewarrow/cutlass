@@ -3010,7 +3010,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 			uniqueVideo = backgroundVideo // Fallback to original
 		}
 		
-		err = addRandomVideoElement(fcpxml, tx, uniqueVideo, 0.0, totalDuration, 0, verbose, createdAssets, createdFormats)
+		err = addRandomVideoElement(fcpxml, tx, uniqueVideo, 0.0, totalDuration, 0, 0, verbose, createdAssets, createdFormats)
 		if err != nil && verbose {
 			fmt.Printf("Warning: Failed to add background video: %v\n", err)
 		} else if verbose {
@@ -3025,7 +3025,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 			uniqueImage = backgroundImage // Fallback to original
 		}
 		
-		err = addRandomImageElement(fcpxml, tx, uniqueImage, 0.0, totalDuration, 0, verbose, createdAssets, createdFormats)
+		err = addRandomImageElement(fcpxml, tx, uniqueImage, 0.0, totalDuration, 0, 0, verbose, createdAssets, createdFormats)
 		if err != nil && verbose {
 			fmt.Printf("Warning: Failed to add background image: %v\n", err)
 		} else if verbose {
@@ -3033,58 +3033,81 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		}
 	}
 	
-	// Generate 10-20 additional random elements for overlay/variety
-	numElements := 10 + rand.Intn(11) // 10-20 elements
+	// Generate 4-9 lanes with sequential clips (no gaps)
+	numLanes := 4 + rand.Intn(6) // 4-9 lanes
+	elementsPerLane := 3 + rand.Intn(4) // 3-6 elements per lane
 	
 	if verbose {
-		fmt.Printf("Generating %d additional timeline elements...\n", numElements)
+		fmt.Printf("Generating %d lanes with %d elements each...\n", numLanes, elementsPerLane)
 	}
 	
-	for i := 1; i <= numElements; i++ { // Start from i=1 since i=0 was used for background
-		// Random placement within timeline (but not at the very end)
-		startTime := rand.Float64() * (totalDuration * 0.8)
-		duration := 2.0 + rand.Float64()*8.0 // 2-10 second elements
+	for lane := 1; lane <= numLanes; lane++ {
+		currentTime := 0.0 // Start each lane at 0s
 		
-		// Randomly choose between images, videos, and text
-		elementType := rand.Intn(3)
-		
-		switch elementType {
-		case 0: // Image
-			if len(assets.Images) > 0 {
-				imagePath := assets.Images[rand.Intn(len(assets.Images))]
-				// Create unique copy for BAFFLE to avoid FCP UID cache conflicts
-				uniqueImage, err := createUniqueMediaCopy(imagePath, fmt.Sprintf("img_%d", i))
-				if err != nil && verbose {
-					fmt.Printf("Warning: Failed to create unique image copy: %v\n", err)
-					uniqueImage = imagePath // Fallback to original
-				}
-				
-				err = addRandomImageElement(fcpxml, tx, uniqueImage, startTime, duration, i, verbose, createdAssets, createdFormats)
-				if err != nil && verbose {
-					fmt.Printf("Warning: Failed to add image element: %v\n", err)
-				}
+		for elementInLane := 1; elementInLane <= elementsPerLane; elementInLane++ {
+			// Sequential placement - no gaps between clips
+			startTime := currentTime
+			duration := 3.0 + rand.Float64()*6.0 // 3-9 second elements
+			currentTime += duration // Next clip starts where this one ends
+			
+			// Stop if we exceed timeline duration
+			if startTime >= totalDuration {
+				break
 			}
 			
-		case 1: // Video
-			if len(assets.Videos) > 0 {
-				videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
-				// Create unique copy for BAFFLE to avoid FCP UID cache conflicts
-				uniqueVideo, err := createUniqueMediaCopy(videoPath, fmt.Sprintf("vid_%d", i))
-				if err != nil && verbose {
-					fmt.Printf("Warning: Failed to create unique video copy: %v\n", err)
-					uniqueVideo = videoPath // Fallback to original
-				}
-				
-				err = addRandomVideoElement(fcpxml, tx, uniqueVideo, startTime, duration, i, verbose, createdAssets, createdFormats)
-				if err != nil && verbose {
-					fmt.Printf("Warning: Failed to add video element: %v\n", err)
-				}
+			// Ensure clip doesn't exceed timeline
+			if startTime+duration > totalDuration {
+				duration = totalDuration - startTime
 			}
 			
-		case 2: // Text
-			err := addRandomTextElement(fcpxml, tx, startTime, duration, i, verbose)
-			if err != nil && verbose {
-				fmt.Printf("Warning: Failed to add text element: %v\n", err)
+			elementIndex := (lane-1)*elementsPerLane + elementInLane
+		
+			// Choose element type based on lane (lower lanes = video/images, higher = text)
+			var elementType int
+			if lane <= 3 {
+				// Lower lanes: mostly videos and images
+				elementType = rand.Intn(2) // 0=image, 1=video
+			} else {
+				// Higher lanes: include more text elements
+				elementType = rand.Intn(3) // 0=image, 1=video, 2=text
+			}
+			
+			switch elementType {
+			case 0: // Image
+				if len(assets.Images) > 0 {
+					imagePath := assets.Images[rand.Intn(len(assets.Images))]
+					uniqueImage, err := createUniqueMediaCopy(imagePath, fmt.Sprintf("img_%d_%d", lane, elementInLane))
+					if err != nil && verbose {
+						fmt.Printf("Warning: Failed to create unique image copy: %v\n", err)
+						uniqueImage = imagePath
+					}
+					
+					err = addRandomImageElement(fcpxml, tx, uniqueImage, startTime, duration, elementIndex, lane, verbose, createdAssets, createdFormats)
+					if err != nil && verbose {
+						fmt.Printf("Warning: Failed to add image element: %v\n", err)
+					}
+				}
+				
+			case 1: // Video
+				if len(assets.Videos) > 0 {
+					videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
+					uniqueVideo, err := createUniqueMediaCopy(videoPath, fmt.Sprintf("vid_%d_%d", lane, elementInLane))
+					if err != nil && verbose {
+						fmt.Printf("Warning: Failed to create unique video copy: %v\n", err)
+						uniqueVideo = videoPath
+					}
+					
+					err = addRandomVideoElement(fcpxml, tx, uniqueVideo, startTime, duration, elementIndex, lane, verbose, createdAssets, createdFormats)
+					if err != nil && verbose {
+						fmt.Printf("Warning: Failed to add video element: %v\n", err)
+					}
+				}
+				
+			case 2: // Text
+				err := addRandomTextElement(fcpxml, tx, startTime, duration, elementIndex, lane, verbose)
+				if err != nil && verbose {
+					fmt.Printf("Warning: Failed to add text element: %v\n", err)
+				}
 			}
 		}
 	}
@@ -3093,7 +3116,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 }
 
 // addRandomImageElement adds an image with random effects and animations
-func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, elementIndex int, verbose bool, createdAssets, createdFormats map[string]string) error {
+func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, elementIndex, lane int, verbose bool, createdAssets, createdFormats map[string]string) error {
 	if verbose {
 		fmt.Printf("  Adding image: %s (%.1fs @ %.1fs)\n", filepath.Base(imagePath), duration, startTime)
 	}
@@ -3135,9 +3158,9 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 		Name:     fmt.Sprintf("Image_%d", elementIndex),
 	}
 	
-	// Random lane assignment (1-5)
-	if rand.Float32() < 0.7 { // 70% chance of being in a lane
-		video.Lane = fmt.Sprintf("%d", 1+rand.Intn(5))
+	// Assign to specific lane
+	if lane > 0 {
+		video.Lane = fmt.Sprintf("%d", lane)
 	}
 	
 	// Random animations
@@ -3166,7 +3189,7 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 }
 
 // addRandomVideoElement adds a video with random effects
-func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, elementIndex int, verbose bool, createdAssets, createdFormats map[string]string) error {
+func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, elementIndex, lane int, verbose bool, createdAssets, createdFormats map[string]string) error {
 	if verbose {
 		fmt.Printf("  Adding video: %s (%.1fs @ %.1fs)\n", filepath.Base(videoPath), duration, startTime)
 	}
@@ -3205,9 +3228,9 @@ func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath st
 		Start:    "0s",
 	}
 	
-	// Random lane assignment (1-4)
-	if rand.Float32() < 0.5 { // 50% chance of being in a lane
-		assetClip.Lane = fmt.Sprintf("%d", 1+rand.Intn(4))
+	// Assign to specific lane
+	if lane > 0 {
+		assetClip.Lane = fmt.Sprintf("%d", lane)
 	}
 	
 	// Random animations
@@ -3223,7 +3246,7 @@ func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath st
 }
 
 // addRandomTextElement adds a text title with random styling
-func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, duration float64, elementIndex int, verbose bool) error {
+func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, duration float64, elementIndex, lane int, verbose bool) error {
 	textContent := generateRandomText()
 	
 	if verbose {
@@ -3266,10 +3289,17 @@ func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 		}},
 	}
 	
-	// Random lane assignment (2-6 for text overlay)
-	if rand.Float32() < 0.8 { // 80% chance of being in a lane
-		title.Lane = fmt.Sprintf("%d", 2+rand.Intn(5))
+	// Assign to specific lane (text elements get higher lanes for overlay)
+	if lane > 0 {
+		title.Lane = fmt.Sprintf("%d", lane + 2) // Offset text to higher lanes
 	}
+	
+	// Add transparency for better overlay on video content
+	opacity := 0.6 + rand.Float64()*0.3 // 60-90% opacity for overlay effect
+	title.Params = append(title.Params, Param{
+		Name:  "Opacity",
+		Value: fmt.Sprintf("%.2f", opacity),
+	})
 	
 	// Add to timeline
 	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
