@@ -3203,7 +3203,7 @@ func createTextOverlay(fcpxml *FCPXML, tx *ResourceTransaction, startTime, durat
 	
 	// Generate content and style
 	textContent := generateRandomText()
-	styleID := generateUID("ts")
+	styleID := fmt.Sprintf("ts_%d", rand.Intn(999999)+100000) // Simple unique number
 	
 	// Create title overlay
 	title := &Title{
@@ -3332,6 +3332,9 @@ func createNestedVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath
 	
 	if verbose {
 		fmt.Printf("  Created main video with %d nested overlays\n", len(mainVideo.NestedVideos)+len(mainVideo.NestedAssetClips)+len(mainVideo.NestedTitles))
+		fmt.Printf("    - NestedVideos: %d\n", len(mainVideo.NestedVideos))
+		fmt.Printf("    - NestedAssetClips: %d\n", len(mainVideo.NestedAssetClips))
+		fmt.Printf("    - NestedTitles: %d\n", len(mainVideo.NestedTitles))
 	}
 	
 	return mainVideo, nil
@@ -3591,7 +3594,7 @@ func addBaffleTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 	}
 	
 	// Generate unique style ID
-	styleID := generateUID("ts")
+	styleID := fmt.Sprintf("ts_%d", rand.Intn(999999)+100000) // Simple unique number
 	
 	// Create title with proper structure
 	title := Title{
