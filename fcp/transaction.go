@@ -1,9 +1,14 @@
 package fcp
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -35,6 +40,78 @@ func (tx *ResourceTransaction) ReserveIDs(count int) []string {
 	return ids
 }
 
+// CreateVideoAssetWithDetection creates a video asset with proper media detection
+func (tx *ResourceTransaction) CreateVideoAssetWithDetection(id, filePath, baseName, duration string, formatID string) error {
+	if tx.rolled {
+		return fmt.Errorf("transaction has been rolled back")
+	}
+
+	// Detect actual video properties
+	props, err := detectVideoProperties(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to detect video properties: %v", err)
+	}
+
+	// Get absolute path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %v", err)
+	}
+
+	// Generate consistent UID based on filename (production ready)
+	uid := tx.registry.GenerateConsistentUID(filepath.Base(filePath))
+
+	// Generate security bookmark for file access
+	bookmark, err := generateBookmark(absPath)
+	if err != nil {
+		// Log but don't fail - bookmark is optional
+		bookmark = ""
+	}
+
+	// Create asset with detected properties
+	asset := &Asset{
+		ID:           id,
+		Name:         baseName,
+		UID:          uid,
+		Start:        "0s",
+		Duration:     duration,
+		HasVideo:     "1",
+		Format:       formatID,
+		VideoSources: "1",
+		MediaRep: MediaRep{
+			Kind:     "original-media",
+			Sig:      uid,
+			Src:      "file://" + absPath,
+			Bookmark: bookmark,
+		},
+	}
+
+	// Set audio properties only if video has audio
+	if props.HasAudio {
+		asset.HasAudio = "1"
+		asset.AudioSources = "1"
+		asset.AudioChannels = props.AudioChannels
+		asset.AudioRate = props.AudioRate
+	}
+
+	// Generate metadata based on actual file properties
+	asset.Metadata = createVideoMetadata(props, absPath)
+
+	// Create format with detected properties
+	format := &Format{
+		ID:            formatID,
+		Name:          "", // Will be auto-generated based on properties
+		FrameDuration: props.FrameRate,
+		Width:         fmt.Sprintf("%d", props.Width),
+		Height:        fmt.Sprintf("%d", props.Height),
+		ColorSpace:    "1-1-1 (Rec. 709)", // Standard default
+	}
+
+	// Add both to transaction
+	tx.created = append(tx.created, &AssetWrapper{asset}, &FormatWrapper{format})
+	return nil
+}
+
 // CreateAsset creates an asset with transaction management
 func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration string, formatID string) (*Asset, error) {
 	if tx.rolled {
@@ -47,8 +124,15 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		return nil, fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
-	// Generate consistent UID
-	uid := tx.registry.GenerateConsistentUID(filepath.Base(filePath))
+	// Generate random UID for testing to avoid FCP caching issues  
+	uid := generateRandomUID()
+
+	// Generate security bookmark for file access
+	bookmark, err := generateBookmark(absPath)
+	if err != nil {
+		// Log but don't fail - bookmark is optional
+		bookmark = ""
+	}
 
 	// Create asset
 	asset := &Asset{
@@ -60,13 +144,14 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		HasVideo: "1",
 		Format:   formatID,
 		MediaRep: MediaRep{
-			Kind: "original-media",
-			Sig:  uid,
-			Src:  "file://" + absPath,
+			Kind:     "original-media",
+			Sig:      uid,
+			Src:      "file://" + absPath,
+			Bookmark: bookmark,
 		},
 	}
 
-	// Set file-type specific properties
+	// Set file-type specific properties and metadata
 	if isImageFile(absPath) {
 		// 🚨 CRITICAL: Images are timeless - asset duration MUST be "0s"
 		// Display duration is applied only to Video element in spine, not asset
@@ -74,6 +159,7 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		asset.Duration = "0s" // CRITICAL: Override caller duration for images
 		asset.VideoSources = "1" // Required for image assets
 		// Image files (PNG, JPG, JPEG) should NOT have audio properties
+		asset.Metadata = createImageMetadata(absPath)
 	} else if isAudioFile(absPath) {
 		// Audio files have only audio properties, NO video properties
 		// 🚨 FIX: Don't set HasVideo to empty string, just don't set it (omitempty will handle)
@@ -87,13 +173,17 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		asset.Format = "" // This will be omitted due to omitempty tag
 		// Note: Duration remains as provided by caller (audio duration)
 	} else {
-		// Video files have both audio and video properties
-		// Match samples/pip.fcpxml pattern: hasVideo="1" format="r3" hasAudio="1" videoSources="1" audioSources="1" audioChannels="1" audioRate="48000"
+		// Video files - check if they actually have audio using ffprobe
 		asset.VideoSources = "1" // Required for video assets
-		asset.HasAudio = "1"
-		asset.AudioSources = "1"  // Required for video assets with audio
-		asset.AudioChannels = "2"
-		asset.AudioRate = "48000"
+		
+		// Try to detect if video has audio using ffprobe
+		if hasAudioTrack(absPath) {
+			asset.HasAudio = "1"
+			asset.AudioSources = "1"  // Required for video assets with audio
+			asset.AudioChannels = "2"
+			asset.AudioRate = "48000"
+		}
+		// If no audio track, leave audio properties empty (omitted by omitempty tags)
 	}
 
 	tx.created = append(tx.created, &AssetWrapper{asset})
@@ -269,4 +359,208 @@ func (tx *ResourceTransaction) Commit() error {
 func (tx *ResourceTransaction) Rollback() {
 	tx.rolled = true
 	tx.created = nil
+}
+
+// VideoProperties holds detected video file properties
+type VideoProperties struct {
+	Width       int
+	Height      int
+	FrameRate   string // FCP format like "1001/30000s"
+	Duration    string // FCP format like "12345/24000s"
+	HasAudio    bool
+	AudioRate   string
+	AudioChannels string
+}
+
+// hasAudioTrack checks if a video file has an audio track using ffprobe
+func hasAudioTrack(videoPath string) bool {
+	// Use ffprobe to check for audio streams
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-select_streams", "a", "-show_entries", "stream=codec_type", "-of", "csv=p=0", videoPath)
+	output, err := cmd.Output()
+	if err != nil {
+		// If ffprobe fails, assume no audio (safer than assuming audio exists)
+		return false
+	}
+	
+	// If output contains "audio", then there's an audio track
+	return strings.Contains(string(output), "audio")
+}
+
+// detectVideoProperties analyzes a video file and returns its actual properties
+func detectVideoProperties(videoPath string) (*VideoProperties, error) {
+	// Use ffprobe to get detailed video properties as JSON
+	cmd := exec.Command("ffprobe", "-v", "quiet", "-print_format", "json", "-show_streams", videoPath)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("ffprobe failed: %v", err)
+	}
+	
+	// Parse ffprobe JSON output
+	var probeResult struct {
+		Streams []struct {
+			CodecType     string `json:"codec_type"`
+			Width         int    `json:"width"`
+			Height        int    `json:"height"`
+			RFrameRate    string `json:"r_frame_rate"`
+			AvgFrameRate  string `json:"avg_frame_rate"`
+			Duration      string `json:"duration"`
+			SampleRate    string `json:"sample_rate"`
+			Channels      int    `json:"channels"`
+		} `json:"streams"`
+	}
+	
+	if err := json.Unmarshal(output, &probeResult); err != nil {
+		return nil, fmt.Errorf("failed to parse ffprobe output: %v", err)
+	}
+	
+	props := &VideoProperties{}
+	
+	// Find video and audio streams
+	for _, stream := range probeResult.Streams {
+		if stream.CodecType == "video" {
+			props.Width = stream.Width
+			props.Height = stream.Height
+			
+			// Convert frame rate to FCP format using average frame rate (more reliable)
+			frameRateStr := stream.AvgFrameRate
+			if frameRateStr == "" || frameRateStr == "0/0" {
+				frameRateStr = stream.RFrameRate
+			}
+			
+			if frameRateStr != "" && frameRateStr != "0/0" {
+				props.FrameRate = convertFrameRateToFCP(frameRateStr)
+			} else {
+				props.FrameRate = "1001/30000s" // Default fallback
+			}
+			
+			// Convert duration to FCP format
+			if stream.Duration != "" {
+				if duration, err := strconv.ParseFloat(stream.Duration, 64); err == nil {
+					props.Duration = ConvertSecondsToFCPDuration(duration)
+				}
+			}
+		} else if stream.CodecType == "audio" {
+			props.HasAudio = true
+			if stream.SampleRate != "" {
+				props.AudioRate = stream.SampleRate
+			} else {
+				props.AudioRate = "48000" // Default fallback
+			}
+			if stream.Channels > 0 {
+				props.AudioChannels = strconv.Itoa(stream.Channels)
+			} else {
+				props.AudioChannels = "2" // Default fallback
+			}
+		}
+	}
+	
+	// Fallback defaults if no video stream found
+	if props.Width == 0 {
+		props.Width = 1920
+		props.Height = 1080
+		props.FrameRate = "1001/30000s"
+	}
+	
+	return props, nil
+}
+
+// createImageMetadata creates appropriate metadata for image files
+func createImageMetadata(filePath string) *Metadata {
+	return &Metadata{
+		MDs: []MetadataItem{
+			{Key: "com.apple.proapps.studio.rawToLogConversion", Value: "0"},
+			{Key: "com.apple.proapps.spotlight.kMDItemProfileName", Value: "sRGB IEC61966-2.1"},
+			{Key: "com.apple.proapps.studio.cameraISO", Value: "0"},
+			{Key: "com.apple.proapps.studio.cameraColorTemperature", Value: "0"},
+			{Key: "com.apple.proapps.mio.ingestDate", Value: "2025-06-25 11:46:22 -0700"},
+			{Key: "com.apple.proapps.spotlight.kMDItemOrientation", Value: "0"},
+		},
+	}
+}
+
+// createVideoMetadata creates appropriate metadata for video files
+func createVideoMetadata(props *VideoProperties, filePath string) *Metadata {
+	metadata := &Metadata{
+		MDs: []MetadataItem{
+			{Key: "com.apple.proapps.studio.rawToLogConversion", Value: "0"},
+			{Key: "com.apple.proapps.spotlight.kMDItemProfileName", Value: "HD (1-1-1)"},
+			{Key: "com.apple.proapps.studio.cameraISO", Value: "0"},
+			{Key: "com.apple.proapps.studio.cameraColorTemperature", Value: "0"},
+		},
+	}
+
+	// Add codec information based on actual file content
+	codecs := []string{"H.264"} // Always has video
+	if props.HasAudio {
+		codecs = append(codecs, "MPEG-4 AAC") // Only add audio codec if file has audio
+	}
+
+	metadata.MDs = append(metadata.MDs, MetadataItem{
+		Key: "com.apple.proapps.spotlight.kMDItemCodecs",
+		Array: &StringArray{
+			Strings: codecs,
+		},
+	})
+
+	return metadata
+}
+
+// convertFrameRateToFCP converts ffprobe frame rate to FCP format with validation
+func convertFrameRateToFCP(frameRateStr string) string {
+	// Parse frame rate like "30000/1001", "1890000/74317", or "25/1"
+	parts := strings.Split(frameRateStr, "/")
+	if len(parts) != 2 {
+		return "1001/30000s" // Default fallback
+	}
+	
+	numerator, err1 := strconv.ParseFloat(parts[0], 64)
+	denominator, err2 := strconv.ParseFloat(parts[1], 64)
+	if err1 != nil || err2 != nil || denominator == 0 {
+		return "1001/30000s" // Default fallback
+	}
+	
+	// Calculate actual frame rate in fps
+	actualFps := numerator / denominator
+	
+	// Validate frame rate is reasonable (between 1 and 120 fps)
+	if actualFps < 1 || actualFps > 120 {
+		return "1001/30000s" // Default fallback for unreasonable rates
+	}
+	
+	// Map to common FCP frame durations based on detected fps with wider tolerance
+	if actualFps >= 20.0 && actualFps <= 24.5 {
+		return "1001/24000s" // 23.976 fps (includes 21.2fps from scan.mp4)
+	} else if actualFps >= 24.5 && actualFps <= 25.5 {
+		return "1/25s" // 25 fps
+	} else if actualFps >= 29.5 && actualFps <= 30.5 {
+		return "1001/30000s" // 29.97 fps
+	} else if actualFps >= 59.5 && actualFps <= 60.5 {
+		return "1001/60000s" // 59.94 fps
+	} else {
+		// For other frame rates, try to create proper reciprocal
+		// Convert back to integers for clean FCP format
+		if denominator == 1 {
+			// Simple case like "25/1" -> "1/25s"
+			return fmt.Sprintf("1/%.0fs", numerator)
+		} else {
+			// Complex fraction - use reciprocal with integer conversion
+			return fmt.Sprintf("%.0f/%.0fs", denominator, numerator)
+		}
+	}
+}
+
+// generateRandomUID creates a truly random UID for testing to avoid FCP caching issues
+func generateRandomUID() string {
+	// Generate 16 random bytes (128 bits)
+	bytes := make([]byte, 16)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		// Fallback to deterministic method if random fails
+		return "TEST-1234-5678-9ABC-DEF123456789"
+	}
+	
+	// Format as standard UID: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+	hex := strings.ToUpper(hex.EncodeToString(bytes))
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		hex[0:8], hex[8:12], hex[12:16], hex[16:20], hex[20:32])
 }

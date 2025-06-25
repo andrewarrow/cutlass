@@ -76,11 +76,15 @@
 - **Shape Mask**: `FFSuperEllipseMask`
 
 ❌ **Never create fictional UIDs** - causes "invalid effect ID" crashes
+- `FFGaussianBlur` → "The effect ID is invalid" crash
+- `FFColorCorrector` → Not verified, avoid
 
 ✅ **Prefer built-in elements:**
 ```go
 AdjustTransform: &AdjustTransform{...}   // ✅ Built-in, crash-safe
 AdjustCrop: &AdjustCrop{...}            // ✅ Built-in, crash-safe
+// Add rotation via parameters:
+AdjustTransform.Params = append(params, Param{Name: "rotation", Value: "15.0"})
 ```
 
 ## MANDATORY: Testing and Validation
@@ -173,6 +177,24 @@ if existingID, exists := createdAssets[filepath]; exists {
 // <asset-clip ref="r2"... /> and <asset-clip ref="r2"... />
 ```
 
+## 🚨 CRITICAL: Video Property Detection 🚨
+
+**ALWAYS detect actual video properties instead of hardcoding:**
+
+```go
+❌ BAD: Hardcoded properties cause import failures
+asset.HasAudio = "1"  // Video might not have audio!
+format.Width = "1920" // Video might be 1080×1920 portrait!
+format.FrameDuration = "1001/30000s" // Video might be different fps!
+
+✅ GOOD: Use CreateVideoAssetWithDetection() for proper detection
+tx.CreateVideoAssetWithDetection(assetID, videoPath, baseName, duration, formatID)
+// Automatically detects: width, height, frame rate, audio presence
+// Matches samples: portrait videos get correct 1080×1920 dimensions
+// Audio-only if file actually has audio tracks
+// Frame rate validation: Rejects bogus rates >120fps, maps to standard FCP rates
+```
+
 ## 🚨 CRITICAL: Transaction Resource Creation 🚨
 
 **ALWAYS use transaction methods to create resources:**
@@ -245,6 +267,19 @@ tx.CreateAsset(assetID, videoPath, baseName, duration, formatID)
 - Text style IDs: Use `generateUID()` not hardcoded "ts1"
 - Asset/format/effect IDs: Use ResourceRegistry
 - Media UIDs: Use filename-based generation for consistency
+
+## 🚨 CRITICAL: FCP Library UID Caching 🚨
+
+**Final Cut Pro caches media file UIDs in its library database:**
+
+❌ **Problem**: Once FCP imports a file with UID "ABC-123", it rejects future imports with different UIDs
+- Error: "The media already exists in the library with a different unique identifier"
+- Error: "The file X.mp4 cannot be imported again with a different unique identifier"
+
+✅ **Solutions**:
+- Use **consistent UIDs** (same file = same UID always)
+- For testing: Create **new FCP library** or use **different filenames**
+- Never change UID generation logic for existing media files
 
 ---
 

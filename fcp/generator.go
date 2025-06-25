@@ -3084,23 +3084,17 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 		video.AdjustTransform = createRandomAnimation(startTime, duration)
 	}
 	
-	// Random effects
-	if rand.Float32() < 0.4 { // 40% chance of effects
-		// Add blur effect using proper transaction method
-		effectID := tx.ReserveIDs(1)[0]
-		_, err := tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
-		if err != nil {
-			return fmt.Errorf("failed to create effect: %v", err)
+	// Random additional transforms (safer than fictional effects)
+	if rand.Float32() < 0.4 { // 40% chance of additional transforms
+		// Add rotation using built-in parameter (crash-safe)
+		if video.AdjustTransform == nil {
+			video.AdjustTransform = &AdjustTransform{}
 		}
-		
-		video.FilterVideos = []FilterVideo{{
-			Ref:  effectID,
-			Name: "Blur",
-			Params: []Param{{
-				Name:  "amount",
-				Value: fmt.Sprintf("%.1f", 2.0+rand.Float64()*8.0), // 2-10 blur amount
-			}},
-		}}
+		// Add rotation parameter for visual variety
+		video.AdjustTransform.Params = append(video.AdjustTransform.Params, Param{
+			Name:  "rotation",
+			Value: fmt.Sprintf("%.1f", -15.0+rand.Float64()*30.0), // -15 to +15 degrees
+		})
 	}
 	
 	// Add to timeline (main spine)
@@ -3125,20 +3119,15 @@ func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath st
 		assetID = existingAssetID
 		formatID = createdFormats[videoPath]
 	} else {
-		// Create new asset and format
+		// Create new asset and format using actual video properties
 		ids := tx.ReserveIDs(2)
 		assetID = ids[0]
 		formatID = ids[1]
 		
-		// Use transaction methods to create asset and format properly
-		_, err = tx.CreateAsset(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration + 30), formatID)
+		// Use transaction methods to create asset and format with proper video detection
+		err = tx.CreateVideoAssetWithDetection(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration + 30), formatID)
 		if err != nil {
-			return fmt.Errorf("failed to create video asset: %v", err)
-		}
-		
-		_, err = tx.CreateFormatWithFrameDuration(formatID, "1001/30000s", "1920", "1080", "1-1-1 (Rec. 709)")
-		if err != nil {
-			return fmt.Errorf("failed to create video format: %v", err)
+			return fmt.Errorf("failed to create video asset with detection: %v", err)
 		}
 		
 		// Remember this asset for reuse

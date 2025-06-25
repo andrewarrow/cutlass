@@ -57,25 +57,41 @@ type Format struct {
 // - NEVER base UID on file path (causes "cannot be imported again" errors)
 // - FOR durations → USE ConvertSecondsToFCPDuration() function
 type Asset struct {
-	ID            string   `xml:"id,attr"`
-	Name          string   `xml:"name,attr"`
-	UID           string   `xml:"uid,attr"`
-	Start         string   `xml:"start,attr"`
-	HasVideo      string   `xml:"hasVideo,attr,omitempty"`
-	Format        string   `xml:"format,attr,omitempty"`
-	VideoSources  string   `xml:"videoSources,attr,omitempty"`
-	HasAudio      string   `xml:"hasAudio,attr,omitempty"`
-	AudioSources  string   `xml:"audioSources,attr,omitempty"`
-	AudioChannels string   `xml:"audioChannels,attr,omitempty"`
-	AudioRate     string   `xml:"audioRate,attr,omitempty"`
-	Duration      string   `xml:"duration,attr"`
-	MediaRep      MediaRep `xml:"media-rep"`
+	ID            string    `xml:"id,attr"`
+	Name          string    `xml:"name,attr"`
+	UID           string    `xml:"uid,attr"`
+	Start         string    `xml:"start,attr"`
+	HasVideo      string    `xml:"hasVideo,attr,omitempty"`
+	Format        string    `xml:"format,attr,omitempty"`
+	VideoSources  string    `xml:"videoSources,attr,omitempty"`
+	HasAudio      string    `xml:"hasAudio,attr,omitempty"`
+	AudioSources  string    `xml:"audioSources,attr,omitempty"`
+	AudioChannels string    `xml:"audioChannels,attr,omitempty"`
+	AudioRate     string    `xml:"audioRate,attr,omitempty"`
+	Duration      string    `xml:"duration,attr"`
+	MediaRep      MediaRep  `xml:"media-rep"`
+	Metadata      *Metadata `xml:"metadata,omitempty"`
 }
 
 type MediaRep struct {
-	Kind string `xml:"kind,attr"`
-	Sig  string `xml:"sig,attr"`
-	Src  string `xml:"src,attr"`
+	Kind     string `xml:"kind,attr"`
+	Sig      string `xml:"sig,attr"`
+	Src      string `xml:"src,attr"`
+	Bookmark string `xml:"bookmark,omitempty"`
+}
+
+type Metadata struct {
+	MDs []MetadataItem `xml:"md"`
+}
+
+type MetadataItem struct {
+	Key   string      `xml:"key,attr"`
+	Value string      `xml:"value,attr,omitempty"`
+	Array *StringArray `xml:"array,omitempty"`
+}
+
+type StringArray struct {
+	Strings []string `xml:"string"`
 }
 
 type Media struct {
