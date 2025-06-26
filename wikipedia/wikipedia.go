@@ -91,9 +91,31 @@ func generateTableFCPXML(table *SimpleTable, outputFile string) error {
 	tx := fcp.NewTransaction(registry)
 	defer tx.Rollback()
 
+	// Create text effect first (required for title elements)
+	textEffectID := ""
+	for _, effect := range fcpxml.Resources.Effects {
+		if strings.Contains(effect.UID, "Text.moti") {
+			textEffectID = effect.ID
+			break
+		}
+	}
+
+	if textEffectID == "" {
+		// Reserve ID for text effect
+		ids := tx.ReserveIDs(1)
+		textEffectID = ids[0]
+
+		// Create text effect using transaction
+		_, err = tx.CreateEffect(textEffectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+		if err != nil {
+			return fmt.Errorf("failed to create text effect: %v", err)
+		}
+	}
+
 	// Create title clips for each table row
 	duration := 3.0 // 3 seconds per row
 	startTime := 0.0
+	totalDuration := 0.0
 
 	for i, row := range table.Rows {
 		if len(row) == 0 {
@@ -115,11 +137,18 @@ func generateTableFCPXML(table *SimpleTable, outputFile string) error {
 		textContent := strings.Join(textParts, " | ")
 		
 		// Add text clip using new system
-		if err := addTextClip(fcpxml, tx, textContent, startTime, duration); err != nil {
+		if err := addTextClip(fcpxml, tx, textContent, startTime, duration, textEffectID); err != nil {
 			return fmt.Errorf("failed to add text clip %d: %v", i+1, err)
 		}
 
 		startTime += duration
+		totalDuration = startTime // Update total duration
+	}
+
+	// Update sequence duration to match total content duration
+	if totalDuration > 0 && len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Duration = fcp.ConvertSecondsToFCPDuration(totalDuration)
 	}
 
 	// Commit transaction and write
@@ -131,19 +160,18 @@ func generateTableFCPXML(table *SimpleTable, outputFile string) error {
 }
 
 // addTextClip adds a text clip to the FCPXML using the new fcp system
-func addTextClip(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, text string, startTime, duration float64) error {
-	// Reserve IDs for the text elements
-	ids := tx.ReserveIDs(2)
-	titleID := ids[0]
-	styleID := ids[1]
+func addTextClip(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, text string, startTime, duration float64, textEffectID string) error {
+	// Reserve IDs for the text style
+	ids := tx.ReserveIDs(1)
+	styleID := ids[0]
 
 	// Convert times to FCP duration format
 	fcpDuration := fcp.ConvertSecondsToFCPDuration(duration)
 	fcpOffset := fcp.ConvertSecondsToFCPDuration(startTime)
 
-	// Create title element with text
+	// Create title element with text that references the effect
 	title := fcp.Title{
-		Ref:      titleID,
+		Ref:      textEffectID,
 		Name:     "Text",
 		Offset:   fcpOffset,
 		Duration: fcpDuration,
