@@ -1,7 +1,9 @@
 
-## 📚 API Reference: FCPXML Go Structs
+## Cutlass
 
 This comprehensive reference covers every Go struct used in FCPXML generation and their corresponding XML elements. Understanding these structs is essential for programmatic FCPXML manipulation.
+
+![XML](https://i.imgur.com/x7eJ7Ht.png)
 
 ### Core Document Structure
 
@@ -489,7 +491,7 @@ The package includes comprehensive validation:
 - `ValidateEffectUID()` - Verifies effect availability
 - Custom `MarshalXML()` - Maintains chronological order
 
-## 📚 Learn More: FCPXML Resources
+## Learn More: FCPXML Resources
 
 Want to dive deeper into the mysterious world of FCPXML? Here are the resources that built Cutlass's expertise:
 

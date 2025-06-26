@@ -3059,14 +3059,23 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		}
 	}
 	
-	// Create additional main timeline elements with their own nested content
-	numMainElements := 3 + rand.Intn(3) // 3-5 main timeline elements
-	currentOffset := totalDuration * 0.3 // Start second set partway through
+	if verbose {
+		fmt.Printf("DEBUG: About to create additional main spine elements...\n")
+	}
+	
+	// Create additional main timeline elements distributed across multiple lanes
+	numMainElements := 3 + rand.Intn(5) // 3-7 main timeline elements
+	maxLanes := 4 // Maximum lanes to use (1-4)
+	currentOffset := totalDuration * 0.2 // Start overlays earlier for better multi-lane effect
+	
+	if verbose {
+		fmt.Printf("Creating %d additional main spine elements with lane distribution...\n", numMainElements)
+	}
 	
 	for i := 1; i <= numMainElements; i++ {
-		duration := 8.0 + rand.Float64()*12.0 // 8-20 second elements
+		duration := 6.0 + rand.Float64()*15.0 // 6-21 second elements
 		startTime := currentOffset
-		currentOffset += duration * 0.6 // 40% overlap
+		currentOffset += duration * 0.4 // 60% overlap for better layering
 		
 		// Stop if we exceed timeline duration
 		if startTime >= totalDuration {
@@ -3078,6 +3087,9 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 			duration = totalDuration - startTime
 		}
 		
+		// CRITICAL FIX: Assign proper lanes to main spine elements (1, 2, 3, 4)
+		lane := (i % maxLanes) + 1 // Distribute across lanes 1-4
+		
 		// Alternate between video and image main elements
 		if i%2 == 0 && len(assets.Videos) > 0 {
 			videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
@@ -3087,11 +3099,15 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 				uniqueVideo = videoPath
 			}
 			
-			mainElement, err := createNestedAssetClipElement(fcpxml, tx, uniqueVideo, startTime, duration, i, verbose, assets, createdAssets, createdFormats)
+			// Create lane-assigned asset-clip directly on spine
+			mainElement, err := createLaneAssetClipElement(fcpxml, tx, uniqueVideo, startTime, duration, lane, i, verbose, createdAssets, createdFormats)
 			if err != nil && verbose {
-				fmt.Printf("Warning: Failed to create nested asset-clip: %v\n", err)
+				fmt.Printf("Warning: Failed to create lane asset-clip: %v\n", err)
 			} else {
 				spine.AssetClips = append(spine.AssetClips, *mainElement)
+				if verbose {
+					fmt.Printf("  Added lane %d video: %s (%.1fs @ %.1fs)\n", lane, filepath.Base(uniqueVideo), duration, startTime)
+				}
 			}
 		} else if len(assets.Images) > 0 {
 			imagePath := assets.Images[rand.Intn(len(assets.Images))]
@@ -3101,11 +3117,15 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 				uniqueImage = imagePath
 			}
 			
-			mainElement, err := createNestedImageElement(fcpxml, tx, uniqueImage, startTime, duration, i, verbose, assets, createdAssets, createdFormats)
+			// Create lane-assigned video element directly on spine
+			mainElement, err := createLaneImageElement(fcpxml, tx, uniqueImage, startTime, duration, lane, i, verbose, createdAssets, createdFormats)
 			if err != nil && verbose {
-				fmt.Printf("Warning: Failed to create nested image: %v\n", err)
+				fmt.Printf("Warning: Failed to create lane image: %v\n", err)
 			} else {
 				spine.Videos = append(spine.Videos, *mainElement)
+				if verbose {
+					fmt.Printf("  Added lane %d image: %s (%.1fs @ %.1fs)\n", lane, filepath.Base(uniqueImage), duration, startTime)
+				}
 			}
 		}
 	}
@@ -3235,6 +3255,90 @@ func createTextOverlay(fcpxml *FCPXML, tx *ResourceTransaction, startTime, durat
 	}
 	
 	return title, nil
+}
+
+// createLaneAssetClipElement creates an asset-clip element with proper lane assignment for spine
+func createLaneAssetClipElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath string, startTime, duration float64, lane, index int, verbose bool, createdAssets, createdFormats map[string]string) (*AssetClip, error) {
+	var assetID, formatID string
+	var err error
+	
+	if existingAssetID, exists := createdAssets[videoPath]; exists {
+		assetID = existingAssetID
+		formatID = createdFormats[videoPath]
+	} else {
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+		
+		err = tx.CreateVideoAssetWithDetection(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create video asset: %v", err)
+		}
+		
+		createdAssets[videoPath] = assetID
+		createdFormats[videoPath] = formatID
+	}
+	
+	// Create asset-clip with proper lane assignment
+	assetClip := &AssetClip{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Lane%dVideo_%d", lane, index),
+		Lane:     fmt.Sprintf("%d", lane), // CRITICAL: Proper lane assignment for spine
+		AdjustTransform: &AdjustTransform{
+			Position: generateRandomPosition(),
+			Scale:    fmt.Sprintf("%.2f %.2f", 0.7+rand.Float64()*0.4, 0.7+rand.Float64()*0.4), // 0.7-1.1 scale
+		},
+	}
+	
+	return assetClip, nil
+}
+
+// createLaneImageElement creates a video element (for image) with proper lane assignment for spine
+func createLaneImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath string, startTime, duration float64, lane, index int, verbose bool, createdAssets, createdFormats map[string]string) (*Video, error) {
+	var assetID, formatID string
+	var err error
+	
+	if existingAssetID, exists := createdAssets[imagePath]; exists {
+		assetID = existingAssetID
+		formatID = createdFormats[imagePath]
+	} else {
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+		
+		_, err = tx.CreateAsset(assetID, imagePath, filepath.Base(imagePath), "0s", formatID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create image asset: %v", err)
+		}
+		
+		createdAssets[imagePath] = assetID
+		createdFormats[imagePath] = formatID
+	}
+	
+	// Create video element (for image) with proper lane assignment
+	video := &Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Lane%dImage_%d", lane, index),
+		Lane:     fmt.Sprintf("%d", lane), // CRITICAL: Proper lane assignment for spine
+		AdjustTransform: &AdjustTransform{
+			Position: generateRandomPosition(),
+			Scale:    fmt.Sprintf("%.2f %.2f", 0.6+rand.Float64()*0.5, 0.6+rand.Float64()*0.5), // 0.6-1.1 scale
+		},
+	}
+	
+	return video, nil
+}
+
+// generateRandomPosition generates a random but reasonable position for elements
+func generateRandomPosition() string {
+	// Keep positions reasonable to avoid off-screen elements
+	x := int(-200 + rand.Float64()*400) // -200 to +200 pixels
+	y := int(-150 + rand.Float64()*300) // -150 to +150 pixels
+	return fmt.Sprintf("%d %d", x, y)
 }
 
 // createNestedVideoElement creates a main video element with nested overlays (proper multi-lane structure)
