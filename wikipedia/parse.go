@@ -7,18 +7,18 @@ import (
 
 // ParseWikipediaTables parses and displays Wikipedia tables
 func ParseWikipediaTables(articleTitle string, tableNumber int) error {
-	// Fetch Wikipedia source
-	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
-	source, err := fetchWikipediaSource(articleTitle)
+	// Fetch Wikipedia HTML
+	fmt.Printf("Fetching Wikipedia page for: %s\n", articleTitle)
+	doc, err := fetchWikipediaHTML(articleTitle)
 	if err != nil {
-		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
+		return fmt.Errorf("failed to fetch Wikipedia page: %v", err)
 	}
 
-	// Parse the source to extract tables
-	fmt.Printf("Parsing Wikipedia source for tables...\n")
-	tables, err := parseWikitableFromSource(source)
+	// Parse the HTML to extract tables
+	fmt.Printf("Parsing Wikipedia HTML for tables...\n")
+	tables, err := parseWikitablesFromHTML(doc)
 	if err != nil {
-		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
+		return fmt.Errorf("failed to parse Wikipedia tables: %v", err)
 	}
 
 	if len(tables) == 0 {

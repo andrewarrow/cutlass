@@ -11,11 +11,47 @@ import (
 )
 
 var wikipediaCmd = &cobra.Command{
-	Use:   "wikipedia",
+	Use:   "wikipedia [article-title]",
 	Short: "Generate FCPXML from Wikipedia articles and tables",
 	Long: `Generate FCPXML files from Wikipedia articles and tables.
 This command allows you to extract tables from Wikipedia articles and convert them
-to FCPXML format for use in Final Cut Pro.`,
+to FCPXML format for use in Final Cut Pro.
+
+If you provide an article title directly (not random, table, or parse), it will
+generate FCPXML from the article's tables, just like the 'table' subcommand.`,
+	Args: cobra.MaximumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// If no args provided, show help
+		if len(args) == 0 {
+			cmd.Help()
+			return
+		}
+
+		articleTitle := args[0]
+		
+		// Check if it's one of the subcommands
+		if articleTitle == "table" || articleTitle == "parse" || articleTitle == "random" {
+			// Let subcommands handle this
+			cmd.Help()
+			return
+		}
+
+		// Default behavior: generate FCPXML from article (like old code)
+		outputFile, _ := cmd.Flags().GetString("output")
+		
+		// If no output file specified, use article title as filename
+		if outputFile == "" {
+			outputFile = articleTitle + ".fcpxml"
+		} else if !strings.HasSuffix(strings.ToLower(outputFile), ".fcpxml") {
+			outputFile += ".fcpxml"
+		}
+
+		fmt.Printf("Using Wikipedia mode to create FCPXML from article tables...\n")
+		if err := wikipedia.GenerateFromWikipedia(articleTitle, outputFile); err != nil {
+			fmt.Fprintf(os.Stderr, "Error generating from Wikipedia: %v\n", err)
+			os.Exit(1)
+		}
+	},
 }
 
 var wikipediaTableCmd = &cobra.Command{
@@ -88,6 +124,9 @@ func init() {
 	wikipediaCmd.AddCommand(wikipediaTableCmd)
 	wikipediaCmd.AddCommand(wikipediaParseCmd)
 	wikipediaCmd.AddCommand(wikipediaRandomCmd)
+	
+	// Add flags for main wikipedia command (for direct article generation)
+	wikipediaCmd.Flags().StringP("output", "o", "", "Output file")
 	
 	// Add flags for table command
 	wikipediaTableCmd.Flags().StringP("output", "o", "", "Output file")

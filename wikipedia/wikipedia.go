@@ -3,11 +3,12 @@ package wikipedia
 import (
 	"cutlass/fcp"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	
+	"golang.org/x/net/html"
 )
 
 type TableCell struct {
@@ -40,18 +41,18 @@ type WikipediaData struct {
 
 // GenerateFromWikipedia creates FCPXML from Wikipedia article tables using the new fcp system
 func GenerateFromWikipedia(articleTitle, outputFile string) error {
-	// Fetch Wikipedia source
-	fmt.Printf("Fetching Wikipedia source for: %s\n", articleTitle)
-	source, err := fetchWikipediaSource(articleTitle)
+	// Fetch Wikipedia HTML
+	fmt.Printf("Fetching Wikipedia page for: %s\n", articleTitle)
+	doc, err := fetchWikipediaHTML(articleTitle)
 	if err != nil {
-		return fmt.Errorf("failed to fetch Wikipedia source: %v", err)
+		return fmt.Errorf("failed to fetch Wikipedia page: %v", err)
 	}
 
-	// Parse the source to extract tables
-	fmt.Printf("Parsing Wikipedia source for tables...\n")
-	tables, err := parseWikitableFromSource(source)
+	// Parse the HTML to extract tables
+	fmt.Printf("Parsing Wikipedia HTML for tables...\n")
+	tables, err := parseWikitablesFromHTML(doc)
 	if err != nil {
-		return fmt.Errorf("failed to parse Wikipedia source: %v", err)
+		return fmt.Errorf("failed to parse Wikipedia tables: %v", err)
 	}
 
 	if len(tables) == 0 {
@@ -204,264 +205,156 @@ func addTextClip(fcpxml *fcp.FCPXML, tx *fcp.ResourceTransaction, text string, s
 	return nil
 }
 
-// fetchWikipediaSource fetches the source of a Wikipedia article
-func fetchWikipediaSource(articleTitle string) (string, error) {
+// fetchWikipediaHTML fetches the rendered HTML of a Wikipedia article
+func fetchWikipediaHTML(articleTitle string) (*html.Node, error) {
 	encodedTitle := url.QueryEscape(articleTitle)
-	sourceURL := fmt.Sprintf("https://en.wikipedia.org/w/index.php?title=%s&action=edit", encodedTitle)
+	pageURL := fmt.Sprintf("https://en.wikipedia.org/wiki/%s", encodedTitle)
 	
-	fmt.Printf("Fetching Wikipedia source from: %s\n", sourceURL)
+	fmt.Printf("Fetching Wikipedia page from: %s\n", pageURL)
 	
-	resp, err := http.Get(sourceURL)
+	resp, err := http.Get(pageURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch Wikipedia source: %v", err)
+		return nil, fmt.Errorf("failed to fetch Wikipedia page: %v", err)
 	}
 	defer resp.Body.Close()
 	
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP error: %s", resp.Status)
+		return nil, fmt.Errorf("HTTP error: %s", resp.Status)
 	}
 	
-	body, err := io.ReadAll(resp.Body)
+	// Parse the HTML
+	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body: %v", err)
+		return nil, fmt.Errorf("failed to parse HTML: %v", err)
 	}
 	
-	// Extract the content from the textarea
-	content := string(body)
-	
-	// Try different patterns for extracting the content
-	patterns := []string{
-		`<textarea[^>]*id="wpTextbox1"[^>]*>(.*?)</textarea>`,
-		`<textarea[^>]*name="wpTextbox1"[^>]*>(.*?)</textarea>`,
-		`<textarea[^>]*>(.*?)</textarea>`,
-	}
-	
-	var wikiSource string
-	var found bool
-	
-	for _, pattern := range patterns {
-		textareaRegex := regexp.MustCompile(`(?s)` + pattern)
-		matches := textareaRegex.FindStringSubmatch(content)
-		if len(matches) >= 2 {
-			wikiSource = matches[1]
-			found = true
-			break
-		}
-	}
-	
-	if !found {
-		return "", fmt.Errorf("could not extract Wikipedia source from edit page")
-	}
-
-	// Decode HTML entities
-	wikiSource = strings.ReplaceAll(wikiSource, "&lt;", "<")
-	wikiSource = strings.ReplaceAll(wikiSource, "&gt;", ">")
-	wikiSource = strings.ReplaceAll(wikiSource, "&quot;", "\"")
-	wikiSource = strings.ReplaceAll(wikiSource, "&#34;", "\"")
-	wikiSource = strings.ReplaceAll(wikiSource, "&apos;", "'")
-	wikiSource = strings.ReplaceAll(wikiSource, "&#39;", "'")
-	wikiSource = strings.ReplaceAll(wikiSource, "&amp;", "&") // Decode &amp; last
-	
-	return wikiSource, nil
+	return doc, nil
 }
 
-// parseWikitableFromSource extracts and parses wikitable from source
-func parseWikitableFromSource(source string) ([]SimpleTable, error) {
-	fmt.Printf("Parsing Wikipedia source for tables...\n")
-	fmt.Printf("Source length: %d characters\n", len(source))
-	
-	// More robust table pattern matching
-	tablePatterns := []string{
-		`(?s)\{\|.*?class=".*?wikitable.*?\n\|\}`,
-		`(?s)\{\|.*?wikitable.*?\n\|\}`,
-		`(?s)\{\|[^}]*class="[^"]*wikitable[^"]*".*?\|\}`,
-	}
+// parseWikitablesFromHTML extracts and parses wikitable from HTML document
+func parseWikitablesFromHTML(doc *html.Node) ([]SimpleTable, error) {
+	fmt.Printf("Parsing Wikipedia HTML for tables...\n")
 	
 	var allTables []SimpleTable
-	tableMatches := make(map[string]bool) // To avoid duplicates
 	
-	for _, pattern := range tablePatterns {
-		regex := regexp.MustCompile(pattern)
-		matches := regex.FindAllString(source, -1)
-		fmt.Printf("Found %d tables with pattern: %s\n", len(matches), pattern)
-		
-		for _, match := range matches {
-			// Create a hash to avoid duplicates
-			hash := fmt.Sprintf("%d", len(match))
-			if tableMatches[hash] {
-				continue
-			}
-			tableMatches[hash] = true
-			
-			table := parseSimpleWikitableContent(match)
-			if len(table.Headers) > 0 {
-				allTables = append(allTables, table)
-			}
+	// Find all table elements with class="wikitable"
+	tables := findTableElements(doc)
+	fmt.Printf("Found %d wikitable elements\n", len(tables))
+	
+	for i, tableNode := range tables {
+		table := parseHTMLTable(tableNode)
+		if len(table.Headers) > 0 && len(table.Rows) > 0 {
+			allTables = append(allTables, table)
+			fmt.Printf("Table %d: %d headers, %d rows\n", i+1, len(table.Headers), len(table.Rows))
 		}
 	}
 	
-	fmt.Printf("Total found %d unique tables in Wikipedia source\n", len(allTables))
-	
+	fmt.Printf("Total found %d valid tables in Wikipedia HTML\n", len(allTables))
 	return allTables, nil
 }
 
-// parseSimpleWikitableContent parses a single wikitable to simple format
-func parseSimpleWikitableContent(tableSource string) SimpleTable {
-	var table SimpleTable
+// findTableElements finds all HTML table elements with class="wikitable"
+func findTableElements(n *html.Node) []*html.Node {
+	var tables []*html.Node
 	
-	lines := strings.Split(tableSource, "\n")
-	var isInHeader bool
-	var currentRow []string
-	
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		
-		// Skip empty lines and table markup
-		if line == "" || strings.HasPrefix(line, "{|") || line == "|}" {
-			continue
-		}
-		
-		// Header row
-		if strings.HasPrefix(line, "!") {
-			if len(currentRow) > 0 {
-				// Finish previous row
-				if len(table.Headers) == 0 {
-					table.Headers = currentRow
-				} else {
-					table.Rows = append(table.Rows, currentRow)
-				}
-				currentRow = nil
-			}
-			
-			isInHeader = true
-			// Split headers by !! or !
-			headerText := strings.TrimPrefix(line, "!")
-			headers := regexp.MustCompile(`\s*!!\s*|\s*!\s*`).Split(headerText, -1)
-			
-			for _, header := range headers {
-				header = cleanWikiText(header)
-				if header != "" {
-					currentRow = append(currentRow, header)
-				}
-			}
-		} else if strings.HasPrefix(line, "|-") {
-			// Row separator
-			if len(currentRow) > 0 {
-				if isInHeader && len(table.Headers) == 0 {
-					table.Headers = currentRow
-				} else {
-					table.Rows = append(table.Rows, currentRow)
-				}
-				currentRow = nil
-			}
-			isInHeader = false
-		} else if strings.HasPrefix(line, "|") && !strings.HasPrefix(line, "|+") {
-			// Data row
-			if len(currentRow) > 0 && isInHeader && len(table.Headers) == 0 {
-				table.Headers = currentRow
-				currentRow = nil
-			}
-			isInHeader = false
-			
-			// Split cells by || but be smarter about it
-			cellText := strings.TrimPrefix(line, "|")
-			
-			var cells []string
-			if strings.Contains(cellText, "||") {
-				cells = strings.Split(cellText, "||")
-			} else {
-				cells = []string{cellText}
-			}
-			
-			for _, cell := range cells {
-				cell = strings.TrimSpace(cell)
-				if cell != "" {
-					cleanedCell := cleanWikiText(cell)
-					currentRow = append(currentRow, cleanedCell)
-				} else {
-					currentRow = append(currentRow, "")
-				}
+	if n.Type == html.ElementNode && n.Data == "table" {
+		// Check if this table has class="wikitable"
+		for _, attr := range n.Attr {
+			if attr.Key == "class" && strings.Contains(attr.Val, "wikitable") {
+				tables = append(tables, n)
+				break
 			}
 		}
 	}
 	
-	// Add final row
-	if len(currentRow) > 0 {
-		if len(table.Headers) == 0 {
-			table.Headers = currentRow
+	// Recursively search child nodes
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		tables = append(tables, findTableElements(c)...)
+	}
+	
+	return tables
+}
+
+// parseHTMLTable parses an HTML table element into SimpleTable format
+func parseHTMLTable(tableNode *html.Node) SimpleTable {
+	var table SimpleTable
+	var headerFound bool
+	
+	// Find all rows (tr elements)
+	rows := findElementsByTag(tableNode, "tr")
+	
+	for _, row := range rows {
+		// Check if this row contains header cells (th elements)
+		headers := findElementsByTag(row, "th")
+		if len(headers) > 0 && !headerFound {
+			// This is a header row
+			for _, header := range headers {
+				headerText := extractTextContent(header)
+				if headerText != "" {
+					table.Headers = append(table.Headers, headerText)
+				}
+			}
+			headerFound = true
 		} else {
-			table.Rows = append(table.Rows, currentRow)
+			// This is a data row - look for td elements
+			cells := findElementsByTag(row, "td")
+			if len(cells) > 0 {
+				var rowData []string
+				for _, cell := range cells {
+					cellText := extractTextContent(cell)
+					rowData = append(rowData, cellText)
+				}
+				if len(rowData) > 0 {
+					table.Rows = append(table.Rows, rowData)
+				}
+			}
 		}
 	}
 	
 	return table
 }
 
-// cleanWikiText removes wiki markup from text
-func cleanWikiText(text string) string {
-	if strings.TrimSpace(text) == "" {
-		return ""
+// findElementsByTag finds all child elements with the given tag name
+func findElementsByTag(n *html.Node, tag string) []*html.Node {
+	var elements []*html.Node
+	
+	if n.Type == html.ElementNode && n.Data == tag {
+		elements = append(elements, n)
 	}
 	
-	// Handle cell content that starts with HTML attributes
-	if strings.Contains(text, "|") && (strings.Contains(text, "style=") || strings.Contains(text, "align=") || strings.Contains(text, "class=")) {
-		parts := strings.Split(text, "|")
-		if len(parts) > 1 {
-			text = parts[len(parts)-1]
-		}
+	// Recursively search child nodes
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		elements = append(elements, findElementsByTag(c, tag)...)
 	}
 	
-	// Remove file/image links completely
-	text = regexp.MustCompile(`\[\[(?:File|Image):[^\]]*\]\]`).ReplaceAllString(text, "")
+	return elements
+}
+
+// extractTextContent extracts clean text content from an HTML node
+func extractTextContent(n *html.Node) string {
+	var text strings.Builder
 	
-	// Remove category links completely
-	text = regexp.MustCompile(`\[\[Category:[^\]]*\]\]`).ReplaceAllString(text, "")
-	
-	// Handle piped links [[target|display]] -> keep only display text
-	text = regexp.MustCompile(`\[\[[^|\]]*\|([^\]]+)\]\]`).ReplaceAllString(text, "$1")
-	
-	// Handle simple links [[target]] -> keep only target text
-	text = regexp.MustCompile(`\[\[([^\]]+)\]\]`).ReplaceAllString(text, "$1")
-	
-	// Remove ref tags
-	text = regexp.MustCompile(`(?s)<ref[^>]*>.*?</ref>`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`<ref[^>]*/>`).ReplaceAllString(text, "")
-	
-	// Handle date templates
-	dtsRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\|(\d{1,2})\|(\d{1,2})\}\}`)
-	text = dtsRegex.ReplaceAllString(text, "$1-$2-$3")
-	
-	dtsShortRegex := regexp.MustCompile(`\{\{Dts\|(\d{4})\}\}`)
-	text = dtsShortRegex.ReplaceAllString(text, "$1")
-	
-	// Remove templates
-	for i := 0; i < 10; i++ {
-		oldText := text
-		text = regexp.MustCompile(`\{\{[^{}]*\}\}`).ReplaceAllString(text, "")
-		if text == oldText {
-			break
-		}
+	if n.Type == html.TextNode {
+		text.WriteString(n.Data)
 	}
 	
-	// Remove remaining template brackets
-	text = strings.ReplaceAll(text, "{{", "")
-	text = strings.ReplaceAll(text, "}}", "")
+	// Recursively get text from child nodes
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		text.WriteString(extractTextContent(c))
+	}
 	
-	// Remove HTML attributes and markup
-	text = regexp.MustCompile(`style\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`class\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
-	text = regexp.MustCompile(`align\s*=\s*[^|]*\|?`).ReplaceAllString(text, "")
+	// Clean up the text
+	result := text.String()
 	
-	// Remove wiki formatting
-	text = regexp.MustCompile(`'''([^']+)'''`).ReplaceAllString(text, "$1") // Bold
-	text = regexp.MustCompile(`''([^']+)''`).ReplaceAllString(text, "$1")   // Italic
+	// Remove extra whitespace and newlines
+	result = regexp.MustCompile(`\s+`).ReplaceAllString(result, " ")
+	result = strings.TrimSpace(result)
 	
-	// Clean up whitespace
-	text = regexp.MustCompile(`\s*\|\s*`).ReplaceAllString(text, " ")
-	text = regexp.MustCompile(`\s+`).ReplaceAllString(text, " ")
-	text = strings.TrimSpace(text)
+	// Remove common unwanted content
+	result = strings.ReplaceAll(result, "[edit]", "")
+	result = strings.ReplaceAll(result, "edit", "")
 	
-	return text
+	return result
 }
 
 // selectBestTable selects the most suitable table for FCPXML generation
