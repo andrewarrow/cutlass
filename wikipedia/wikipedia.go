@@ -287,7 +287,7 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 		}
 	}
 
-	// Create the main spine video with all elements nested inside (from old code structure)
+	// Create the main spine video with all elements nested inside (exactly like old code structure)
 	mainVideo := fcp.Video{
 		Ref:      shapeGeneratorID,
 		Offset:   "0s",
@@ -302,19 +302,16 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 			{Name: "Outline", Value: "0"},
 		},
 		AdjustTransform: &fcp.AdjustTransform{Scale: "0 0"}, // Invisible base
+		NestedVideos:    nestedVideos,                       // CRITICAL: Nested structure like old code
+		NestedTitles:    nestedTitles,                       // CRITICAL: Nested structure like old code
 	}
 
-	// Add nested elements using new system
+	// Add only the main video to spine (like old code)
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
 		
-		// Add main video to spine
+		// Add only the main video to spine - all grid lines and text are nested inside it
 		sequence.Spine.Videos = append(sequence.Spine.Videos, mainVideo)
-		
-		// Add all nested videos and titles to the main video (this needs to be handled differently in new system)
-		// For now, add them directly to spine to ensure they display
-		sequence.Spine.Videos = append(sequence.Spine.Videos, nestedVideos...)
-		sequence.Spine.Titles = append(sequence.Spine.Titles, nestedTitles...)
 		
 		// Update sequence duration
 		sequence.Duration = fcpDuration
