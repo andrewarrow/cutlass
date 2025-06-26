@@ -47,7 +47,7 @@ type PixabayHit struct {
 	ID           int    `json:"id"`
 	WebformatURL string `json:"webformatURL"`
 	Tags         string `json:"tags"`
-	User         string `json:"user"`         // Photographer/creator name
+	User         string `json:"user"`         // Photographer/creator display name
 	UserID       int    `json:"user_id"`     // Photographer user ID
 	Type         string `json:"type"`        // photo, illustration, vector
 	Category     string `json:"category"`    // nature, backgrounds, etc.
@@ -386,7 +386,7 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 		// Add attribution text for Pixabay images if enabled
 		if config.ShowAttribution && imageAttr.Source == "pixabay" && imageAttr.Author != "" {
 			imageOffset := float64(i) * imageDuration
-			attributionText := fmt.Sprintf("Photo by %s", imageAttr.Author)
+			attributionText := fmt.Sprintf("https://pixabay.com/users/%s-%d/", strings.ToLower(imageAttr.Author), imageAttr.UserID)
 			
 			err = AddAttributionText(fcpxml, attributionText, imageOffset, imageDuration)
 			if err != nil {
@@ -686,7 +686,7 @@ func AddAttributionText(fcpxml *FCPXML, attributionText string, offsetSeconds fl
 			{
 				Name:  "Position",
 				Key:   "9999/10003/13260/3296672360/1/100/101", 
-				Value: "450 -300", // Upper right position but more conservative (X=450, Y=-300)
+				Value: "1780 1934", // Upper right position (from Info.fcpxml)
 			},
 			{
 				Name:  "Layout Method",
@@ -742,7 +742,7 @@ func AddAttributionText(fcpxml *FCPXML, attributionText string, offsetSeconds fl
 				ID: textStyleID,
 				TextStyle: TextStyle{
 					Font:        "Helvetica Neue",
-					FontSize:    "32", // Readable font size for attribution
+					FontSize:    "123", // Font size from Info.fcpxml
 					FontFace:    "Regular",
 					FontColor:   "1 1 1 0.8", // White text with slight transparency
 					Alignment:   "right",
