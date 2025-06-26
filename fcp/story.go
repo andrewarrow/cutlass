@@ -6,10 +6,12 @@
 package fcp
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
+	rand_math "math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -66,13 +68,20 @@ func DefaultStoryConfig() *StoryConfig {
 	}
 }
 
+// generateRandomFilename creates a random UUID-like filename
+func generateRandomFilename() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
 // GenerateRandomWords generates a list of random English words
 func GenerateRandomWords(count int) []string {
-	rand.Seed(time.Now().UnixNano())
+	rand_math.Seed(time.Now().UnixNano())
 	
 	words := make([]string, count)
 	for i := 0; i < count; i++ {
-		words[i] = englishWords[rand.Intn(len(englishWords))]
+		words[i] = englishWords[rand_math.Intn(len(englishWords))]
 	}
 	
 	return words
@@ -143,8 +152,9 @@ func downloadFromPixabay(word string, count int, outputDir string, apiKey string
 			break
 		}
 		
-		// Download image
-		filename := fmt.Sprintf("%s_pixabay_%d_%d.jpg", word, hit.ID, i+1)
+		// Download image with random UUID filename to prevent UID conflicts
+		uuidStr := generateRandomFilename()
+		filename := fmt.Sprintf("%s.jpg", uuidStr)
 		filepath := filepath.Join(outputDir, filename)
 		
 		if err := downloadImage(hit.WebformatURL, filepath); err != nil {
@@ -182,8 +192,9 @@ func downloadFromLoremPicsum(word string, count int, outputDir string) ([]string
 		// Lorem Picsum URL with seed for consistent images
 		imageURL := fmt.Sprintf("https://picsum.photos/seed/%s%d/800/600", word, seed)
 		
-		// Download image
-		filename := fmt.Sprintf("%s_picsum_%d.jpg", word, i+1)
+		// Download image with random UUID filename to prevent UID conflicts
+		uuidStr := generateRandomFilename()
+		filename := fmt.Sprintf("%s.jpg", uuidStr)
 		filepath := filepath.Join(outputDir, filename)
 		
 		if err := downloadImage(imageURL, filepath); err != nil {
