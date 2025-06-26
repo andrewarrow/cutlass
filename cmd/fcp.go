@@ -817,6 +817,7 @@ Examples:
 		imagesPerWordStr, _ := cmd.Flags().GetString("images-per-word")
 		outputDir, _ := cmd.Flags().GetString("output-dir")
 		apiKey, _ := cmd.Flags().GetString("api-key")
+		showAttribution, _ := cmd.Flags().GetBool("attribution")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		
 		// Parse duration
@@ -842,11 +843,12 @@ Examples:
 		
 		// Create story configuration
 		config := &fcp.StoryConfig{
-			Duration:       duration,
-			ImagesPerWord:  imagesPerWord,
-			TotalImages:    totalImages,
-			OutputDir:      outputDir,
-			PixabayAPIKey:  apiKey,
+			Duration:        duration,
+			ImagesPerWord:   imagesPerWord,
+			TotalImages:     totalImages,
+			OutputDir:       outputDir,
+			PixabayAPIKey:   apiKey,
+			ShowAttribution: showAttribution,
 		}
 		
 		// Generate story timeline
@@ -927,6 +929,7 @@ func init() {
 	storyCmd.Flags().String("images-per-word", "3", "Number of images to download per word (default 3)")
 	storyCmd.Flags().String("output-dir", "./story_assets", "Directory to save downloaded images (default ./story_assets)")
 	storyCmd.Flags().String("api-key", "", "Pixabay API key for higher rate limits (optional)")
+	storyCmd.Flags().Bool("attribution", true, "Show attribution text for Pixabay images (default true)")
 	storyCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
 	fcpCmd.AddCommand(createEmptyCmd)
