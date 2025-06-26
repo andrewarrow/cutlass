@@ -68,15 +68,289 @@ func GenerateFromWikipedia(articleTitle, outputFile string) error {
 	fmt.Printf("Table headers: %v\n", bestTable.Headers)
 	fmt.Printf("Table has %d rows\n", len(bestTable.Rows))
 
-	// Generate FCPXML using new fcp system
-	fmt.Printf("Generating FCPXML: %s\n", outputFile)
-	err = generateTableFCPXML(bestTable, outputFile)
+	// Generate FCPXML using visual table system
+	fmt.Printf("Generating FCPXML with visual table: %s\n", outputFile)
+	err = generateVisualTableFCPXML(bestTable, outputFile)
 	if err != nil {
 		return fmt.Errorf("failed to generate FCPXML: %v", err)
 	}
 
 	fmt.Printf("Successfully generated Wikipedia table FCPXML: %s\n", outputFile)
 	return nil
+}
+
+// generateVisualTableFCPXML creates visual table with red grid lines using the new fcp system
+func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) error {
+	
+	// Create base FCPXML using new system
+	fcpxml, err := fcp.GenerateEmpty("")
+	if err != nil {
+		return fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+
+	// Use proper resource management
+	registry := fcp.NewResourceRegistry(fcpxml)
+	tx := fcp.NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs for shape generator and text effect
+	ids := tx.ReserveIDs(2)
+	shapeGeneratorID := ids[0] 
+	textEffectID := ids[1]
+
+	// Create shape generator for red grid lines (using verified UID from CLAUDE.md)
+	_, err = tx.CreateEffect(shapeGeneratorID, "Vivid", ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn")
+	if err != nil {
+		return fmt.Errorf("failed to create shape generator: %v", err)
+	}
+
+	// Create text effect (using verified UID from CLAUDE.md)
+	_, err = tx.CreateEffect(textEffectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+	if err != nil {
+		return fmt.Errorf("failed to create text effect: %v", err)
+	}
+
+	// Calculate table dimensions - limit for FCP performance
+	maxRows := 5 // Limit data rows for FCP performance
+	maxCols := 2 // Use 2-column format: Field | Value
+	if len(simpleTable.Rows) < maxRows {
+		maxRows = len(simpleTable.Rows)
+	}
+	totalRows := maxRows + 1 // Add 1 for header row
+
+	// Calculate positions for grid lines
+	startY := 100.0  // Top of table
+	endY := -100.0   // Bottom of table  
+	stepY := (endY - startY) / float64(totalRows)
+	
+	startX := -150.0 // Left of table
+	endX := 150.0    // Right of table
+	stepX := (endX - startX) / float64(maxCols)
+
+	// Calculate durations
+	duration := 3.0 * float64(maxRows) // 3 seconds per row
+	totalDuration := duration
+	fcpDuration := fcp.ConvertSecondsToFCPDuration(totalDuration)
+
+	// Add horizontal grid lines
+	for i := 0; i <= totalRows; i++ {
+		yPos := startY + float64(i)*stepY
+		
+		// Create red horizontal line using Video element with Shape generator
+		horizontalLine := fcp.Video{
+			Ref:      shapeGeneratorID,
+			Offset:   "0/24000s",
+			Duration: fcpDuration,
+			AdjustTransform: &fcp.AdjustTransform{
+				Position: fmt.Sprintf("0 %.1f", yPos),
+				Scale:    "30 0.05", // Wide and thin for horizontal line
+			},
+			Params: []fcp.Param{
+				{Name: "Shape", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Value: "1 0 0"}, // Red color  
+				{Name: "Outline", Value: "0"},        // No outline
+				{Name: "Corners", Value: "1 (Square)"},
+			},
+		}
+		
+		// Add to spine
+		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+			sequence.Spine.Videos = append(sequence.Spine.Videos, horizontalLine)
+		}
+	}
+
+	// Add vertical grid lines
+	for j := 0; j <= maxCols; j++ {
+		xPos := startX + float64(j)*stepX
+		
+		// Create red vertical line using Video element with Shape generator
+		verticalLine := fcp.Video{
+			Ref:      shapeGeneratorID,
+			Offset:   "0/24000s", 
+			Duration: fcpDuration,
+			AdjustTransform: &fcp.AdjustTransform{
+				Position: fmt.Sprintf("%.1f 0", xPos),
+				Scale:    "0.0081 30", // Thin and tall for vertical line
+			},
+			Params: []fcp.Param{
+				{Name: "Shape", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Value: "1 0 0"}, // Red color
+				{Name: "Outline", Value: "0"},        // No outline  
+				{Name: "Corners", Value: "1 (Square)"},
+			},
+		}
+		
+		// Add to spine
+		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+			sequence.Spine.Videos = append(sequence.Spine.Videos, verticalLine)
+		}
+	}
+
+	// Add table headers ("Field" and "Value")
+	headers := []string{"Field", "Value"}
+	for col := 0; col < maxCols && col < len(headers); col++ {
+		centerX := startX + (float64(col)+0.5)*stepX
+		centerY := startY + 0.5*stepY // Center of first row
+		
+		// Reserve ID for text style
+		styleIDs := tx.ReserveIDs(1)
+		styleID := styleIDs[0]
+		
+		headerTitle := fcp.Title{
+			Ref:      textEffectID,
+			Offset:   "0/24000s",
+			Duration: fcpDuration,
+			Params: []fcp.Param{
+				{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", centerX*10, centerY*10)}, // Scale positions
+			},
+			Text: &fcp.TitleText{
+				TextStyles: []fcp.TextStyleRef{
+					{
+						Ref:  styleID,
+						Text: headers[col],
+					},
+				},
+			},
+			TextStyleDefs: []fcp.TextStyleDef{
+				{
+					ID: styleID,
+					TextStyle: fcp.TextStyle{
+						Font:      "Helvetica Neue",
+						FontSize:  "150",
+						FontColor: "1 1 1 1", // White text
+						FontFace:  "Bold",
+						Alignment: "center",
+					},
+				},
+			},
+		}
+		
+		// Add to spine
+		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+			sequence.Spine.Titles = append(sequence.Spine.Titles, headerTitle)
+		}
+	}
+
+	// Add table data as Field | Value pairs
+	currentTime := 0.0
+	for row := 0; row < maxRows && row < len(simpleTable.Rows); row++ {
+		rowData := simpleTable.Rows[row]
+		rowDuration := 3.0 // 3 seconds per row
+		
+		// Display each field-value pair
+		for fieldIndex, header := range simpleTable.Headers {
+			if fieldIndex >= len(rowData) {
+				continue
+			}
+			
+			cellValue := rowData[fieldIndex]
+			if cellValue == "" {
+				continue
+			}
+			
+			// Position in Field column
+			fieldCenterX := startX + 0.5*stepX
+			fieldCenterY := startY + (float64(row)+1.5)*stepY
+			
+			// Position in Value column  
+			valueCenterX := startX + 1.5*stepX
+			valueCenterY := fieldCenterY
+			
+			fcpOffset := fcp.ConvertSecondsToFCPDuration(currentTime)
+			fcpRowDuration := fcp.ConvertSecondsToFCPDuration(rowDuration)
+			
+			// Field name text
+			fieldStyleIDs := tx.ReserveIDs(1)
+			fieldStyleID := fieldStyleIDs[0]
+			
+			fieldTitle := fcp.Title{
+				Ref:      textEffectID,
+				Offset:   fcpOffset,
+				Duration: fcpRowDuration,
+				Params: []fcp.Param{
+					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", fieldCenterX*10, fieldCenterY*10)},
+				},
+				Text: &fcp.TitleText{
+					TextStyles: []fcp.TextStyleRef{
+						{
+							Ref:  fieldStyleID,
+							Text: header,
+						},
+					},
+				},
+				TextStyleDefs: []fcp.TextStyleDef{
+					{
+						ID: fieldStyleID,
+						TextStyle: fcp.TextStyle{
+							Font:      "Helvetica Neue", 
+							FontSize:  "120",
+							FontColor: "0.9 0.9 0.9 1", // Light gray
+							Alignment: "center",
+						},
+					},
+				},
+			}
+			
+			// Value text
+			valueStyleIDs := tx.ReserveIDs(1)
+			valueStyleID := valueStyleIDs[0]
+			
+			valueTitle := fcp.Title{
+				Ref:      textEffectID,
+				Offset:   fcpOffset,
+				Duration: fcpRowDuration,
+				Params: []fcp.Param{
+					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", valueCenterX*10, valueCenterY*10)},
+				},
+				Text: &fcp.TitleText{
+					TextStyles: []fcp.TextStyleRef{
+						{
+							Ref:  valueStyleID,
+							Text: cellValue,
+						},
+					},
+				},
+				TextStyleDefs: []fcp.TextStyleDef{
+					{
+						ID: valueStyleID,
+						TextStyle: fcp.TextStyle{
+							Font:      "Helvetica Neue",
+							FontSize:  "120", 
+							FontColor: "0.9 0.9 0.9 1", // Light gray
+							Alignment: "center",
+						},
+					},
+				},
+			}
+			
+			// Add to spine
+			if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+				sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+				sequence.Spine.Titles = append(sequence.Spine.Titles, fieldTitle)
+				sequence.Spine.Titles = append(sequence.Spine.Titles, valueTitle)
+			}
+			
+			break // Only show first field-value pair per row
+		}
+		
+		currentTime += rowDuration
+	}
+
+	// Update sequence duration to match total content duration
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Duration = fcpDuration
+	}
+
+	// Commit transaction and write
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	return fcp.WriteToFile(fcpxml, outputFile)
 }
 
 // generateTableFCPXML creates FCPXML from table data using the new fcp system
