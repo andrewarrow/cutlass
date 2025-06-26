@@ -79,7 +79,7 @@ func GenerateFromWikipedia(articleTitle, outputFile string) error {
 	return nil
 }
 
-// generateVisualTableFCPXML creates visual table with red grid lines using the new fcp system
+// generateVisualTableFCPXML creates visual table with complete grid layout using nested video structure from old working code
 func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) error {
 	
 	// Create base FCPXML using new system
@@ -110,106 +110,117 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 		return fmt.Errorf("failed to create text effect: %v", err)
 	}
 
-	// Calculate table dimensions - limit for FCP performance
+	// Calculate table dimensions using old code approach - show all columns
 	maxRows := 5 // Limit data rows for FCP performance
-	maxCols := 2 // Use 2-column format: Field | Value
 	if len(simpleTable.Rows) < maxRows {
 		maxRows = len(simpleTable.Rows)
 	}
+	maxCols := len(simpleTable.Headers) // Show ALL columns like old code
+	if maxCols > 4 { // Limit for FCP performance
+		maxCols = 4
+	}
 	totalRows := maxRows + 1 // Add 1 for header row
 
-	// Calculate positions for grid lines
-	startY := 100.0  // Top of table
-	endY := -100.0   // Bottom of table  
+	// Calculate positions for grid lines (from old code)
+	startY := 100.0
+	endY := -100.0   
 	stepY := (endY - startY) / float64(totalRows)
 	
-	startX := -150.0 // Left of table
-	endX := 150.0    // Right of table
+	startX := -150.0
+	endX := 150.0
 	stepX := (endX - startX) / float64(maxCols)
 
-	// Calculate durations
-	duration := 3.0 * float64(maxRows) // 3 seconds per row
-	totalDuration := duration
-	fcpDuration := fcp.ConvertSecondsToFCPDuration(totalDuration)
+	// Calculate duration
+	duration := 15.0 // 15 seconds total like old code static tables
+	fcpDuration := fcp.ConvertSecondsToFCPDuration(duration)
 
-	// Add horizontal grid lines
+	// Create nested videos and titles arrays for main video structure (from old code)
+	var nestedVideos []fcp.Video
+	var nestedTitles []fcp.Title
+	laneCounter := 1
+
+	// Calculate all grid line positions (from old code approach)
+	horizontalPositionOffsets := make([]float64, totalRows+1)
 	for i := 0; i <= totalRows; i++ {
-		yPos := startY + float64(i)*stepY
-		
-		// Create red horizontal line using Video element with Shape generator
-		horizontalLine := fcp.Video{
-			Ref:      shapeGeneratorID,
-			Offset:   "0/24000s",
-			Duration: fcpDuration,
-			AdjustTransform: &fcp.AdjustTransform{
-				Position: fmt.Sprintf("0 %.1f", yPos),
-				Scale:    "30 0.05", // Wide and thin for horizontal line
-			},
-			Params: []fcp.Param{
-				{Name: "Shape", Value: "4 (Rectangle)"},
-				{Name: "Fill Color", Value: "1 0 0"}, // Red color  
-				{Name: "Outline", Value: "0"},        // No outline
-				{Name: "Corners", Value: "1 (Square)"},
-			},
-		}
-		
-		// Add to spine
-		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
-			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-			sequence.Spine.Videos = append(sequence.Spine.Videos, horizontalLine)
-		}
+		horizontalPositionOffsets[i] = startY + float64(i)*stepY
+	}
+	
+	verticalPositionOffsets := make([]float64, maxCols+1)
+	for i := 0; i <= maxCols; i++ {
+		verticalPositionOffsets[i] = startX + float64(i)*stepX
 	}
 
-	// Add vertical grid lines
-	for j := 0; j <= maxCols; j++ {
-		xPos := startX + float64(j)*stepX
-		
-		// Create red vertical line using Video element with Shape generator
-		verticalLine := fcp.Video{
-			Ref:      shapeGeneratorID,
-			Offset:   "0/24000s", 
+	// Add all horizontal lines as nested videos (from old code)
+	for i, yOffset := range horizontalPositionOffsets {
+		horizontalLine := fcp.Video{
+			Ref:    shapeGeneratorID,
+			Lane:   fmt.Sprintf("%d", laneCounter), // CRITICAL: Use lanes for simultaneous display
+			Offset: "0s",
+			Name:   fmt.Sprintf("Horizontal Line %d", i+1),
+			Start:  "0s",
 			Duration: fcpDuration,
-			AdjustTransform: &fcp.AdjustTransform{
-				Position: fmt.Sprintf("%.1f 0", xPos),
-				Scale:    "0.0081 30", // Thin and tall for vertical line
-			},
 			Params: []fcp.Param{
 				{Name: "Shape", Value: "4 (Rectangle)"},
 				{Name: "Fill Color", Value: "1 0 0"}, // Red color
-				{Name: "Outline", Value: "0"},        // No outline  
+				{Name: "Outline", Value: "0"},
 				{Name: "Corners", Value: "1 (Square)"},
 			},
+			AdjustTransform: &fcp.AdjustTransform{
+				Position: fmt.Sprintf("0 %.1f", yOffset),
+				Scale:    "30 0.05", // Wide and thin for horizontal line
+			},
 		}
-		
-		// Add to spine
-		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
-			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-			sequence.Spine.Videos = append(sequence.Spine.Videos, verticalLine)
+		nestedVideos = append(nestedVideos, horizontalLine)
+		laneCounter++
+	}
+	
+	// Add all vertical lines as nested videos (from old code)
+	for j, xOffset := range verticalPositionOffsets {
+		verticalLine := fcp.Video{
+			Ref:    shapeGeneratorID,
+			Lane:   fmt.Sprintf("%d", laneCounter), // CRITICAL: Use lanes for simultaneous display
+			Offset: "0s",
+			Name:   fmt.Sprintf("Vertical Line %d", j+1),
+			Start:  "0s",
+			Duration: fcpDuration,
+			Params: []fcp.Param{
+				{Name: "Shape", Value: "4 (Rectangle)"},
+				{Name: "Fill Color", Value: "1 0 0"}, // Red color
+				{Name: "Outline", Value: "0"},
+				{Name: "Corners", Value: "1 (Square)"},
+			},
+			AdjustTransform: &fcp.AdjustTransform{
+				Position: fmt.Sprintf("%.1f 0", xOffset),
+				Scale:    "0.0081 30", // Thin and tall for vertical line
+			},
 		}
+		nestedVideos = append(nestedVideos, verticalLine)
+		laneCounter++
 	}
 
-	// Add table headers ("Field" and "Value")
-	headers := []string{"Field", "Value"}
-	for col := 0; col < maxCols && col < len(headers); col++ {
-		centerX := startX + (float64(col)+0.5)*stepX
-		centerY := startY + 0.5*stepY // Center of first row
-		
-		// Reserve ID for text style
+	// Calculate cell positions for text placement (from old code)
+	cellTextPositions := calculateCellTextPositions(horizontalPositionOffsets, verticalPositionOffsets)
+
+	// Add table headers - show actual column headers (from old code approach)
+	for col := 0; col < maxCols && col < len(simpleTable.Headers) && col < len(cellTextPositions[0]); col++ {
 		styleIDs := tx.ReserveIDs(1)
 		styleID := styleIDs[0]
 		
 		headerTitle := fcp.Title{
-			Ref:      textEffectID,
-			Offset:   "0/24000s",
+			Ref:    textEffectID,
+			Lane:   fmt.Sprintf("%d", laneCounter),
+			Offset: "0s",
+			Name:   fmt.Sprintf("Header %d", col+1),
+			Start:  "0s",
 			Duration: fcpDuration,
 			Params: []fcp.Param{
-				{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", centerX*10, centerY*10)}, // Scale positions
+				{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
 			},
 			Text: &fcp.TitleText{
 				TextStyles: []fcp.TextStyleRef{
 					{
 						Ref:  styleID,
-						Text: headers[col],
+						Text: simpleTable.Headers[col],
 					},
 				},
 			},
@@ -226,66 +237,44 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 				},
 			},
 		}
-		
-		// Add to spine
-		if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
-			sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-			sequence.Spine.Titles = append(sequence.Spine.Titles, headerTitle)
-		}
+		nestedTitles = append(nestedTitles, headerTitle)
+		laneCounter++
 	}
 
-	// Add table data as Field | Value pairs
-	currentTime := 0.0
+	// Add table data - show ALL cells in grid layout (from old code approach)
 	for row := 0; row < maxRows && row < len(simpleTable.Rows); row++ {
-		rowData := simpleTable.Rows[row]
-		rowDuration := 3.0 // 3 seconds per row
-		
-		// Display each field-value pair
-		for fieldIndex, header := range simpleTable.Headers {
-			if fieldIndex >= len(rowData) {
-				continue
-			}
-			
-			cellValue := rowData[fieldIndex]
+		for col := 0; col < maxCols && col < len(simpleTable.Rows[row]) && row+1 < len(cellTextPositions) && col < len(cellTextPositions[row+1]); col++ {
+			cellValue := simpleTable.Rows[row][col]
 			if cellValue == "" {
 				continue
 			}
 			
-			// Position in Field column
-			fieldCenterX := startX + 0.5*stepX
-			fieldCenterY := startY + (float64(row)+1.5)*stepY
+			styleIDs := tx.ReserveIDs(1)
+			styleID := styleIDs[0]
 			
-			// Position in Value column  
-			valueCenterX := startX + 1.5*stepX
-			valueCenterY := fieldCenterY
-			
-			fcpOffset := fcp.ConvertSecondsToFCPDuration(currentTime)
-			fcpRowDuration := fcp.ConvertSecondsToFCPDuration(rowDuration)
-			
-			// Field name text
-			fieldStyleIDs := tx.ReserveIDs(1)
-			fieldStyleID := fieldStyleIDs[0]
-			
-			fieldTitle := fcp.Title{
-				Ref:      textEffectID,
-				Offset:   fcpOffset,
-				Duration: fcpRowDuration,
+			cellTitle := fcp.Title{
+				Ref:    textEffectID,
+				Lane:   fmt.Sprintf("%d", laneCounter),
+				Offset: "0s",
+				Name:   fmt.Sprintf("Cell R%d-C%d", row+1, col+1),
+				Start:  "0s",
+				Duration: fcpDuration,
 				Params: []fcp.Param{
-					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", fieldCenterX*10, fieldCenterY*10)},
+					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
 				},
 				Text: &fcp.TitleText{
 					TextStyles: []fcp.TextStyleRef{
 						{
-							Ref:  fieldStyleID,
-							Text: header,
+							Ref:  styleID,
+							Text: cellValue,
 						},
 					},
 				},
 				TextStyleDefs: []fcp.TextStyleDef{
 					{
-						ID: fieldStyleID,
+						ID: styleID,
 						TextStyle: fcp.TextStyle{
-							Font:      "Helvetica Neue", 
+							Font:      "Helvetica Neue",
 							FontSize:  "120",
 							FontColor: "0.9 0.9 0.9 1", // Light gray
 							Alignment: "center",
@@ -293,55 +282,41 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 					},
 				},
 			}
-			
-			// Value text
-			valueStyleIDs := tx.ReserveIDs(1)
-			valueStyleID := valueStyleIDs[0]
-			
-			valueTitle := fcp.Title{
-				Ref:      textEffectID,
-				Offset:   fcpOffset,
-				Duration: fcpRowDuration,
-				Params: []fcp.Param{
-					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", valueCenterX*10, valueCenterY*10)},
-				},
-				Text: &fcp.TitleText{
-					TextStyles: []fcp.TextStyleRef{
-						{
-							Ref:  valueStyleID,
-							Text: cellValue,
-						},
-					},
-				},
-				TextStyleDefs: []fcp.TextStyleDef{
-					{
-						ID: valueStyleID,
-						TextStyle: fcp.TextStyle{
-							Font:      "Helvetica Neue",
-							FontSize:  "120", 
-							FontColor: "0.9 0.9 0.9 1", // Light gray
-							Alignment: "center",
-						},
-					},
-				},
-			}
-			
-			// Add to spine
-			if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
-				sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
-				sequence.Spine.Titles = append(sequence.Spine.Titles, fieldTitle)
-				sequence.Spine.Titles = append(sequence.Spine.Titles, valueTitle)
-			}
-			
-			break // Only show first field-value pair per row
+			nestedTitles = append(nestedTitles, cellTitle)
+			laneCounter++
 		}
-		
-		currentTime += rowDuration
 	}
 
-	// Update sequence duration to match total content duration
+	// Create the main spine video with all elements nested inside (from old code structure)
+	mainVideo := fcp.Video{
+		Ref:      shapeGeneratorID,
+		Offset:   "0s",
+		Name:     "Table Grid Base",
+		Start:    "0s",
+		Duration: fcpDuration,
+		Params: []fcp.Param{
+			{Name: "Drop Shadow Opacity", Value: "0"},
+			{Name: "Feather", Value: "0"},
+			{Name: "Fill Color", Value: "0 0 0"},
+			{Name: "Shape", Value: "4 (Rectangle)"},
+			{Name: "Outline", Value: "0"},
+		},
+		AdjustTransform: &fcp.AdjustTransform{Scale: "0 0"}, // Invisible base
+	}
+
+	// Add nested elements using new system
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		
+		// Add main video to spine
+		sequence.Spine.Videos = append(sequence.Spine.Videos, mainVideo)
+		
+		// Add all nested videos and titles to the main video (this needs to be handled differently in new system)
+		// For now, add them directly to spine to ensure they display
+		sequence.Spine.Videos = append(sequence.Spine.Videos, nestedVideos...)
+		sequence.Spine.Titles = append(sequence.Spine.Titles, nestedTitles...)
+		
+		// Update sequence duration
 		sequence.Duration = fcpDuration
 	}
 
@@ -351,6 +326,32 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 	}
 
 	return fcp.WriteToFile(fcpxml, outputFile)
+}
+
+// calculateCellTextPositions calculates the center position of each cell formed by the grid lines
+func calculateCellTextPositions(horizontalOffsets, verticalOffsets []float64) [][]Position {
+	var positions [][]Position
+	
+	for row := 0; row < len(horizontalOffsets)-1; row++ {
+		var rowPositions []Position
+		for col := 0; col < len(verticalOffsets)-1; col++ {
+			centerX := (verticalOffsets[col] + verticalOffsets[col+1]) / 2
+			centerY := (horizontalOffsets[row] + horizontalOffsets[row+1]) / 2
+			
+			rowPositions = append(rowPositions, Position{
+				X: centerX,
+				Y: centerY,
+			})
+		}
+		positions = append(positions, rowPositions)
+	}
+	
+	return positions
+}
+
+// Position represents X,Y coordinates
+type Position struct {
+	X, Y float64
 }
 
 // generateTableFCPXML creates FCPXML from table data using the new fcp system
