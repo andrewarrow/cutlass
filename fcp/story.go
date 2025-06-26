@@ -308,8 +308,9 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 		fmt.Printf("Downloaded %d images total\n", len(allImagePaths))
 	}
 	
-	// Generate timeline with images
+	// Generate timeline with images and text overlays
 	imageDuration := config.Duration / float64(len(allImagePaths))
+	wordIndex := 0
 	
 	for i, imagePath := range allImagePaths {
 		// Add image with proper duration
@@ -317,6 +318,24 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 		if err != nil {
 			fmt.Printf("Warning: Failed to add image %s: %v\n", imagePath, err)
 			continue
+		}
+		
+		// Add text overlay for corresponding word (one word per images-per-word images)
+		if i%config.ImagesPerWord == 0 && wordIndex < len(words) {
+			textOffset := float64(i) * imageDuration
+			word := words[wordIndex]
+			
+			// Add text with 290 font size (similar to baffle)
+			err = AddStoryText(fcpxml, word, textOffset, imageDuration, 290)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Warning: Failed to add text '%s' at offset %.1fs: %v\n", word, textOffset, err)
+				}
+			} else if verbose {
+				fmt.Printf("Added text '%s' at offset %.1fs\n", word, textOffset)
+			}
+			
+			wordIndex++
 		}
 		
 		if verbose && (i+1)%10 == 0 {
@@ -346,4 +365,179 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// AddStoryText adds a single text element to the story timeline with specified font size
+func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSeconds float64, fontSize int) error {
+	// Use the existing resource registry
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Find or create text effect
+	textEffectID := ""
+	for _, effect := range fcpxml.Resources.Effects {
+		if strings.Contains(effect.UID, "Text.moti") {
+			textEffectID = effect.ID
+			break
+		}
+	}
+
+	if textEffectID == "" {
+		ids := tx.ReserveIDs(1)
+		textEffectID = ids[0]
+		
+		_, err := tx.CreateEffect(textEffectID, "Text", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+		if err != nil {
+			return fmt.Errorf("failed to create text effect: %v", err)
+		}
+	}
+
+	// Generate unique text style ID
+	textStyleID := GenerateTextStyleID(text, fmt.Sprintf("story_text_offset_%.1f", offsetSeconds))
+	
+	// Convert durations to FCP format
+	offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
+	titleDuration := ConvertSecondsToFCPDuration(durationSeconds)
+
+	// Find the target video/asset-clip first to get the correct offset
+	var targetVideo *Video
+	var targetAssetClip *AssetClip
+	var titleOffset string = offsetDuration // default fallback
+
+	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		offsetFrames := parseFCPDuration(offsetDuration)
+
+		// Find the video/asset-clip that covers this time offset
+		for i := range sequence.Spine.AssetClips {
+			clip := &sequence.Spine.AssetClips[i]
+			clipOffsetFrames := parseFCPDuration(clip.Offset)
+			clipDurationFrames := parseFCPDuration(clip.Duration)
+			clipEndFrames := clipOffsetFrames + clipDurationFrames
+
+			if offsetFrames >= clipOffsetFrames && offsetFrames < clipEndFrames {
+				targetAssetClip = clip
+				titleOffset = clip.Start // Use video start time as offset!
+				break
+			}
+		}
+
+		if targetAssetClip == nil {
+			for i := range sequence.Spine.Videos {
+				video := &sequence.Spine.Videos[i]
+				videoOffsetFrames := parseFCPDuration(video.Offset)
+				videoDurationFrames := parseFCPDuration(video.Duration)
+				videoEndFrames := videoOffsetFrames + videoDurationFrames
+
+				if offsetFrames >= videoOffsetFrames && offsetFrames < videoEndFrames {
+					targetVideo = video
+					titleOffset = video.Start // Use video start time as offset!
+					break
+				}
+			}
+		}
+	}
+
+	// Create title with large font (290 size like baffle)
+	title := Title{
+		Ref:      textEffectID,
+		Lane:     "2", // Use lane 2 for text overlay
+		Offset:   titleOffset, // Use video start time as offset (key fix!)
+		Name:     text + " - Story Text",
+		Start:    "86486400/24000s",
+		Duration: titleDuration,
+		Params: []Param{
+			{
+				Name:  "Position",
+				Key:   "9999/10003/13260/3296672360/1/100/101", 
+				Value: "0 0", // Center position
+			},
+			{
+				Name:  "Layout Method",
+				Key:   "9999/10003/13260/3296672360/2/314",
+				Value: "1 (Paragraph)",
+			},
+			{
+				Name:  "Left Margin",
+				Key:   "9999/10003/13260/3296672360/2/323",
+				Value: "-1730",
+			},
+			{
+				Name:  "Right Margin", 
+				Key:   "9999/10003/13260/3296672360/2/324",
+				Value: "1730",
+			},
+			{
+				Name:  "Top Margin",
+				Key:   "9999/10003/13260/3296672360/2/325",
+				Value: "960",
+			},
+			{
+				Name:  "Bottom Margin",
+				Key:   "9999/10003/13260/3296672360/2/326",
+				Value: "-960",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/401",
+				Value: "1 (Center)", // Center alignment
+			},
+			{
+				Name:  "Line Spacing",
+				Key:   "9999/10003/13260/3296672360/2/354/3296667315/404",
+				Value: "-19",
+			},
+			{
+				Name:  "Auto-Shrink",
+				Key:   "9999/10003/13260/3296672360/2/370",
+				Value: "3 (To All Margins)",
+			},
+			{
+				Name:  "Alignment",
+				Key:   "9999/10003/13260/3296672360/2/373",
+				Value: "1 (Center) 1 (Center)",
+			},
+		},
+		Text: &TitleText{
+			TextStyles: []TextStyleRef{
+				{
+					Ref:  textStyleID,
+					Text: text,
+				},
+			},
+		},
+		TextStyleDefs: []TextStyleDef{
+			{
+				ID: textStyleID,
+				TextStyle: TextStyle{
+					Font:        "Helvetica Neue",
+					FontSize:    fmt.Sprintf("%d", fontSize), // Use specified font size
+					FontFace:    "Bold",
+					FontColor:   "1 1 1 1", // White text
+					Alignment:   "center",
+					LineSpacing: "-19",
+					Bold:        "1",
+				},
+			},
+		},
+	}
+
+	// Commit the transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit text transaction: %v", err)
+	}
+
+	// Add text to the appropriate element (we already found the targets above)
+	if targetAssetClip != nil {
+		targetAssetClip.Titles = append(targetAssetClip.Titles, title)
+	} else if targetVideo != nil {
+		targetVideo.NestedTitles = append(targetVideo.NestedTitles, title)
+	} else if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
+		// Fallback: add to spine directly
+		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
+		sequence.Spine.Titles = append(sequence.Spine.Titles, title)
+	}
+
+	return nil
 }
