@@ -91,21 +91,21 @@ func addDurations(duration1, duration2 string) string {
 	return fmt.Sprintf("%d/24000s", totalFrames)
 }
 
-// createSlideAnimation creates keyframe animation for sliding an image from left to right
-// Based on samples/slide.fcpxml pattern with keyframes for position parameter
-// Slides from position "0 0" to "51.3109 0" over 1 second (from start to 1 second into the clip)
+// createKenBurnsAnimation creates Ken Burns effect animation (slow zoom + pan)
+// Ken Burns effect combines gradual zoom-in with subtle panning motion
 // 🚨 CRITICAL: Keyframe attributes follow CLAUDE.md rules:
 // - Position keyframes: NO attributes (no interp/curve)
 // - Scale/Rotation/Anchor keyframes: Only curve attribute (no interp)
-func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *AdjustTransform {
+func createKenBurnsAnimation(offsetDuration string, totalDurationSeconds float64) *AdjustTransform {
 
 	videoStartFrames := 86399313
 
-	oneSecondDuration := ConvertSecondsToFCPDuration(1.0)
-	oneSecondFrames := parseFCPDuration(oneSecondDuration)
+	// Ken Burns effect duration should be longer than slide (3 seconds for subtle effect)
+	kenBurnsDuration := ConvertSecondsToFCPDuration(3.0)
+	kenBurnsFrames := parseFCPDuration(kenBurnsDuration)
 
 	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
-	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+oneSecondFrames)
+	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+kenBurnsFrames)
 
 	return &AdjustTransform{
 		Params: []Param{
@@ -113,6 +113,11 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 				Name: "anchor",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0 0",
+							Curve: "linear",
+						},
 						{
 							Time:  endTime,
 							Value: "0 0",
@@ -131,7 +136,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						},
 						{
 							Time:  endTime,
-							Value: "59.3109 0",
+							Value: "-20 -15",
 						},
 					},
 				},
@@ -140,6 +145,11 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 				Name: "rotation",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0",
+							Curve: "linear",
+						},
 						{
 							Time:  endTime,
 							Value: "0",
@@ -153,8 +163,13 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
+							Time:  startTime,
+							Value: "1.2 1.2",
+							Curve: "linear",
+						},
+						{
 							Time:  endTime,
-							Value: "1 1",
+							Value: "1.35 1.35",
 							Curve: "linear",
 						},
 					},

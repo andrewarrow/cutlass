@@ -58,12 +58,12 @@ func getNextUniqueTextStyleID(existingIDs map[string]bool) string {
 	}
 }
 
-// AddSlideToVideoAtOffset finds a video at the specified offset and adds slide animation to it.
+// AddSlideToVideoAtOffset finds a video at the specified offset and adds Ken Burns animation to it.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
 // - Uses frame-aligned timing → ConvertSecondsToFCPDuration() function for offset calculation
 // - Uses STRUCTS ONLY - no string templates → modifies Video.AdjustTransform in spine
-// - Maintains existing video properties while adding slide animation keyframes
+// - Maintains existing video properties while adding Ken Burns animation keyframes
 // - Proper FCP timing with video start time as base for animation keyframes
 //
 // ❌ NEVER: fmt.Sprintf("<adjust-transform...") - CRITICAL VIOLATION!
@@ -120,7 +120,7 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 
 			for _, param := range targetVideo.AdjustTransform.Params {
 				if param.Name == "position" && param.KeyframeAnimation != nil {
-					return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetVideo.Name, offsetSeconds)
+					return fmt.Errorf("video '%s' at offset %.1f seconds already has Ken Burns animation", targetVideo.Name, offsetSeconds)
 				}
 			}
 		}
@@ -132,7 +132,7 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 			targetVideo.Start = "86399313/24000s"
 		}
 
-		targetVideo.AdjustTransform = createSlideAnimation(targetVideo.Offset, 1.0)
+		targetVideo.AdjustTransform = createKenBurnsAnimation(targetVideo.Offset, 1.0)
 	}
 
 	if targetClip != nil {
@@ -141,30 +141,32 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 
 			for _, param := range targetClip.AdjustTransform.Params {
 				if param.Name == "position" && param.KeyframeAnimation != nil {
-					return fmt.Errorf("video '%s' at offset %.1f seconds already has slide animation", targetClip.Name, offsetSeconds)
+					return fmt.Errorf("video '%s' at offset %.1f seconds already has Ken Burns animation", targetClip.Name, offsetSeconds)
 				}
 			}
 		}
 
-		targetClip.AdjustTransform = createAssetClipSlideAnimation(targetClip.Offset, 1.0)
+		targetClip.AdjustTransform = createAssetClipKenBurnsAnimation(targetClip.Offset, 1.0)
 	}
 
 	return nil
 }
 
-// createAssetClipSlideAnimation creates timeline-based slide animation for AssetClip elements (videos)
+// createAssetClipKenBurnsAnimation creates timeline-based Ken Burns animation for AssetClip elements (videos)
+// Ken Burns effect combines gradual zoom-in with subtle panning motion
 // 🚨 CRITICAL: Keyframe attributes follow CLAUDE.md rules:
 // - Position keyframes: NO attributes (no interp/curve)
 // - Scale/Rotation/Anchor keyframes: Only curve attribute (no interp)
-func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float64) *AdjustTransform {
+func createAssetClipKenBurnsAnimation(clipOffset string, totalDurationSeconds float64) *AdjustTransform {
 
 	offsetFrames := parseFCPDuration(clipOffset)
 
-	oneSecondDuration := ConvertSecondsToFCPDuration(1.0)
-	oneSecondFrames := parseFCPDuration(oneSecondDuration)
+	// Ken Burns effect duration should be longer than slide (3 seconds for subtle effect)
+	kenBurnsDuration := ConvertSecondsToFCPDuration(3.0)
+	kenBurnsFrames := parseFCPDuration(kenBurnsDuration)
 
 	startTime := fmt.Sprintf("%d/24000s", offsetFrames)
-	endTime := fmt.Sprintf("%d/24000s", offsetFrames+oneSecondFrames)
+	endTime := fmt.Sprintf("%d/24000s", offsetFrames+kenBurnsFrames)
 
 	return &AdjustTransform{
 		Params: []Param{
@@ -172,6 +174,11 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 				Name: "anchor",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0 0",
+							Curve: "linear",
+						},
 						{
 							Time:  endTime,
 							Value: "0 0",
@@ -190,7 +197,7 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						},
 						{
 							Time:  endTime,
-							Value: "59.3109 0",
+							Value: "-20 -15",
 						},
 					},
 				},
@@ -199,6 +206,11 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 				Name: "rotation",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
+						{
+							Time:  startTime,
+							Value: "0",
+							Curve: "linear",
+						},
 						{
 							Time:  endTime,
 							Value: "0",
@@ -212,8 +224,13 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
+							Time:  startTime,
+							Value: "1.2 1.2",
+							Curve: "linear",
+						},
+						{
 							Time:  endTime,
-							Value: "1 1",
+							Value: "1.35 1.35",
 							Curve: "linear",
 						},
 					},

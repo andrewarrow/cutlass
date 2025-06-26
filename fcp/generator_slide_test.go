@@ -78,20 +78,20 @@ func TestAddImageWithSlide(t *testing.T) {
 		t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
 	}
 
-	// Check keyframe values
+	// Check keyframe values for Ken Burns effect
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected first keyframe value '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "59.3109 0" {
-		t.Errorf("Expected second keyframe value '59.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "-20 -15" {
+		t.Errorf("Expected second keyframe value '-20 -15', got '%s'", keyframes[1].Value)
 	}
 
-	// Check keyframe timing matches samples/slide.fcpxml pattern
+	// Check keyframe timing matches Ken Burns (3 second duration)
 	if keyframes[0].Time != "86399313/24000s" {
 		t.Errorf("Expected first keyframe time '86399313/24000s', got '%s'", keyframes[0].Time)
 	}
-	if keyframes[1].Time != "86423337/24000s" {
-		t.Errorf("Expected second keyframe time '86423337/24000s', got '%s'", keyframes[1].Time)
+	if keyframes[1].Time != "86471385/24000s" {
+		t.Errorf("Expected second keyframe time '86471385/24000s', got '%s'", keyframes[1].Time)
 	}
 
 	// Verify curve attributes on static keyframes
@@ -177,9 +177,9 @@ func TestSlideAnimationXMLOutput(t *testing.T) {
 		`<param name="scale">`,
 		"<keyframeAnimation>",
 		`time="86399313/24000s"`,
-		`time="86423337/24000s"`,
+		`time="86471385/24000s"`,
 		`value="0 0"`,
-		`value="59.3109 0"`,
+		`value="-20 -15"`,
 		`curve="linear"`,
 	}
 
@@ -198,13 +198,13 @@ func TestSlideAnimationXMLOutput(t *testing.T) {
 	}
 }
 
-// TestCreateSlideAnimation tests the slide animation creation function directly
-func TestCreateSlideAnimation(t *testing.T) {
-	// Test the createSlideAnimation function
-	adjustTransform := createSlideAnimation("0s", 9.0)
+// TestCreateKenBurnsAnimation tests the Ken Burns animation creation function directly
+func TestCreateKenBurnsAnimation(t *testing.T) {
+	// Test the createKenBurnsAnimation function
+	adjustTransform := createKenBurnsAnimation("0s", 9.0)
 
 	if adjustTransform == nil {
-		t.Fatalf("createSlideAnimation returned nil")
+		t.Fatalf("createKenBurnsAnimation returned nil")
 	}
 
 	// Check that we have 4 parameters
@@ -234,21 +234,21 @@ func TestCreateSlideAnimation(t *testing.T) {
 		t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
 	}
 
-	// Test timing calculation (should be exactly 1 second apart)
-	// 86423337 - 86399313 = 24024 frames = exactly 1 second in 1001/24000s timebase
-	if keyframes[1].Time != "86423337/24000s" {
-		t.Errorf("Expected end time 86423337/24000s, got %s", keyframes[1].Time)
+	// Test timing calculation (should be exactly 3 seconds apart for Ken Burns)
+	// 86471385 - 86399313 = 72072 frames = exactly 3 seconds in 1001/24000s timebase
+	if keyframes[1].Time != "86471385/24000s" {
+		t.Errorf("Expected end time 86471385/24000s, got %s", keyframes[1].Time)
 	}
 	if keyframes[0].Time != "86399313/24000s" {
 		t.Errorf("Expected start time 86399313/24000s, got %s", keyframes[0].Time)
 	}
 
-	// Verify the slide values
+	// Verify the Ken Burns position values (starts at center, pans slightly)
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected start position '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "59.3109 0" {
-		t.Errorf("Expected end position '59.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "-20 -15" {
+		t.Errorf("Expected end position '-20 -15', got '%s'", keyframes[1].Value)
 	}
 }
 
@@ -370,17 +370,17 @@ func TestAddSlideToVideoAtOffset(t *testing.T) {
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected first keyframe value '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "59.3109 0" {
-		t.Errorf("Expected second keyframe value '59.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "-20 -15" {
+		t.Errorf("Expected second keyframe value '-20 -15', got '%s'", keyframes[1].Value)
 	}
 
 	// Check timeline-based timing (NOT image-based timing)
-	// Should start at clip offset (0s) and go for 1 frame-aligned second
+	// Should start at clip offset (0s) and go for 3 frame-aligned seconds (Ken Burns)
 	if keyframes[0].Time != "0/24000s" {
 		t.Errorf("Expected first keyframe time '0/24000s' (timeline-based), got '%s'", keyframes[0].Time)
 	}
-	if keyframes[1].Time != "24024/24000s" {
-		t.Errorf("Expected second keyframe time '24024/24000s' (frame-aligned 1 second), got '%s'", keyframes[1].Time)
+	if keyframes[1].Time != "72072/24000s" {
+		t.Errorf("Expected second keyframe time '72072/24000s' (frame-aligned 3 seconds), got '%s'", keyframes[1].Time)
 	}
 
 	// Verify this is NOT using image start time
@@ -389,13 +389,13 @@ func TestAddSlideToVideoAtOffset(t *testing.T) {
 	}
 }
 
-// TestCreateAssetClipSlideAnimation tests the AssetClip slide animation creation function
-func TestCreateAssetClipSlideAnimation(t *testing.T) {
-	// Test the createAssetClipSlideAnimation function with offset 0
-	adjustTransform := createAssetClipSlideAnimation("0s", 1.0)
+// TestCreateAssetClipKenBurnsAnimation tests the AssetClip Ken Burns animation creation function
+func TestCreateAssetClipKenBurnsAnimation(t *testing.T) {
+	// Test the createAssetClipKenBurnsAnimation function with offset 0
+	adjustTransform := createAssetClipKenBurnsAnimation("0s", 1.0)
 
 	if adjustTransform == nil {
-		t.Fatalf("createAssetClipSlideAnimation returned nil")
+		t.Fatalf("createAssetClipKenBurnsAnimation returned nil")
 	}
 
 	// Check that we have 4 parameters
@@ -425,20 +425,20 @@ func TestCreateAssetClipSlideAnimation(t *testing.T) {
 		t.Errorf("Expected 2 position keyframes, got %d", len(keyframes))
 	}
 
-	// Test timeline-based timing (should start at offset and go for 1 second)
+	// Test timeline-based timing (should start at offset and go for 3 seconds for Ken Burns)
 	if keyframes[0].Time != "0/24000s" {
 		t.Errorf("Expected start time 0/24000s, got %s", keyframes[0].Time)
 	}
-	if keyframes[1].Time != "24024/24000s" {
-		t.Errorf("Expected end time 24024/24000s (frame-aligned 1 second), got %s", keyframes[1].Time)
+	if keyframes[1].Time != "72072/24000s" {
+		t.Errorf("Expected end time 72072/24000s (frame-aligned 3 seconds), got %s", keyframes[1].Time)
 	}
 
-	// Verify the slide values (same as image animation)
+	// Verify the Ken Burns position values (starts at center, pans slightly)
 	if keyframes[0].Value != "0 0" {
 		t.Errorf("Expected start position '0 0', got '%s'", keyframes[0].Value)
 	}
-	if keyframes[1].Value != "59.3109 0" {
-		t.Errorf("Expected end position '59.3109 0', got '%s'", keyframes[1].Value)
+	if keyframes[1].Value != "-20 -15" {
+		t.Errorf("Expected end position '-20 -15', got '%s'", keyframes[1].Value)
 	}
 }
 
@@ -486,9 +486,9 @@ func TestVideoSlideAnimationXMLOutput(t *testing.T) {
 		`<param name="scale">`,
 		"<keyframeAnimation>",
 		`time="0/24000s"`,        // Timeline-based start
-		`time="24024/24000s"`,    // Frame-aligned 1 second
+		`time="72072/24000s"`,    // Frame-aligned 3 seconds
 		`value="0 0"`,
-		`value="59.3109 0"`,
+		`value="-20 -15"`,
 		`curve="linear"`,
 	}
 

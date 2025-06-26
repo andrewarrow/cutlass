@@ -362,7 +362,7 @@ func addImageAssetClipToSpineWithSlide(fcpxml *FCPXML, asset *Asset, durationSec
 		}
 
 		if withSlide {
-			video.AdjustTransform = createSlideAnimation(currentTimelineDuration, durationSeconds)
+			video.AdjustTransform = createKenBurnsAnimation(currentTimelineDuration, durationSeconds)
 		}
 
 		sequence.Spine.Videos = append(sequence.Spine.Videos, video)
