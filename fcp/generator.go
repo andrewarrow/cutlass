@@ -3151,6 +3151,12 @@ func createImageOverlay(fcpxml *FCPXML, tx *ResourceTransaction, imagePath strin
 			return nil, fmt.Errorf("failed to create image asset: %v", err)
 		}
 		
+		// CRITICAL FIX: CreateAsset doesn't create format, so create it manually for images
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1920", "1080", "1-13-1")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create image format: %v", err)
+		}
+		
 		createdAssets[imagePath] = assetID
 		createdFormats[imagePath] = formatID
 	}
@@ -3184,7 +3190,7 @@ func createVideoOverlay(fcpxml *FCPXML, tx *ResourceTransaction, videoPath strin
 		assetID = ids[0]
 		formatID = ids[1]
 		
-		_, err = tx.CreateAsset(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
+		err = tx.CreateVideoAssetWithDetection(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create video asset: %v", err)
 		}
@@ -3313,6 +3319,12 @@ func createLaneImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath s
 			return nil, fmt.Errorf("failed to create image asset: %v", err)
 		}
 		
+		// CRITICAL FIX: CreateAsset doesn't create format, so create it manually for images
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1920", "1080", "1-13-1")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create image format: %v", err)
+		}
+		
 		createdAssets[imagePath] = assetID
 		createdFormats[imagePath] = formatID
 	}
@@ -3355,7 +3367,7 @@ func createNestedVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath
 		assetID = ids[0]
 		formatID = ids[1]
 		
-		_, err = tx.CreateAsset(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
+		err = tx.CreateVideoAssetWithDetection(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create video asset: %v", err)
 		}
@@ -3458,7 +3470,7 @@ func createNestedAssetClipElement(fcpxml *FCPXML, tx *ResourceTransaction, video
 		assetID = ids[0]
 		formatID = ids[1]
 		
-		_, err = tx.CreateAsset(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
+		err = tx.CreateVideoAssetWithDetection(assetID, videoPath, filepath.Base(videoPath), ConvertSecondsToFCPDuration(duration), formatID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create video asset: %v", err)
 		}
@@ -3533,6 +3545,12 @@ func createNestedImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath
 			return nil, fmt.Errorf("failed to create image asset: %v", err)
 		}
 		
+		// CRITICAL FIX: CreateAsset doesn't create format, so create it manually for images
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1920", "1080", "1-13-1")
+		if err != nil {
+			return nil, fmt.Errorf("failed to create image format: %v", err)
+		}
+		
 		createdAssets[imagePath] = assetID
 		createdFormats[imagePath] = formatID
 	}
@@ -3592,6 +3610,12 @@ func addBaffleImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 		_, err = tx.CreateAsset(assetID, imagePath, filepath.Base(imagePath), "0s", formatID)
 		if err != nil {
 			return fmt.Errorf("failed to create image asset: %v", err)
+		}
+		
+		// CRITICAL FIX: CreateAsset doesn't create format, so create it manually for images
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1920", "1080", "1-13-1")
+		if err != nil {
+			return fmt.Errorf("failed to create image format: %v", err)
 		}
 		
 		createdAssets[imagePath] = assetID

@@ -50,7 +50,17 @@ func (tx *ResourceTransaction) CreateVideoAssetWithDetection(id, filePath, baseN
 		// Fallback to basic asset creation if video detection fails
 		// This handles test scenarios with fake video files
 		_, err := tx.CreateAsset(id, filePath, baseName, duration, formatID)
-		return err
+		if err != nil {
+			return err
+		}
+		
+		// CRITICAL FIX: CreateAsset doesn't create format for videos, so create it manually in fallback
+		_, err = tx.CreateFormatWithFrameDuration(formatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
+		if err != nil {
+			return fmt.Errorf("failed to create fallback video format: %v", err)
+		}
+		
+		return nil
 	}
 
 	// Get absolute path
