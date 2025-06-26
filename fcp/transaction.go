@@ -137,8 +137,9 @@ func (tx *ResourceTransaction) CreateAsset(id, filePath, baseName, duration stri
 		return nil, fmt.Errorf("failed to get absolute path: %v", err)
 	}
 
-	// Generate random UID for testing to avoid FCP caching issues  
-	uid := generateRandomUID()
+	// Generate consistent UID based on file path for deterministic results
+	// This prevents "cannot be imported again with different unique identifier" errors
+	uid := generateUID(absPath)
 
 	// Generate security bookmark for file access
 	bookmark, err := generateBookmark(absPath)
