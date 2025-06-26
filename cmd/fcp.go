@@ -818,6 +818,7 @@ Examples:
 		outputDir, _ := cmd.Flags().GetString("output-dir")
 		apiKey, _ := cmd.Flags().GetString("api-key")
 		showAttribution, _ := cmd.Flags().GetBool("attribution")
+		attributionOutput, _ := cmd.Flags().GetString("attribution-output")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		
 		// Parse duration
@@ -843,12 +844,13 @@ Examples:
 		
 		// Create story configuration
 		config := &fcp.StoryConfig{
-			Duration:        duration,
-			ImagesPerWord:   imagesPerWord,
-			TotalImages:     totalImages,
-			OutputDir:       outputDir,
-			PixabayAPIKey:   apiKey,
-			ShowAttribution: showAttribution,
+			Duration:         duration,
+			ImagesPerWord:    imagesPerWord,
+			TotalImages:      totalImages,
+			OutputDir:        outputDir,
+			PixabayAPIKey:    apiKey,
+			ShowAttribution:  showAttribution,
+			AttributionOutput: attributionOutput,
 		}
 		
 		// Generate story timeline
@@ -930,6 +932,7 @@ func init() {
 	storyCmd.Flags().String("output-dir", "./story_assets", "Directory to save downloaded images (default ./story_assets)")
 	storyCmd.Flags().String("api-key", "", "Pixabay API key for higher rate limits (optional)")
 	storyCmd.Flags().Bool("attribution", true, "Show attribution text for Pixabay images (default true)")
+	storyCmd.Flags().String("attribution-output", "video", "Where to output attribution: 'video' (text elements), 'stdout' (console), 'both', or 'none' (default 'video')")
 	storyCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
 	fcpCmd.AddCommand(createEmptyCmd)

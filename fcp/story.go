@@ -67,22 +67,24 @@ type ImageAttribution struct {
 
 // StoryConfig holds configuration for story generation
 type StoryConfig struct {
-	Duration       float64 // Total duration in seconds (default: 180 = 3 minutes)
-	ImagesPerWord  int     // Number of images to download per word (default: 3)
-	TotalImages    int     // Target total number of images (default: 90)
-	OutputDir      string  // Directory to store downloaded images
-	PixabayAPIKey  string  // Pixabay API key (optional, uses public API if empty)
-	ShowAttribution bool   // Whether to show attribution text for Pixabay images (default: true)
+	Duration         float64 // Total duration in seconds (default: 180 = 3 minutes)
+	ImagesPerWord    int     // Number of images to download per word (default: 3)
+	TotalImages      int     // Target total number of images (default: 90)
+	OutputDir        string  // Directory to store downloaded images
+	PixabayAPIKey    string  // Pixabay API key (optional, uses public API if empty)
+	ShowAttribution  bool    // Whether to show attribution text for Pixabay images (default: true)
+	AttributionOutput string  // Where to output attribution: "video", "stdout", "both", or "none" (default: "video")
 }
 
 // DefaultStoryConfig returns a default configuration for story generation
 func DefaultStoryConfig() *StoryConfig {
 	return &StoryConfig{
-		Duration:        180.0, // 3 minutes
-		ImagesPerWord:   3,
-		TotalImages:     90,
-		OutputDir:       "./story_assets",
-		ShowAttribution: true, // Enable attribution by default
+		Duration:         180.0, // 3 minutes
+		ImagesPerWord:    3,
+		TotalImages:      90,
+		OutputDir:        "./story_assets",
+		ShowAttribution:  true,   // Enable attribution by default
+		AttributionOutput: "video", // Default to video text elements
 	}
 }
 
@@ -383,18 +385,27 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 			wordIndex++
 		}
 		
-		// Add attribution text for Pixabay images if enabled
-		if config.ShowAttribution && imageAttr.Source == "pixabay" && imageAttr.Author != "" {
+		// Handle attribution output based on configuration
+		if imageAttr.Source == "pixabay" && imageAttr.Author != "" {
 			imageOffset := float64(i) * imageDuration
 			attributionText := fmt.Sprintf("https://pixabay.com/users/%s-%d/", strings.ToLower(imageAttr.Author), imageAttr.UserID)
 			
-			err = AddAttributionText(fcpxml, attributionText, imageOffset, imageDuration)
-			if err != nil {
-				if verbose {
-					fmt.Printf("Warning: Failed to add attribution '%s' at offset %.1fs: %v\n", attributionText, imageOffset, err)
+			// Output to stdout if requested
+			if config.AttributionOutput == "stdout" || config.AttributionOutput == "both" {
+				fmt.Printf("Attribution: %s (for image: %s)\n", attributionText, imageAttr.FilePath)
+			}
+			
+			// Add to video if requested (default behavior for backward compatibility)
+			shouldAddToVideo := config.ShowAttribution && (config.AttributionOutput == "video" || config.AttributionOutput == "both")
+			if shouldAddToVideo {
+				err = AddAttributionText(fcpxml, attributionText, imageOffset, imageDuration)
+				if err != nil {
+					if verbose {
+						fmt.Printf("Warning: Failed to add attribution '%s' at offset %.1fs: %v\n", attributionText, imageOffset, err)
+					}
+				} else if verbose {
+					fmt.Printf("Added attribution '%s' at offset %.1fs\n", attributionText, imageOffset)
 				}
-			} else if verbose {
-				fmt.Printf("Added attribution '%s' at offset %.1fs\n", attributionText, imageOffset)
 			}
 		}
 		
