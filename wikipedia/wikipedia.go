@@ -121,13 +121,13 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 	}
 	totalRows := maxRows + 1 // Add 1 for header row
 
-	// Calculate positions for grid lines (from old code)
-	startY := 100.0
-	endY := -100.0   
+	// Calculate positions for grid lines - use smaller, more reasonable coordinates
+	startY := 50.0   // Reduced from 100.0 for better on-screen positioning
+	endY := -50.0    // Reduced from -100.0 for better on-screen positioning
 	stepY := (endY - startY) / float64(totalRows)
 	
-	startX := -150.0
-	endX := 150.0
+	startX := -100.0 // Reduced from -150.0 for better on-screen positioning  
+	endX := 100.0    // Reduced from 150.0 for better on-screen positioning
 	stepX := (endX - startX) / float64(maxCols)
 
 	// Calculate duration
@@ -214,7 +214,7 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 			Start:  "0s",
 			Duration: fcpDuration,
 			Params: []fcp.Param{
-				{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
+				{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[0][col].X*10, cellTextPositions[0][col].Y*10)},
 			},
 			Text: &fcp.TitleText{
 				TextStyles: []fcp.TextStyleRef{
@@ -260,7 +260,7 @@ func generateVisualTableFCPXML(simpleTable *SimpleTable, outputFile string) erro
 				Start:  "0s",
 				Duration: fcpDuration,
 				Params: []fcp.Param{
-					{Name: "Position", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
+					{Name: "Position", Key: "9999/10003/13260/3296672360/1/100/101", Value: fmt.Sprintf("%.0f %.0f", cellTextPositions[row+1][col].X*10, cellTextPositions[row+1][col].Y*10)},
 				},
 				Text: &fcp.TitleText{
 					TextStyles: []fcp.TextStyleRef{
