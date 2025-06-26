@@ -777,6 +777,100 @@ that might not occur in normal usage.`,
 	},
 }
 
+var storyCmd = &cobra.Command{
+	Use:   "story [output-filename]",
+	Short: "Generate a 3-minute story video using random words and Pixabay images",
+	Long: `Generate a narrative video using random English words and corresponding images from Pixabay.
+
+Creates a 3-minute timeline containing:
+- ~90 images downloaded from Pixabay based on random English words
+- Each word generates 3 images from Pixabay search
+- Images are arranged sequentially with slide animations
+- Automatic duration calculation to fit 3-minute target
+
+The story generation process:
+1. Generates random English words (nature, adventure, family, etc.)
+2. Searches Pixabay for 3 images per word using the public API
+3. Downloads images to ./story_assets directory
+4. Creates FCPXML timeline with proper image timing and animations
+5. Each image gets slide animation for visual continuity
+
+Examples:
+  cutlass fcp story                          # Generate story_timestamp.fcpxml
+  cutlass fcp story mystory.fcpxml           # Custom filename
+  cutlass fcp story --duration 300 --images 150  # 5 minutes with 150 images
+  cutlass fcp story --api-key YOUR_KEY --verbose # Use Pixabay API key`,
+	Args: cobra.RangeArgs(0, 1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get output filename
+		var filename string
+		if len(args) > 0 {
+			filename = args[0]
+		} else {
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("story_%d.fcpxml", timestamp)
+		}
+		
+		// Get flags
+		durationStr, _ := cmd.Flags().GetString("duration")
+		imagesStr, _ := cmd.Flags().GetString("images")
+		imagesPerWordStr, _ := cmd.Flags().GetString("images-per-word")
+		outputDir, _ := cmd.Flags().GetString("output-dir")
+		apiKey, _ := cmd.Flags().GetString("api-key")
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		
+		// Parse duration
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Parse total images
+		totalImages, err := strconv.Atoi(imagesStr)
+		if err != nil {
+			fmt.Printf("Error parsing images '%s': %v\n", imagesStr, err)
+			return
+		}
+		
+		// Parse images per word
+		imagesPerWord, err := strconv.Atoi(imagesPerWordStr)
+		if err != nil {
+			fmt.Printf("Error parsing images-per-word '%s': %v\n", imagesPerWordStr, err)
+			return
+		}
+		
+		// Create story configuration
+		config := &fcp.StoryConfig{
+			Duration:       duration,
+			ImagesPerWord:  imagesPerWord,
+			TotalImages:    totalImages,
+			OutputDir:      outputDir,
+			PixabayAPIKey:  apiKey,
+		}
+		
+		// Generate story timeline
+		fmt.Printf("Generating story timeline (%.1f minutes with %d images)...\n", duration/60, totalImages)
+		
+		fcpxml, err := fcp.GenerateStoryTimeline(config, verbose)
+		if err != nil {
+			fmt.Printf("Error generating story timeline: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated story timeline: %s\n", filename)
+		fmt.Printf("Images saved to: %s\n", config.OutputDir)
+		fmt.Printf("Import this into Final Cut Pro to view your story.\n")
+	},
+}
+
 func init() {
 	// Add output flag to create-empty subcommand
 	createEmptyCmd.Flags().StringP("output", "o", "", "Output filename (defaults to cutlass_unixtime.fcpxml)")
@@ -827,6 +921,14 @@ func init() {
 	baffleCmd.Flags().String("max-duration", "540", "Maximum timeline duration in seconds (default 540 = 9 minutes)")
 	baffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
+	// Add flags to story subcommand
+	storyCmd.Flags().String("duration", "180", "Total story duration in seconds (default 180 = 3 minutes)")
+	storyCmd.Flags().String("images", "90", "Total number of images to download and use (default 90)")
+	storyCmd.Flags().String("images-per-word", "3", "Number of images to download per word (default 3)")
+	storyCmd.Flags().String("output-dir", "./story_assets", "Directory to save downloaded images (default ./story_assets)")
+	storyCmd.Flags().String("api-key", "", "Pixabay API key for higher rate limits (optional)")
+	storyCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
+	
 	fcpCmd.AddCommand(createEmptyCmd)
 	fcpCmd.AddCommand(addVideoCmd)
 	fcpCmd.AddCommand(addImageCmd)
@@ -837,4 +939,5 @@ func init() {
 	fcpCmd.AddCommand(addTxtCmd)
 	fcpCmd.AddCommand(addConversationCmd)
 	fcpCmd.AddCommand(baffleCmd)
+	fcpCmd.AddCommand(storyCmd)
 }

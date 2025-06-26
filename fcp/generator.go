@@ -920,6 +920,9 @@ func addDurations(duration1, duration2 string) string {
 // createSlideAnimation creates keyframe animation for sliding an image from left to right
 // Based on samples/slide.fcpxml pattern with keyframes for position parameter
 // Slides from position "0 0" to "51.3109 0" over 1 second (from start to 1 second into the clip)
+// 🚨 CRITICAL: Keyframe attributes follow CLAUDE.md rules:
+// - Position keyframes: NO attributes (no interp/curve)
+// - Scale/Rotation/Anchor keyframes: Only curve attribute (no interp)
 func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *AdjustTransform {
 	// Calculate keyframe times based on video start time (like samples/slide.fcpxml)
 	// The sample uses video start time as base: start="86399313/24000s"
@@ -946,8 +949,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "0 0",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for anchor
 						},
 					},
 				},
@@ -959,10 +961,12 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  startTime,
 							Value: "0 0",
+							// NO attributes for position keyframes
 						},
 						{
 							Time:  endTime,
 							Value: "59.3109 0",
+							// NO attributes for position keyframes
 						},
 					},
 				},
@@ -974,8 +978,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "0",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for rotation
 						},
 					},
 				},
@@ -987,8 +990,7 @@ func createSlideAnimation(offsetDuration string, totalDurationSeconds float64) *
 						{
 							Time:  endTime,
 							Value: "1 1",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for scale
 						},
 					},
 				},
@@ -2386,6 +2388,9 @@ func AddSlideToVideoAtOffset(fcpxml *FCPXML, offsetSeconds float64) error {
 }
 
 // createAssetClipSlideAnimation creates timeline-based slide animation for AssetClip elements (videos)
+// 🚨 CRITICAL: Keyframe attributes follow CLAUDE.md rules:
+// - Position keyframes: NO attributes (no interp/curve)
+// - Scale/Rotation/Anchor keyframes: Only curve attribute (no interp)
 func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float64) *AdjustTransform {
 	// For AssetClip elements, use timeline-based timing starting from clip offset
 	offsetFrames := parseFCPDuration(clipOffset)
@@ -2410,8 +2415,7 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "0 0",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for anchor
 						},
 					},
 				},
@@ -2423,10 +2427,12 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  startTime,
 							Value: "0 0",
+							// NO attributes for position keyframes
 						},
 						{
 							Time:  endTime,
 							Value: "59.3109 0",
+							// NO attributes for position keyframes
 						},
 					},
 				},
@@ -2438,8 +2444,7 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "0",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for rotation
 						},
 					},
 				},
@@ -2451,8 +2456,7 @@ func createAssetClipSlideAnimation(clipOffset string, totalDurationSeconds float
 						{
 							Time:  endTime,
 							Value: "1 1",
-							Interp: "linear",
-							Curve:  "linear",
+							Curve: "linear", // Only curve attribute for scale
 						},
 					},
 				},

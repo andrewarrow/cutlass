@@ -1,0 +1,338 @@
+// Package fcp provides FCPXML generation for story creation.
+//
+// Story generation creates narrative videos using random English words
+// and corresponding images from Pixabay. Each word becomes a visual element
+// in a 3-minute story timeline.
+package fcp
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"math/rand"
+	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+)
+
+// Common English words for story generation
+var englishWords = []string{
+	"adventure", "animal", "beautiful", "bird", "car", "cat", "city", "cloud", "color",
+	"dance", "dog", "dream", "earth", "family", "fire", "flower", "forest", "friend",
+	"garden", "happy", "heart", "home", "house", "journey", "light", "love", "mountain",
+	"nature", "ocean", "peace", "people", "rainbow", "river", "smile", "sun", "sunset",
+	"tree", "water", "weather", "wind", "winter", "wonder", "world", "beach", "bridge",
+	"castle", "children", "door", "freedom", "gold", "green", "hero", "island", "magic",
+	"moon", "music", "night", "path", "quiet", "road", "sky", "snow", "star", "storm",
+	"summer", "time", "travel", "village", "wave", "whisper", "art", "book", "butterfly",
+	"childhood", "curiosity", "discovery", "emotion", "energy", "excitement", "exploration",
+	"flower", "growth", "happiness", "imagination", "inspiration", "joy", "knowledge",
+	"laughter", "memory", "mystery", "opportunity", "passion", "photography", "playground",
+	"possibility", "reflection", "serenity", "strength", "surprise", "transformation",
+	"victory", "wisdom", "young", "adventure", "beauty", "courage", "determination",
+}
+
+// PixabayResponse represents the structure of Pixabay API response
+type PixabayResponse struct {
+	Hits []PixabayHit `json:"hits"`
+}
+
+// PixabayHit represents a single image result from Pixabay
+type PixabayHit struct {
+	ID           int    `json:"id"`
+	WebformatURL string `json:"webformatURL"`
+	Tags         string `json:"tags"`
+}
+
+// StoryConfig holds configuration for story generation
+type StoryConfig struct {
+	Duration       float64 // Total duration in seconds (default: 180 = 3 minutes)
+	ImagesPerWord  int     // Number of images to download per word (default: 3)
+	TotalImages    int     // Target total number of images (default: 90)
+	OutputDir      string  // Directory to store downloaded images
+	PixabayAPIKey  string  // Pixabay API key (optional, uses public API if empty)
+}
+
+// DefaultStoryConfig returns a default configuration for story generation
+func DefaultStoryConfig() *StoryConfig {
+	return &StoryConfig{
+		Duration:      180.0, // 3 minutes
+		ImagesPerWord: 3,
+		TotalImages:   90,
+		OutputDir:     "./story_assets",
+	}
+}
+
+// GenerateRandomWords generates a list of random English words
+func GenerateRandomWords(count int) []string {
+	rand.Seed(time.Now().UnixNano())
+	
+	words := make([]string, count)
+	for i := 0; i < count; i++ {
+		words[i] = englishWords[rand.Intn(len(englishWords))]
+	}
+	
+	return words
+}
+
+// DownloadImagesFromPixabay downloads images for a given word from Pixabay or fallback sources
+func DownloadImagesFromPixabay(word string, count int, outputDir string, apiKey string) ([]string, error) {
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create output directory: %v", err)
+	}
+	
+	// Try Pixabay first if API key is provided
+	if apiKey != "" {
+		if files, err := downloadFromPixabay(word, count, outputDir, apiKey); err == nil {
+			return files, nil
+		}
+	}
+	
+	// Fallback to Lorem Picsum with themed seeds based on word
+	return downloadFromLoremPicsum(word, count, outputDir)
+}
+
+// downloadFromPixabay attempts to download from Pixabay API
+func downloadFromPixabay(word string, count int, outputDir string, apiKey string) ([]string, error) {
+	// Build Pixabay API URL
+	baseURL := "https://pixabay.com/api/"
+	params := url.Values{}
+	params.Add("q", word)
+	params.Add("key", apiKey)
+	params.Add("image_type", "photo")
+	params.Add("orientation", "horizontal")
+	params.Add("category", "all")
+	params.Add("min_width", "640")
+	params.Add("min_height", "480")
+	params.Add("per_page", fmt.Sprintf("%d", count))
+	params.Add("safesearch", "true")
+	
+	requestURL := baseURL + "?" + params.Encode()
+	
+	// Make HTTP request to Pixabay API
+	resp, err := http.Get(requestURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch images from Pixabay: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		// Read response body for debugging
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Pixabay API returned status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+	
+	// Parse JSON response
+	var pixabayResp PixabayResponse
+	if err := json.NewDecoder(resp.Body).Decode(&pixabayResp); err != nil {
+		return nil, fmt.Errorf("failed to parse Pixabay response: %v", err)
+	}
+	
+	if len(pixabayResp.Hits) == 0 {
+		return nil, fmt.Errorf("no images found for word: %s", word)
+	}
+	
+	// Download images
+	var downloadedFiles []string
+	for i, hit := range pixabayResp.Hits {
+		if i >= count {
+			break
+		}
+		
+		// Download image
+		filename := fmt.Sprintf("%s_pixabay_%d_%d.jpg", word, hit.ID, i+1)
+		filepath := filepath.Join(outputDir, filename)
+		
+		if err := downloadImage(hit.WebformatURL, filepath); err != nil {
+			fmt.Printf("Warning: Failed to download image %s: %v\n", hit.WebformatURL, err)
+			continue
+		}
+		
+		downloadedFiles = append(downloadedFiles, filepath)
+	}
+	
+	if len(downloadedFiles) == 0 {
+		return nil, fmt.Errorf("failed to download any images for word: %s", word)
+	}
+	
+	return downloadedFiles, nil
+}
+
+// downloadFromLoremPicsum downloads placeholder images from Lorem Picsum
+func downloadFromLoremPicsum(word string, count int, outputDir string) ([]string, error) {
+	var downloadedFiles []string
+	
+	// Create a simple hash from the word to get consistent images
+	hash := 0
+	for _, char := range word {
+		hash = hash*31 + int(char)
+	}
+	if hash < 0 {
+		hash = -hash
+	}
+	
+	for i := 0; i < count; i++ {
+		// Generate a seed based on word hash and index
+		seed := (hash + i*137) % 1000 // Keep seed within reasonable range
+		
+		// Lorem Picsum URL with seed for consistent images
+		imageURL := fmt.Sprintf("https://picsum.photos/seed/%s%d/800/600", word, seed)
+		
+		// Download image
+		filename := fmt.Sprintf("%s_picsum_%d.jpg", word, i+1)
+		filepath := filepath.Join(outputDir, filename)
+		
+		if err := downloadImage(imageURL, filepath); err != nil {
+			fmt.Printf("Warning: Failed to download image %s: %v\n", imageURL, err)
+			continue
+		}
+		
+		downloadedFiles = append(downloadedFiles, filepath)
+	}
+	
+	if len(downloadedFiles) == 0 {
+		return nil, fmt.Errorf("failed to download any images for word: %s", word)
+	}
+	
+	return downloadedFiles, nil
+}
+
+// downloadImage downloads an image from a URL to a local file
+func downloadImage(imageURL, filepath string) error {
+	resp, err := http.Get(imageURL)
+	if err != nil {
+		return fmt.Errorf("failed to fetch image: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("image request returned status %d", resp.StatusCode)
+	}
+	
+	// Create output file
+	out, err := os.Create(filepath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %v", err)
+	}
+	defer out.Close()
+	
+	// Copy image data to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to write image data: %v", err)
+	}
+	
+	return nil
+}
+
+// GenerateStoryTimeline creates a 3-minute story timeline using random words and Pixabay images
+func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
+	if config == nil {
+		config = DefaultStoryConfig()
+	}
+	
+	// Create base FCPXML structure
+	fcpxml, err := GenerateEmpty("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+	
+	// Set up resource management
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+	
+	if verbose {
+		fmt.Printf("Starting story timeline generation...\n")
+		fmt.Printf("Target duration: %.1f seconds (%.1f minutes)\n", config.Duration, config.Duration/60)
+		fmt.Printf("Target images: %d\n", config.TotalImages)
+	}
+	
+	// Calculate how many words we need
+	wordsNeeded := config.TotalImages / config.ImagesPerWord
+	if config.TotalImages%config.ImagesPerWord != 0 {
+		wordsNeeded++
+	}
+	
+	// Generate random words
+	words := GenerateRandomWords(wordsNeeded)
+	if verbose {
+		fmt.Printf("Generated %d words: %s\n", len(words), strings.Join(words[:min(5, len(words))], ", "))
+		if len(words) > 5 {
+			fmt.Printf("... and %d more\n", len(words)-5)
+		}
+	}
+	
+	// Download images for each word
+	var allImagePaths []string
+	for i, word := range words {
+		if verbose {
+			fmt.Printf("Downloading images for word %d/%d: %s\n", i+1, len(words), word)
+		}
+		
+		imagePaths, err := DownloadImagesFromPixabay(word, config.ImagesPerWord, config.OutputDir, config.PixabayAPIKey)
+		if err != nil {
+			fmt.Printf("Warning: Failed to download images for word '%s': %v\n", word, err)
+			continue
+		}
+		
+		allImagePaths = append(allImagePaths, imagePaths...)
+		
+		// Stop if we have enough images
+		if len(allImagePaths) >= config.TotalImages {
+			allImagePaths = allImagePaths[:config.TotalImages]
+			break
+		}
+	}
+	
+	if len(allImagePaths) == 0 {
+		return nil, fmt.Errorf("no images were downloaded successfully")
+	}
+	
+	if verbose {
+		fmt.Printf("Downloaded %d images total\n", len(allImagePaths))
+	}
+	
+	// Generate timeline with images
+	imageDuration := config.Duration / float64(len(allImagePaths))
+	
+	for i, imagePath := range allImagePaths {
+		// Add image with proper duration
+		err := AddImageWithSlide(fcpxml, imagePath, imageDuration, true)
+		if err != nil {
+			fmt.Printf("Warning: Failed to add image %s: %v\n", imagePath, err)
+			continue
+		}
+		
+		if verbose && (i+1)%10 == 0 {
+			fmt.Printf("Added %d/%d images to timeline\n", i+1, len(allImagePaths))
+		}
+	}
+	
+	// Update sequence duration
+	updateSequenceDuration(fcpxml, config.Duration)
+	
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+	
+	if verbose {
+		fmt.Printf("Story timeline generation completed successfully\n")
+		fmt.Printf("Final timeline duration: %.1f seconds with %d images\n", config.Duration, len(allImagePaths))
+	}
+	
+	return fcpxml, nil
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
