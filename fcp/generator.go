@@ -1253,7 +1253,7 @@ func AddTextFromFile(fcpxml *FCPXML, textFilePath string, offsetSeconds float64,
 						ID: textStyleID,
 						TextStyle: TextStyle{
 							Font:        "Helvetica Neue",
-							FontSize:    "134",
+							FontSize:    "1340",
 							FontColor:   "1 1 1 1",
 							Bold:        "1",
 							LineSpacing: "-19",
@@ -1443,7 +1443,7 @@ func AddSingleText(fcpxml *FCPXML, text string, offsetSeconds float64, durationS
 				ID: textStyleID,
 				TextStyle: TextStyle{
 					Font:        "Arial",
-					FontSize:    "204",
+					FontSize:    "2040",
 					FontFace:    "Regular",
 					FontColor:   "0.999995 1 1 1",
 					Alignment:   "center",
@@ -1612,7 +1612,7 @@ func AddImessageText(fcpxml *FCPXML, text string, offsetSeconds float64, duratio
 					ID: "ts1",
 					TextStyle: TextStyle{
 						Font:        "Arial",
-						FontSize:    "204",
+						FontSize:    "2040",
 						FontFace:    "Regular",
 						FontColor:   "0.999995 1 1 1",
 						Alignment:   "center",
@@ -1800,7 +1800,7 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 						ID: replyTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
-							FontSize:    "204",
+							FontSize:    "2040",
 							FontFace:    "Regular",
 							FontColor:   "0 0 0 1",      // Black text for white bubble
 							Alignment:   "center",
@@ -1853,7 +1853,7 @@ func AddImessageReply(fcpxml *FCPXML, originalText, replyText string, offsetSeco
 						ID: originalTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
-							FontSize:    "204",
+							FontSize:    "2040",
 							FontFace:    "Regular",
 							FontColor:   "0.999995 1 1 1", // White text for blue bubble
 							Alignment:   "center",
@@ -2060,7 +2060,7 @@ func addBlueBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversat
 						ID: uniqueTextStyleID1,
 						TextStyle: TextStyle{
 							Font:        "Arial",
-							FontSize:    "204",
+							FontSize:    "2040",
 							FontFace:    "Regular",
 							FontColor:   "0.999995 1 1 1", // White text for blue bubble
 							Alignment:   "center",
@@ -2180,7 +2180,7 @@ func addWhiteBubbleContinuation(fcpxml *FCPXML, newText string, pattern Conversa
 						ID: uniqueTextStyleID,
 						TextStyle: TextStyle{
 							Font:        "Arial",
-							FontSize:    "204",
+							FontSize:    "2040",
 							FontFace:    "Regular",
 							FontColor:   "0 0 0 1", // Black text for white bubble
 							Alignment:   "center",
@@ -3065,7 +3065,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 	
 	// Create additional main timeline elements distributed across multiple lanes
 	numMainElements := 3 + rand.Intn(5) // 3-7 main timeline elements
-	maxLanes := 4 // Maximum lanes to use (1-4)
+	maxLanes := 8 // Maximum lanes to use (1-8)
 	currentOffset := totalDuration * 0.2 // Start overlays earlier for better multi-lane effect
 	
 	if verbose {
@@ -3248,7 +3248,7 @@ func createTextOverlay(fcpxml *FCPXML, tx *ResourceTransaction, startTime, durat
 			ID: styleID,
 			TextStyle: TextStyle{
 				Font:         randomFont(),
-				FontSize:     fmt.Sprintf("%.0f", 24+rand.Float64()*24), // 24-48pt for overlays
+				FontSize:     fmt.Sprintf("%.0f", 240+rand.Float64()*240), // 240-480pt for overlays
 				FontColor:    randomColor(),
 				Alignment:    randomAlignment(),
 				LineSpacing:  "1.2",
@@ -3740,7 +3740,7 @@ func addBaffleTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 			ID: styleID,
 			TextStyle: TextStyle{
 				Font:         randomFont(),
-				FontSize:     fmt.Sprintf("%.0f", 32+rand.Float64()*32), // 32-64pt
+				FontSize:     fmt.Sprintf("%.0f", 320+rand.Float64()*320), // 320-640pt
 				FontColor:    randomColor(),
 				Alignment:    randomAlignment(),
 				LineSpacing:  fmt.Sprintf("%.1f", 1.0+rand.Float64()*0.5), // 1.0-1.5
@@ -3933,7 +3933,7 @@ func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 			ID: styleID,
 			TextStyle: TextStyle{
 				Font:         randomFont(),
-				FontSize:     fmt.Sprintf("%.0f", 36+rand.Float64()*48), // 36-84pt
+				FontSize:     fmt.Sprintf("%.0f", 360+rand.Float64()*480), // 360-840pt
 				FontColor:    randomColor(),
 				Alignment:    randomAlignment(),
 				LineSpacing:  fmt.Sprintf("%.1f", 1.0+rand.Float64()*0.5), // 1.0-1.5
