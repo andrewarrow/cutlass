@@ -382,7 +382,14 @@ func addImageAssetClipToSpineWithFormat(fcpxml *FCPXML, asset *Asset, durationSe
 		}
 
 		if withSlide {
-			video.AdjustTransform = createKenBurnsAnimationWithFormat(currentTimelineDuration, durationSeconds, format)
+			// Use enhanced Ken Burns with both crop and transform for vertical format
+			if format == "vertical" {
+				adjustCrop, adjustTransform := createEnhancedKenBurnsWithFormat(currentTimelineDuration, durationSeconds, format)
+				video.AdjustCrop = adjustCrop
+				video.AdjustTransform = adjustTransform
+			} else {
+				video.AdjustTransform = createKenBurnsAnimationWithFormat(currentTimelineDuration, durationSeconds, format)
+			}
 		} else {
 			// Add zoom scaling for vertical format to fill frame with no empty space
 			if format == "vertical" {

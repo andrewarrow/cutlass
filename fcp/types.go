@@ -321,6 +321,7 @@ type Video struct {
 	Duration      string         `xml:"duration,attr"`
 	Start         string         `xml:"start,attr,omitempty"`
 	Params        []Param        `xml:"param,omitempty"`
+	AdjustCrop      *AdjustCrop      `xml:"adjust-crop,omitempty"`
 	AdjustTransform *AdjustTransform `xml:"adjust-transform,omitempty"`
 	FilterVideos     []FilterVideo   `xml:"filter-video,omitempty"`   // Support filter-video effects
 	NestedVideos     []Video     `xml:"video,omitempty"`      // Support nested video elements with lanes
@@ -346,8 +347,9 @@ type ConformRate struct {
 }
 
 type AdjustCrop struct {
-	Mode     string    `xml:"mode,attr"`
-	TrimRect *TrimRect `xml:"trim-rect,omitempty"`
+	Mode     string     `xml:"mode,attr"`
+	TrimRect *TrimRect  `xml:"trim-rect,omitempty"`
+	PanRects []PanRect  `xml:"pan-rect,omitempty"`
 }
 
 type TrimRect struct {
@@ -355,6 +357,13 @@ type TrimRect struct {
 	Right  string `xml:"right,attr,omitempty"`
 	Top    string `xml:"top,attr,omitempty"`
 	Bottom string `xml:"bottom,attr,omitempty"`
+}
+
+type PanRect struct {
+	Left   string `xml:"left,attr"`
+	Top    string `xml:"top,attr"`
+	Right  string `xml:"right,attr"`
+	Bottom string `xml:"bottom,attr"`
 }
 
 type FilterVideo struct {

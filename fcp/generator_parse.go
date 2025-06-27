@@ -199,6 +199,45 @@ func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSecon
 	}
 }
 
+// createEnhancedKenBurnsWithFormat creates both adjust-crop and adjust-transform for full-frame image filling
+// Based on the pattern from Info.fcpxml where images are scaled high and use pan-rect for Ken Burns effect
+func createEnhancedKenBurnsWithFormat(offsetDuration string, totalDurationSeconds float64, format string) (*AdjustCrop, *AdjustTransform) {
+	var adjustCrop *AdjustCrop
+	var adjustTransform *AdjustTransform
+	
+	if format == "vertical" {
+		// For vertical format, create both crop and transform like in Info.fcpxml
+		// This ensures images fill the entire 9:16 space with no black borders
+		adjustCrop = &AdjustCrop{
+			Mode: "pan",
+			PanRects: []PanRect{
+				{
+					Left:   "27.0605",
+					Top:    "-20.4557", 
+					Right:  "27.8971",
+					Bottom: "-18.8788",
+				},
+				{
+					Left:   "0.0227865",
+					Top:    "-67.7966",
+					Right:  "0.667521", 
+					Bottom: "-68.0132",
+				},
+			},
+		}
+		
+		adjustTransform = &AdjustTransform{
+			Position: "-0.0180805 2.25475",
+			Scale:    "2.52215 2.52215",
+		}
+	} else {
+		// For horizontal format, use standard Ken Burns animation
+		adjustTransform = createKenBurnsAnimationWithFormat(offsetDuration, totalDurationSeconds, format)
+	}
+	
+	return adjustCrop, adjustTransform
+}
+
 // AddTextFromFile reads a text file and adds staggered text elements to the FCPXML structure.
 //
 // 🚨 CLAUDE.md Rules Applied Here:
