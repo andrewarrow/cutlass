@@ -143,3 +143,50 @@ Kannada Sangam MN
 Kefa
 Khmer MN
 Khmer Sangam MN
+Kohinoor Bangla
+Kohinoor Devanagari
+Kohinoor Gujarati
+Kohinoor Telugu
+Kokonor
+Korataki
+Krungthep
+KufiStandardGK
+Lao MN
+Lao Sangam MN
+LoopieJuice
+Lucida Grande
+Luminari
+Malayalam MN
+Malayalam Sangam MN
+Marker Felt
+Meloriac
+Menlo
+Microsoft Sans Serif
+Misadventures
+Mishafi
+MishafiGold
+Monaco
+Mshtakan
+Mukta Mahee
+Muna
+Myanmar MN
+Myanmar Sangam MN
+Nadeem
+New Peninim MT
+Noteworthy
+Noto Nastaliq Urdu
+Noto Sans Batak
+Noto Sans Kannada
+Noto Sans Myanmar
+Noto Sans NKo
+Noto Sans Oriya
+Noto Sans Syriac
+Noto Sans Tagalog
+Noto Serif Myanmar
+OCTIN SPRAYPAINT
+OCTIN STENCIL
+OCTIN TEAM
+Old English Text
+Operina Pro
+Optima
+Oriya MN

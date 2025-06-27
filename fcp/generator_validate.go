@@ -257,6 +257,32 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 						violations = append(violations, fmt.Sprintf("Spine title[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, title.Name, title.Lane))
 					}
 				}
+
+				// 🚨 CRITICAL: Check for asset-clip elements referencing image assets (CLAUDE.md violation)
+				// This is the #1 cause of addAssetClip:toObject:parentFormatID crashes in FCP
+				for i, clip := range sequence.Spine.AssetClips {
+					// Find the referenced asset
+					var referencedAsset *Asset
+					for j := range fcpxml.Resources.Assets {
+						if fcpxml.Resources.Assets[j].ID == clip.Ref {
+							referencedAsset = &fcpxml.Resources.Assets[j]
+							break
+						}
+					}
+					
+					if referencedAsset != nil {
+						// Check if this is an image asset (duration="0s" + image file extension)
+						if referencedAsset.Duration == "0s" {
+							// Extract the source file path from media-rep
+							if strings.HasPrefix(referencedAsset.MediaRep.Src, "file://") {
+								filePath := strings.TrimPrefix(referencedAsset.MediaRep.Src, "file://")
+								if isImageFile(filePath) {
+									violations = append(violations, fmt.Sprintf("🚨 CRASH RISK: asset-clip[%d] '%s' references image asset '%s' - images MUST use <video> elements, NOT <asset-clip> (causes addAssetClip:toObject:parentFormatID crash)", i, clip.Name, referencedAsset.ID))
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}

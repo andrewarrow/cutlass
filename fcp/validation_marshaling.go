@@ -128,6 +128,13 @@ func (fcpxml *FCPXML) ValidateStructure() error {
 		return fmt.Errorf("timeline validation failed: %v", err)
 	}
 
+	// 🚨 CRITICAL: Run CLAUDE.md compliance validation 
+	// This catches asset-clip on images and other critical violations
+	violations := ValidateClaudeCompliance(fcpxml)
+	if len(violations) > 0 {
+		return fmt.Errorf("CLAUDE.md compliance violations detected:\n  - %s", strings.Join(violations, "\n  - "))
+	}
+
 	return nil
 }
 
