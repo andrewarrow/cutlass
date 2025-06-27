@@ -391,3 +391,114 @@ func (fcpxml *FCPXML) ValidateAndMarshalWithDTD(dtdPath string) ([]byte, error) 
 
 	return data, nil
 }
+
+// ValidateAndMarshalWithComprehensiveValidation performs all available validation methods
+func (fcpxml *FCPXML) ValidateAndMarshalWithComprehensiveValidation(dtdPath, xsdPath, rngPath string) ([]byte, error) {
+	// First do structure validation
+	data, err := fcpxml.ValidateAndMarshal()
+	if err != nil {
+		return nil, err
+	}
+
+	// Then do comprehensive external validation
+	if dtdPath != "" || xsdPath != "" || rngPath != "" {
+		dtdValidator := NewDTDValidator(dtdPath)
+		if err := dtdValidator.ValidateCompatibility(data, dtdPath, xsdPath, rngPath); err != nil {
+			return nil, fmt.Errorf("external validation failed: %v", err)
+		}
+	}
+
+	return data, nil
+}
+
+// ValidateWithSummary returns validation results with detailed summary
+func (fcpxml *FCPXML) ValidateWithSummary(dtdPath string) ([]byte, ValidationReport, error) {
+	report := ValidationReport{
+		StructureValidation: true,
+		XMLValidation:      true,
+		DTDValidation:      false,
+		Errors:            []string{},
+		Warnings:          []string{},
+	}
+
+	// Structure validation
+	data, err := fcpxml.ValidateAndMarshal()
+	if err != nil {
+		report.StructureValidation = false
+		report.Errors = append(report.Errors, fmt.Sprintf("Structure validation failed: %v", err))
+		return nil, report, err
+	}
+
+	// DTD validation if available
+	if dtdPath != "" {
+		dtdValidator := NewDTDValidator(dtdPath)
+		summary := dtdValidator.GetValidationSummary()
+		report.ValidationSummary = summary.String()
+		
+		if summary.DTDAvailable {
+			if err := dtdValidator.ValidateXML(data); err != nil {
+				report.Errors = append(report.Errors, fmt.Sprintf("DTD validation failed: %v", err))
+			} else {
+				report.DTDValidation = true
+			}
+		} else {
+			report.Warnings = append(report.Warnings, "DTD validation requested but not available")
+		}
+	}
+
+	return data, report, nil
+}
+
+// ValidationReport provides detailed validation results
+type ValidationReport struct {
+	StructureValidation bool
+	XMLValidation      bool
+	DTDValidation      bool
+	ValidationSummary  string
+	Errors            []string
+	Warnings          []string
+}
+
+// IsValid returns true if all validations passed
+func (vr ValidationReport) IsValid() bool {
+	return vr.StructureValidation && vr.XMLValidation && len(vr.Errors) == 0
+}
+
+// String returns a human-readable validation report
+func (vr ValidationReport) String() string {
+	var lines []string
+	
+	lines = append(lines, "=== FCPXML Validation Report ===")
+	lines = append(lines, fmt.Sprintf("Structure Validation: %s", boolToStatus(vr.StructureValidation)))
+	lines = append(lines, fmt.Sprintf("XML Validation: %s", boolToStatus(vr.XMLValidation)))
+	lines = append(lines, fmt.Sprintf("DTD Validation: %s", boolToStatus(vr.DTDValidation)))
+	
+	if vr.ValidationSummary != "" {
+		lines = append(lines, fmt.Sprintf("Available Methods: %s", vr.ValidationSummary))
+	}
+	
+	if len(vr.Errors) > 0 {
+		lines = append(lines, "\nErrors:")
+		for _, err := range vr.Errors {
+			lines = append(lines, fmt.Sprintf("  - %s", err))
+		}
+	}
+	
+	if len(vr.Warnings) > 0 {
+		lines = append(lines, "\nWarnings:")
+		for _, warning := range vr.Warnings {
+			lines = append(lines, fmt.Sprintf("  - %s", warning))
+		}
+	}
+	
+	lines = append(lines, fmt.Sprintf("\nOverall Status: %s", boolToStatus(vr.IsValid())))
+	
+	return strings.Join(lines, "\n")
+}
+
+func boolToStatus(b bool) string {
+	if b {
+		return "PASSED"
+	}
+	return "FAILED"
+}

@@ -872,6 +872,8 @@ type ValidationTestResults struct {
 	EndTime        time.Time
 	Duration       time.Duration
 	Categories     map[string]*CategoryResults
+	DTDPath        string // Path to DTD file used for validation
+	DTDAvailable   bool   // Whether DTD validation was available
 }
 
 // CategoryResults contains results for a test category
@@ -904,19 +906,6 @@ const (
 	TestFailed
 	TestSkipped
 )
-
-// BenchmarkValidationFramework benchmarks the validation testing framework
-func BenchmarkValidationFramework(b *testing.B) {
-	vt := NewValidationTester()
-	vt.AddCriticalValidationTests()
-	
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for _, testCase := range vt.testCases {
-			_ = testCase.Setup(vt)
-		}
-	}
-}
 
 // Helper methods for ValidationTester
 
