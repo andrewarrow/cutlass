@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	rand_math "math/rand"
 	"path/filepath"
 	"strings"
 )
@@ -13,6 +14,20 @@ import (
 type ContentSection struct {
 	Title  string   `json:"title"`
 	Points []string `json:"points"`
+}
+
+// getRandomFont returns a random font from the available font list
+func getRandomFont() string {
+	fonts := fcp.GetRandomFonts()
+	return fonts[rand_math.Intn(len(fonts))]
+}
+
+// getRandomFontWithLogging returns a random font and logs the selection
+func getRandomFontWithLogging(text string) string {
+	fonts := fcp.GetRandomFonts()
+	selectedFont := fonts[rand_math.Intn(len(fonts))]
+	fmt.Printf("Text: \"%s\" -> Font: %s\n", text, selectedFont)
+	return selectedFont
 }
 
 // CreativeTextOptions contains options for text animation
@@ -259,7 +274,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 			{
 				ID: titleID,
 				TextStyle: fcp.TextStyle{
-					Font:      "Helvetica Neue",
+					Font:      getRandomFontWithLogging("🎯 " + strings.ToUpper(section.Title) + " 🎯"),
 					FontSize:  "96", // MUCH BIGGER!
 					FontFace:  "Bold",
 					FontColor: "1 1 0.2 1", // Bright yellow for impact!
@@ -375,7 +390,7 @@ func addSectionText(backgroundVideo *fcp.Video, tx *fcp.ResourceTransaction, sec
 				{
 					ID: pointID,
 					TextStyle: fcp.TextStyle{
-						Font:      "Helvetica Neue",
+						Font:      getRandomFontWithLogging(fmt.Sprintf("⚡ %s ⚡", strings.ToUpper(point))),
 						FontSize:  "80", // Consistent 80px font size matching Info.fcpxml
 						FontFace:  "Bold",
 						FontColor: fmt.Sprintf("%.1f 1 %.1f 1", 0.8+intensity*0.1, 0.6+intensity*0.2), // Increasingly bright!

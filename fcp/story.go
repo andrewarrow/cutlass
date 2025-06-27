@@ -163,20 +163,50 @@ func GetRandomHighContrastColors() []HighContrastColor {
 	}
 }
 
-// GetRandomFonts returns a list of fonts to choose from
+// GetRandomFonts returns a list of fonts to choose from, loading from reference/fonts.txt
 func GetRandomFonts() []string {
-	return []string{
-		"Sinzano",
-		"Helvetica Neue",
-		"Arial",
-		"Times New Roman",
-		"Courier New",
-		"Verdana",
-		"Georgia",
-		"Trebuchet MS",
-		"Comic Sans MS",
-		"Impact",
+	fonts, err := loadFontsFromFile()
+	if err != nil {
+		// Fallback to hardcoded fonts if file reading fails
+		return []string{
+			"Sinzano",
+			"Helvetica Neue",
+			"Arial",
+			"Times New Roman",
+			"Courier New",
+			"Verdana",
+			"Georgia",
+			"Trebuchet MS",
+			"Comic Sans MS",
+			"Impact",
+		}
 	}
+	return fonts
+}
+
+// loadFontsFromFile loads the complete font list from reference/fonts.txt
+func loadFontsFromFile() ([]string, error) {
+	// Try to read from reference/fonts.txt
+	content, err := os.ReadFile("reference/fonts.txt")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read fonts file: %v", err)
+	}
+	
+	lines := strings.Split(string(content), "\n")
+	var fonts []string
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			fonts = append(fonts, line)
+		}
+	}
+	
+	if len(fonts) == 0 {
+		return nil, fmt.Errorf("no fonts found in file")
+	}
+	
+	return fonts, nil
 }
 
 // DownloadImagesFromPixabay downloads images for a given word from Pixabay or fallback sources
@@ -597,6 +627,9 @@ func AddStoryTextWithFormat(fcpxml *FCPXML, text string, offsetSeconds float64, 
 	rand_math.Seed(time.Now().UnixNano() + int64(offsetSeconds*1000)) // Ensure different seed for each text
 	selectedColor := colors[rand_math.Intn(len(colors))]
 	selectedFont := fonts[rand_math.Intn(len(fonts))]
+	
+	// Output selected font to stdout
+	fmt.Printf("Text: \"%s\" -> Font: %s\n", text, selectedFont)
 	
 	// Convert durations to FCP format
 	offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
