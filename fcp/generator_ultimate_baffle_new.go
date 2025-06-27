@@ -3,6 +3,9 @@ package fcp
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -101,45 +104,45 @@ func GenerateComplexBaffle(outputPath string, config ComplexBaffleConfig) error 
 	return nil
 }
 
-// createComplexVideoAssets creates multiple video assets with various formats
+// createComplexVideoAssets creates multiple video assets using real files from ./assets
 func createComplexVideoAssets(tx *ResourceTransaction, count int) ([]AssetInfo, error) {
+	// Scan for real video files
+	realVideoFiles, err := scanForRealAssets("./assets", []string{".mp4", ".mov", ".avi", ".mkv"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan for video assets: %v", err)
+	}
+	
+	if len(realVideoFiles) == 0 {
+		return nil, fmt.Errorf("no video files found in ./assets directory")
+	}
+	
 	assets := make([]AssetInfo, count)
 	
-	// Create variety of video formats (using valid frame durations)
-	formatConfigs := []struct {
+	// Create format for videos (using consistent format)
+	formatConfig := struct {
 		frameDuration string
 		width, height string
 		colorSpace    string
 		name          string
-	}{
-		{"1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)", "1080p24"},
-		{"2002/24000s", "1920", "1080", "1-1-1 (Rec. 709)", "1080p12"},
-		{"1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)", "1080p24_alt"},
-		{"1001/24000s", "3840", "2160", "1-1-1 (Rec. 709)", "4K24"},
-		{"1001/24000s", "1280", "720", "1-1-1 (Rec. 709)", "720p24"},
-		{"1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)", "1080p24_v2"},
-	}
+	}{"1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)", "ComplexVideo"}
 	
 	for i := 0; i < count; i++ {
 		ids := tx.ReserveIDs(2)
 		assetID := ids[0]
 		formatID := ids[1]
 		
-		// Use different format configs cyclically
-		config := formatConfigs[i%len(formatConfigs)]
-		
 		// Create format
-		_, err := tx.CreateFormatWithFrameDuration(formatID, config.frameDuration, config.width, config.height, config.colorSpace)
+		_, err := tx.CreateFormatWithFrameDuration(formatID, formatConfig.frameDuration, formatConfig.width, formatConfig.height, formatConfig.colorSpace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create video format %d: %v", i, err)
 		}
 		
-		// Create asset with realistic path and duration
+		// Use real video file (cycle through available files)
+		realVideoPath := realVideoFiles[i%len(realVideoFiles)]
 		assetName := fmt.Sprintf("ComplexVideo_%03d", i)
-		assetPath := fmt.Sprintf("/Users/aa/cs/cutlass/assets/complex_%03d.mov", i)
-		duration := ConvertSecondsToFCPDuration(30.0 + float64(i%60)) // 30-90 second videos
+		duration := ConvertSecondsToFCPDuration(30.0 + float64(i%60)) // 30-90 second duration
 		
-		_, err = tx.CreateAsset(assetID, assetPath, assetName, duration, formatID)
+		_, err = tx.CreateAsset(assetID, realVideoPath, assetName, duration, formatID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create video asset %d: %v", i, err)
 		}
@@ -148,7 +151,7 @@ func createComplexVideoAssets(tx *ResourceTransaction, count int) ([]AssetInfo, 
 			ID:       assetID,
 			FormatID: formatID,
 			Name:     assetName,
-			Path:     assetPath,
+			Path:     realVideoPath,
 			Duration: duration,
 			Type:     "video",
 		}
@@ -157,43 +160,43 @@ func createComplexVideoAssets(tx *ResourceTransaction, count int) ([]AssetInfo, 
 	return assets, nil
 }
 
-// createComplexImageAssets creates multiple image assets with various formats
+// createComplexImageAssets creates multiple image assets using real files from ./assets
 func createComplexImageAssets(tx *ResourceTransaction, count int) ([]AssetInfo, error) {
+	// Scan for real image files
+	realImageFiles, err := scanForRealAssets("./assets", []string{".png", ".jpg", ".jpeg", ".gif"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan for image assets: %v", err)
+	}
+	
+	if len(realImageFiles) == 0 {
+		return nil, fmt.Errorf("no image files found in ./assets directory")
+	}
+	
 	assets := make([]AssetInfo, count)
 	
-	// Various image format configs
-	formatConfigs := []struct {
+	// Standard image format
+	formatConfig := struct {
 		width, height string
 		colorSpace    string
 		name          string
-	}{
-		{"1920", "1080", "1-13-1", "HD_Image"},
-		{"3840", "2160", "1-13-1", "4K_Image"},
-		{"1280", "720", "1-13-1", "HD_Image_720"},
-		{"2560", "1440", "1-13-1", "QHD_Image"},
-		{"1080", "1920", "1-13-1", "Portrait_HD"},
-		{"4096", "2160", "1-13-1", "Cinema_4K"},
-	}
+	}{"1920", "1080", "1-13-1", "ComplexImage"}
 	
 	for i := 0; i < count; i++ {
 		ids := tx.ReserveIDs(2)
 		assetID := ids[0]
 		formatID := ids[1]
 		
-		// Use different format configs cyclically
-		config := formatConfigs[i%len(formatConfigs)]
-		
 		// Create format (images don't have frameDuration)
-		_, err := tx.CreateFormat(formatID, config.name, config.width, config.height, config.colorSpace)
+		_, err := tx.CreateFormat(formatID, formatConfig.name, formatConfig.width, formatConfig.height, formatConfig.colorSpace)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create image format %d: %v", i, err)
 		}
 		
-		// Create asset with realistic path
+		// Use real image file (cycle through available files)
+		realImagePath := realImageFiles[i%len(realImageFiles)]
 		assetName := fmt.Sprintf("ComplexImage_%03d", i)
-		assetPath := fmt.Sprintf("/Users/aa/cs/cutlass/assets/complex_%03d.png", i)
 		
-		_, err = tx.CreateAsset(assetID, assetPath, assetName, "0s", formatID)
+		_, err = tx.CreateAsset(assetID, realImagePath, assetName, "0s", formatID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create image asset %d: %v", i, err)
 		}
@@ -202,7 +205,7 @@ func createComplexImageAssets(tx *ResourceTransaction, count int) ([]AssetInfo, 
 			ID:       assetID,
 			FormatID: formatID,
 			Name:     assetName,
-			Path:     assetPath,
+			Path:     realImagePath,
 			Duration: "0s",
 			Type:     "image",
 		}
@@ -260,17 +263,19 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 			startTime := (float64(elementIndex) / float64(totalVideoElements)) * timelineDuration * 0.8
 			duration := 15.0 + float64(elementIndex%20) // 15-35 second clips
 			
-			// Calculate lane (distribute across layers)
-			lane := (elementIndex % config.MaxLayers) + 1
-			
-			// Create complex asset-clip with animations
+			// Create asset-clip - main spine elements have NO lane attribute
 			assetClip := AssetClip{
 				Ref:      asset.ID,
 				Offset:   ConvertSecondsToFCPDuration(startTime),
 				Duration: ConvertSecondsToFCPDuration(duration),
 				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
-				Lane:     fmt.Sprintf("%d", lane),
 				Start:    "0s",
+			}
+			
+			// Only use lanes for secondary elements (smaller subset)
+			if elementIndex > 5 && elementIndex%3 == 0 {
+				lane := -1 // Background lane like working samples
+				assetClip.Lane = fmt.Sprintf("%d", lane)
 			}
 			
 			// Add complex animations
@@ -289,16 +294,17 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 			startTime := (float64(elementIndex) / float64(totalImageElements)) * timelineDuration * 0.9
 			duration := 8.0 + float64(elementIndex%12) // 8-20 second displays
 			
-			// Calculate lane
-			lane := (elementIndex % config.MaxLayers) + 1
-			
-			// Create video element for image
+			// Create video element for image - main spine elements have NO lane
 			video := Video{
 				Ref:      asset.ID,
 				Offset:   ConvertSecondsToFCPDuration(startTime),
 				Duration: ConvertSecondsToFCPDuration(duration),
 				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
-				Lane:     fmt.Sprintf("%d", lane),
+			}
+			
+			// Only use lanes for secondary elements 
+			if elementIndex > 10 && elementIndex%4 == 0 {
+				video.Lane = "-1" // Background lane like working samples
 			}
 			
 			// Add simpler animations for images (per CLAUDE.md guidance)
@@ -317,10 +323,7 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 		startTime := (float64(i) / float64(config.TitleElementCount)) * timelineDuration
 		duration := 5.0 + float64(i%8) // 5-13 second titles
 		
-		// Calculate lane - use higher lanes for titles
-		lane := (i % (config.MaxLayers/2)) + config.MaxLayers/2 + 1
-		
-		title := createComplexTitle(effectID, startTime, duration, i, lane)
+		title := createComplexTitle(effectID, startTime, duration, i)
 		spine.Titles = append(spine.Titles, title)
 	}
 	
@@ -439,20 +442,19 @@ func createImageAnimation(startTime, duration float64, seed int) *AdjustTransfor
 	}
 }
 
-// createComplexTitle creates sophisticated title with valid styling
-func createComplexTitle(effectID string, startTime, duration float64, index, lane int) Title {
+// createComplexTitle creates sophisticated title with valid styling  
+func createComplexTitle(effectID string, startTime, duration float64, index int) Title {
 	// Generate complex text content
 	textContent := generateValidTextContent(index)
 	
 	// Generate unique style ID
 	styleID := fmt.Sprintf("complex_style_%d_%d", index, int(time.Now().UnixNano()%10000))
 	
-	return Title{
+	title := Title{
 		Ref:      effectID,
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("ComplexTitle_%d", index),
-		Lane:     fmt.Sprintf("%d", lane),
 		Text: &TitleText{
 			TextStyles: []TextStyleRef{
 				{
@@ -476,6 +478,13 @@ func createComplexTitle(effectID string, startTime, duration float64, index, lan
 			},
 		},
 	}
+	
+	// Only some titles use lanes (like working samples)
+	if index > 5 && index%5 == 0 {
+		title.Lane = "-1" // Background lane
+	}
+	
+	return title
 }
 
 // generateValidTextContent creates interesting but valid text content
@@ -534,4 +543,43 @@ func getValidBool(index int) string {
 		return "1"
 	}
 	return "0"
+}
+
+// scanForRealAssets scans a directory for real media files with specified extensions
+func scanForRealAssets(dir string, extensions []string) ([]string, error) {
+	var assets []string
+	
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get absolute path: %v", err)
+	}
+	
+	if _, err := os.Stat(absDir); os.IsNotExist(err) {
+		return assets, nil // Return empty slice if directory doesn't exist
+	}
+	
+	entries, err := os.ReadDir(absDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %v", err)
+	}
+	
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		
+		filename := entry.Name()
+		ext := strings.ToLower(filepath.Ext(filename))
+		
+		// Check if extension matches
+		for _, validExt := range extensions {
+			if ext == validExt {
+				absolutePath := filepath.Join(absDir, filename)
+				assets = append(assets, absolutePath)
+				break
+			}
+		}
+	}
+	
+	return assets, nil
 }
