@@ -35,7 +35,7 @@ func createLaneAssetClipElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPa
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("Lane%dVideo_%d", lane, index),
-		Lane:     fmt.Sprintf("%d", lane),
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 		AdjustTransform: &AdjustTransform{
 			Position: generateRandomPosition(),
 			Scale:    fmt.Sprintf("%.2f %.2f", 0.7+rand.Float64()*0.4, 0.7+rand.Float64()*0.4),
@@ -77,7 +77,7 @@ func createLaneImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath s
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("Lane%dImage_%d", lane, index),
-		Lane:     fmt.Sprintf("%d", lane),
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 		AdjustTransform: &AdjustTransform{
 			Position: generateRandomPosition(),
 			Scale:    fmt.Sprintf("%.2f %.2f", 0.6+rand.Float64()*0.5, 0.6+rand.Float64()*0.5),
@@ -360,7 +360,7 @@ func addBaffleImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 	}
 
 	if targetLane > 0 {
-		video.Lane = fmt.Sprintf("%d", targetLane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 	}
 
 	if rand.Float32() < 0.3 {

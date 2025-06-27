@@ -5,6 +5,186 @@ import (
 	"testing"
 )
 
+// TestSpineStructuralValidation tests that the validateSpine method catches lane violations
+// This ensures baffle and other direct manipulation is caught by the validation system
+func TestSpineStructuralValidation(t *testing.T) {
+	// Create an FCPXML with spine elements that have lane attributes (violates structure)
+	fcpxml := &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{
+					ID:       "r2",
+					Name:     "test.mp4",
+					UID:      "test-uid",
+					Start:    "0s",
+					Duration: "240240/24000s",
+					HasVideo: "1",
+					MediaRep: MediaRep{
+						Kind: "original-media",
+						Src:  "file:///test.mp4",
+					},
+				},
+			},
+			Formats: []Format{
+				{
+					ID:     "r3",
+					Name:   "FFVideoFormat1080p",
+					Width:  "1920",
+					Height: "1080",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							Sequences: []Sequence{
+								{
+									Duration: "240240/24000s",
+									Spine: Spine{
+										// These elements with lanes should be REJECTED
+										AssetClips: []AssetClip{
+											{
+												Ref:      "r2",
+												Lane:     "1", // ❌ INVALID: spine elements can't have lanes
+												Offset:   "0s",
+												Duration: "120120/24000s",
+												Name:     "TestClip",
+											},
+										},
+										Videos: []Video{
+											{
+												Ref:      "r2",
+												Lane:     "5", // ❌ INVALID: spine elements can't have lanes
+												Offset:   "120120/24000s", 
+												Duration: "120120/24000s",
+												Name:     "TestVideo",
+											},
+										},
+										Titles: []Title{
+											{
+												Ref:      "r2",
+												Lane:     "11", // ❌ INVALID: spine elements can't have lanes (baffle-style)
+												Offset:   "60060/24000s",
+												Duration: "60060/24000s",
+												Name:     "TestTitle",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test 1: ValidateStructure should reject spine elements with lanes
+	err := fcpxml.ValidateStructure()
+	if err == nil {
+		t.Errorf("expected validation to fail for spine elements with lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine") && !strings.Contains(err.Error(), "lane") {
+		t.Errorf("expected spine lane validation error, got: %v", err)
+	}
+
+	// Test 2: ValidateAndMarshal should also reject
+	_, err = fcpxml.ValidateAndMarshal()
+	if err == nil {
+		t.Errorf("expected marshal validation to fail for spine elements with lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine") && !strings.Contains(err.Error(), "lane") {
+		t.Errorf("expected spine lane validation error in marshal, got: %v", err)
+	}
+}
+
+// TestSpineStructuralValidationValid tests that valid spine elements pass validation
+func TestSpineStructuralValidationValid(t *testing.T) {
+	// Create an FCPXML with valid spine elements (no lane attributes)
+	fcpxml := &FCPXML{
+		Version: "1.13",
+		Resources: Resources{
+			Assets: []Asset{
+				{
+					ID:       "r2",
+					Name:     "test.mp4",
+					UID:      "test-uid",
+					Start:    "0s",
+					Duration: "240240/24000s",
+					HasVideo: "1",
+					MediaRep: MediaRep{
+						Kind: "original-media",
+						Src:  "file:///test.mp4",
+					},
+				},
+			},
+			Formats: []Format{
+				{
+					ID:     "r3",
+					Name:   "FFVideoFormat1080p",
+					Width:  "1920",
+					Height: "1080",
+				},
+			},
+		},
+		Library: Library{
+			Events: []Event{
+				{
+					Name: "Test Event",
+					Projects: []Project{
+						{
+							Name: "Test Project",
+							Sequences: []Sequence{
+								{
+									Duration: "240240/24000s",
+									Spine: Spine{
+										// These elements without lanes should be ACCEPTED
+										AssetClips: []AssetClip{
+											{
+												Ref:      "r2",
+												// Lane is omitted - valid for spine
+												Offset:   "0s",
+												Duration: "120120/24000s",
+												Name:     "TestClip",
+											},
+										},
+										Videos: []Video{
+											{
+												Ref:      "r2",
+												// Lane is omitted - valid for spine
+												Offset:   "120120/24000s", 
+												Duration: "120120/24000s",
+												Name:     "TestVideo",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test: ValidateStructure should pass for valid spine elements
+	err := fcpxml.ValidateStructure()
+	if err != nil {
+		t.Errorf("expected validation to pass for valid spine elements, got: %v", err)
+	}
+
+	// Test: ValidateAndMarshal should also pass
+	_, err = fcpxml.ValidateAndMarshal()
+	if err != nil {
+		t.Errorf("expected marshal validation to pass for valid spine elements, got: %v", err)
+	}
+}
+
 func TestValidationMarshaling(t *testing.T) {
 	tests := []struct {
 		name        string

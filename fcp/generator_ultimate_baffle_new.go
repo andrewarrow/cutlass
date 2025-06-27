@@ -88,6 +88,7 @@ func GenerateComplexBaffle(outputPath string, config ComplexBaffleConfig) error 
 	}
 	
 	fmt.Printf("Validating complex structure...\n")
+	
 	if err := fcpxml.ValidateStructure(); err != nil {
 		return fmt.Errorf("validation failed: %v", err)
 	}
@@ -275,31 +276,9 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 				Start:    "0s",
 			}
 			
-			// 🔥 CRAZY LANE ASSIGNMENT: Multiple lanes above and below main track
-			if elementIndex == 0 {
-				// First element: main spine (no lane)
-			} else {
-				// All other elements: distribute across lanes
-				lanePattern := elementIndex % 12
-				switch lanePattern {
-				case 1, 2:
-					assetClip.Lane = "1" // Above main track
-				case 3, 4:
-					assetClip.Lane = "2" // Higher above
-				case 5:
-					assetClip.Lane = "3" // Even higher
-				case 6, 7:
-					assetClip.Lane = "-1" // Below main track
-				case 8, 9:
-					assetClip.Lane = "-2" // Lower below
-				case 10:
-					assetClip.Lane = "-3" // Even lower
-				case 11:
-					assetClip.Lane = "4" // Way above
-				default:
-					assetClip.Lane = "-4" // Way below
-				}
-			}
+			// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML architecture)
+			// Lanes are only for connected clips nested within spine elements
+			// All spine elements go on the main timeline without lane attributes
 			
 			// Add complex animations
 			assetClip.AdjustTransform = createComplexAnimation(startTime, duration, config.KeyframesPerAnimation, elementIndex)
@@ -329,24 +308,9 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
 			}
 			
-			// 🔥 CRAZY IMAGE LANE DISTRIBUTION: Use different lanes than videos
-			lanePattern := elementIndex % 14
-			switch lanePattern {
-			case 0, 1:
-				// Some images on main spine (no lane)
-			case 2, 3, 4:
-				video.Lane = "5" // High above videos
-			case 5, 6:
-				video.Lane = "6" // Even higher
-			case 7:
-				video.Lane = "7" // Top layer
-			case 8, 9, 10:
-				video.Lane = "-5" // Deep below videos  
-			case 11, 12:
-				video.Lane = "-6" // Even deeper
-			default:
-				video.Lane = "-7" // Bottom layer
-			}
+			// 🚨 FIXED: Spine video elements cannot have lanes (per FCPXML architecture)
+			// Lanes are only for connected clips nested within spine elements
+			// All spine elements go on the main timeline without lane attributes
 			
 			// Add simpler animations for images (per CLAUDE.md guidance)
 			video.AdjustTransform = createImageAnimation(startTime, duration, elementIndex)
@@ -370,30 +334,9 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 		
 		title := createComplexTitle(effectID, startTime, duration, i)
 		
-		// 🔥 CRAZY TITLE LANE DISTRIBUTION: Use yet more different lanes!
-		lanePattern := i % 16
-		switch lanePattern {
-		case 0, 1, 2:
-			// Some titles on main spine (no lane)
-		case 3, 4:
-			title.Lane = "8" // Higher than images
-		case 5:
-			title.Lane = "9" // Even higher
-		case 6:
-			title.Lane = "10" // Top text layer
-		case 7, 8, 9:
-			title.Lane = "-8" // Below images
-		case 10, 11:
-			title.Lane = "-9" // Even lower
-		case 12:
-			title.Lane = "-10" // Bottom text layer
-		case 13:
-			title.Lane = "11" // Extreme top
-		case 14:
-			title.Lane = "-11" // Extreme bottom
-		default:
-			title.Lane = "12" // Stratospheric text!
-		}
+		// 🚨 FIXED: Spine title elements cannot have lanes (per FCPXML architecture)
+		// Lanes are only for connected clips nested within spine elements
+		// All spine elements go on the main timeline without lane attributes
 		
 		spine.Titles = append(spine.Titles, title)
 	}

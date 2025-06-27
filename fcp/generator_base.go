@@ -47,7 +47,7 @@ func addBaffleVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath st
 	}
 
 	if targetLane > 0 {
-		assetClip.Lane = fmt.Sprintf("%d", targetLane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 	}
 
 	if rand.Float32() < 0.4 {
@@ -102,7 +102,7 @@ func addBaffleTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 	}
 
 	if targetLane > 0 {
-		title.Lane = fmt.Sprintf("%d", targetLane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 	}
 
 	opacity := 0.7 + rand.Float64()*0.3
@@ -159,7 +159,7 @@ func addRandomImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 	}
 
 	if lane > 0 {
-		video.Lane = fmt.Sprintf("%d", lane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 	}
 
 	if rand.Float32() < 0.6 {
@@ -222,7 +222,7 @@ func addRandomVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath st
 	}
 
 	if lane > 0 {
-		assetClip.Lane = fmt.Sprintf("%d", lane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 	}
 
 	if rand.Float32() < 0.7 {
@@ -276,9 +276,8 @@ func addRandomTextElement(fcpxml *FCPXML, tx *ResourceTransaction, startTime, du
 	}
 
 	if lane > 0 {
-
-		textLane := lane + 5
-		title.Lane = fmt.Sprintf("%d", textLane)
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
+		// textLane calculation removed since lanes are not used
 	}
 
 	opacity := 0.6 + rand.Float64()*0.3

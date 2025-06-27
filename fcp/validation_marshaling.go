@@ -133,6 +133,26 @@ func (fcpxml *FCPXML) ValidateStructure() error {
 
 // validateSpine validates all elements within a spine
 func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, timelineValidator *TimelineValidator, textValidator *TextStyleValidator, boundaryValidator *BoundaryValidator, rangeValidator *NumericRangeValidator) error {
+	// 🚨 CRITICAL: Validate spine structural rules FIRST (FCPXML architecture)
+	// This catches violations from ALL code paths (baffle, generators, etc.)
+	for i, clip := range spine.AssetClips {
+		if clip.Lane != "" {
+			return fmt.Errorf("spine asset-clip[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, clip.Name, clip.Lane)
+		}
+	}
+	
+	for i, video := range spine.Videos {
+		if video.Lane != "" {
+			return fmt.Errorf("spine video[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, video.Name, video.Lane)
+		}
+	}
+	
+	for i, title := range spine.Titles {
+		if title.Lane != "" {
+			return fmt.Errorf("spine title[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, title.Name, title.Lane)
+		}
+	}
+
 	// Validate all asset clips
 	for i := range spine.AssetClips {
 		clip := &spine.AssetClips[i]

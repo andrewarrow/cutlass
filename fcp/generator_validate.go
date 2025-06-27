@@ -234,6 +234,33 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 	}
 
+	// 🚨 CRITICAL: Validate spine structural rules (FCPXML architecture)
+	// This catches violations from ALL code paths, not just SpineBuilder
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				// Rule: Spine elements cannot have lane attributes
+				for i, clip := range sequence.Spine.AssetClips {
+					if clip.Lane != "" {
+						violations = append(violations, fmt.Sprintf("Spine asset-clip[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, clip.Name, clip.Lane))
+					}
+				}
+				
+				for i, video := range sequence.Spine.Videos {
+					if video.Lane != "" {
+						violations = append(violations, fmt.Sprintf("Spine video[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, video.Name, video.Lane))
+					}
+				}
+				
+				for i, title := range sequence.Spine.Titles {
+					if title.Lane != "" {
+						violations = append(violations, fmt.Sprintf("Spine title[%d] '%s' has lane='%s' - spine elements cannot have lanes (connected clips must be nested inside primary elements)", i, title.Name, title.Lane))
+					}
+				}
+			}
+		}
+	}
+
 	return violations
 }
 

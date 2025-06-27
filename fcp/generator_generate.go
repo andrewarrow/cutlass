@@ -491,7 +491,7 @@ func createImageOverlay(fcpxml *FCPXML, tx *ResourceTransaction, imagePath strin
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("ImageOverlay_%d", index),
-		Lane:     fmt.Sprintf("%d", lane),
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 		AdjustTransform: &AdjustTransform{
 			Position: "0 0",
 			Scale:    fmt.Sprintf("%.2f %.2f", 0.5+rand.Float64()*0.3, 0.5+rand.Float64()*0.3),
@@ -528,7 +528,7 @@ func createVideoOverlay(fcpxml *FCPXML, tx *ResourceTransaction, videoPath strin
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("VideoOverlay_%d", index),
-		Lane:     fmt.Sprintf("%d", lane),
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 		AdjustTransform: &AdjustTransform{
 			Position: "0 0",
 			Scale:    fmt.Sprintf("%.2f %.2f", 0.6+rand.Float64()*0.3, 0.6+rand.Float64()*0.3),
@@ -557,7 +557,7 @@ func createTextOverlay(fcpxml *FCPXML, tx *ResourceTransaction, startTime, durat
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
 		Name:     fmt.Sprintf("TextOverlay_%d", index),
-		Lane:     fmt.Sprintf("%d", lane),
+		// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML validation rules)
 		Text: &TitleText{
 			TextStyles: []TextStyleRef{{
 				Ref:  styleID,
