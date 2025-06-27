@@ -415,10 +415,11 @@ type SpineBuilder struct {
 	sorter           *SpineElementSorter
 	timelineValidator *TimelineValidator
 	totalDuration    Duration
+	registry         *ReferenceRegistry
 }
 
 // NewSpineBuilder creates a new spine builder
-func NewSpineBuilder(totalDuration Duration) (*SpineBuilder, error) {
+func NewSpineBuilder(totalDuration Duration, registry *ReferenceRegistry) (*SpineBuilder, error) {
 	timelineValidator, err := NewTimelineValidator(totalDuration)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create timeline validator: %v", err)
@@ -428,6 +429,7 @@ func NewSpineBuilder(totalDuration Duration) (*SpineBuilder, error) {
 		sorter:           NewSpineElementSorter(),
 		timelineValidator: timelineValidator,
 		totalDuration:    totalDuration,
+		registry:         registry,
 	}, nil
 }
 

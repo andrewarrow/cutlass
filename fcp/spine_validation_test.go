@@ -357,7 +357,8 @@ func TestSpineElementSorter_GetElementsInTimeRange(t *testing.T) {
 }
 
 func TestSpineBuilder(t *testing.T) {
-	builder, err := NewSpineBuilder(Duration("720720/24000s")) // 30 seconds
+	registry := NewReferenceRegistry()
+	builder, err := NewSpineBuilder(Duration("720720/24000s"), registry) // 30 seconds
 	if err != nil {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}
@@ -413,7 +414,8 @@ func TestSpineBuilder(t *testing.T) {
 }
 
 func TestSpineBuilder_OverlapValidation(t *testing.T) {
-	builder, err := NewSpineBuilder(Duration("720720/24000s")) // 30 seconds
+	registry := NewReferenceRegistry()
+	builder, err := NewSpineBuilder(Duration("720720/24000s"), registry) // 30 seconds
 	if err != nil {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}
@@ -445,7 +447,8 @@ func TestSpineBuilder_OverlapValidation(t *testing.T) {
 }
 
 func TestSpineBuilder_GetStatistics(t *testing.T) {
-	builder, err := NewSpineBuilder(Duration("720720/24000s")) // 30 seconds
+	registry := NewReferenceRegistry()
+	builder, err := NewSpineBuilder(Duration("720720/24000s"), registry) // 30 seconds
 	if err != nil {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}

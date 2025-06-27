@@ -745,6 +745,43 @@ func getSystemFonts() []string {
 	}
 }
 
+// ValidateTextConfiguration validates a text configuration struct
+func (tsv *TextStyleValidator) ValidateTextConfiguration(config *TextConfiguration) error {
+	if config == nil {
+		return fmt.Errorf("text configuration cannot be nil")
+	}
+	
+	// Validate font
+	if config.Font != "" {
+		if err := tsv.validateFontName(config.Font); err != nil {
+			return fmt.Errorf("invalid font: %v", err)
+		}
+	}
+	
+	// Validate font size
+	if config.FontSize != "" {
+		if err := tsv.validateFontSize(config.FontSize); err != nil {
+			return fmt.Errorf("invalid font size: %v", err)
+		}
+	}
+	
+	// Validate font color
+	if config.FontColor != "" {
+		if err := tsv.validateRGBColor(config.FontColor); err != nil {
+			return fmt.Errorf("invalid font color: %v", err)
+		}
+	}
+	
+	// Validate alignment
+	if config.Alignment != "" {
+		if err := tsv.validateAlignment(config.Alignment); err != nil {
+			return fmt.Errorf("invalid alignment: %v", err)
+		}
+	}
+	
+	return nil
+}
+
 // floatPtr returns a pointer to a float64 value
 func floatPtr(f float64) *float64 {
 	return &f

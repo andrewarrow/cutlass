@@ -194,6 +194,86 @@ func (tx *SafeResourceTransaction) CreateValidatedEffect(name, uid string) (*Eff
 	return effect, nil
 }
 
+// CreateImageAsset creates a validated image asset
+func (tx *SafeResourceTransaction) CreateImageAsset(filePath, name string, duration Duration) (*Asset, *Format, error) {
+	return tx.CreateValidatedAsset(filePath, name, "image")
+}
+
+// CreateVideoAsset creates a validated video asset  
+func (tx *SafeResourceTransaction) CreateVideoAsset(filePath, name string, duration Duration) (*Asset, *Format, error) {
+	return tx.CreateValidatedAsset(filePath, name, "video")
+}
+
+// CreateAudioAsset creates a validated audio asset
+func (tx *SafeResourceTransaction) CreateAudioAsset(filePath, name string, duration Duration) (*Asset, *Format, error) {
+	return tx.CreateValidatedAsset(filePath, name, "audio")
+}
+
+// CreateEffect creates a validated effect with given ID and properties
+func (tx *SafeResourceTransaction) CreateEffect(id, name, uid string) (*Effect, error) {
+	tx.mu.Lock()
+	defer tx.mu.Unlock()
+
+	if tx.rolled {
+		return nil, fmt.Errorf("transaction has been rolled back")
+	}
+	if tx.committed {
+		return nil, fmt.Errorf("transaction has already been committed")
+	}
+
+	// Create effect using EffectBuilder with specific ID
+	builder := NewEffectBuilder()
+	effect, err := builder.CreateEffect(ID(id), name, uid)
+	if err != nil {
+		return nil, fmt.Errorf("effect creation failed: %v", err)
+	}
+
+	// Create wrapped resource for transaction tracking
+	wrapper := &SafeEffectWrapper{
+		Effect:    effect,
+		validator: tx.validator,
+	}
+
+	// Validate the wrapper
+	if err := wrapper.Validate(); err != nil {
+		return nil, fmt.Errorf("effect validation failed: %v", err)
+	}
+
+	// Add to transaction
+	tx.created = append(tx.created, wrapper)
+
+	return effect, nil
+}
+
+// CreateFormat creates a validated format
+func (tx *SafeResourceTransaction) CreateFormat(id, name, width, height, colorSpace string) (*Format, error) {
+	tx.mu.Lock()
+	defer tx.mu.Unlock()
+
+	if tx.rolled {
+		return nil, fmt.Errorf("transaction has been rolled back")
+	}
+	if tx.committed {
+		return nil, fmt.Errorf("transaction has already been committed")
+	}
+
+	// Create format
+	format := &Format{
+		ID:         id,
+		Name:       name,
+		Width:      width,
+		Height:     height,
+		ColorSpace: colorSpace,
+	}
+
+	// Validate format structure
+	if err := tx.validator.validateFormatStructure(format); err != nil {
+		return nil, fmt.Errorf("format validation failed: %v", err)
+	}
+
+	return format, nil
+}
+
 // Commit atomically commits all resources in the transaction
 func (tx *SafeResourceTransaction) Commit() error {
 	tx.mu.Lock()
@@ -229,12 +309,18 @@ func (tx *SafeResourceTransaction) Commit() error {
 	for _, resource := range tx.created {
 		switch r := resource.(type) {
 		case *SafeAssetWrapper:
-			tx.registry.RegisterAsset(r.Asset)
+			if err := tx.registry.RegisterAsset(r.Asset); err != nil {
+				return fmt.Errorf("failed to register asset: %v", err)
+			}
 			if r.Format != nil {
-				tx.registry.RegisterFormat(r.Format)
+				if err := tx.registry.RegisterFormat(r.Format); err != nil {
+					return fmt.Errorf("failed to register format: %v", err)
+				}
 			}
 		case *SafeEffectWrapper:
-			tx.registry.RegisterEffect(r.Effect)
+			if err := tx.registry.RegisterEffect(r.Effect); err != nil {
+				return fmt.Errorf("failed to register effect: %v", err)
+			}
 		default:
 			return fmt.Errorf("unknown resource type: %T", resource)
 		}
