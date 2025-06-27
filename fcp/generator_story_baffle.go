@@ -293,26 +293,58 @@ func buildStep1Timeline(fcpxml *FCPXML, allImages []ImageAttribution, textEffect
 		fmt.Printf("Warning: Failed to add final text: %v\n", err)
 	}
 
-	// Add 18 images with 0.5s cuts, overlapping for no black screens
+	// Add 18 images with 0.5s cuts and MULTIPLE LANES for Michael Bay chaos
 	cutDuration := 0.5
 	overlapDuration := 0.1 // Small overlap to prevent black frames
 	
-	for i := 0; i < config.ImageCount && i < len(allImages); i++ {
-		startTime := float64(i) * (cutDuration - overlapDuration)
-		duration := cutDuration + overlapDuration*2 // Extend slightly to ensure overlap
+	// Create 6 primary spine elements, each with 3 connected clips in different lanes
+	numPrimary := 6
+	clipsPerPrimary := 3
+	
+	imageIndex := 0
+	for primaryIndex := 0; primaryIndex < numPrimary && imageIndex < len(allImages); primaryIndex++ {
+		primaryStartTime := float64(primaryIndex) * (cutDuration * float64(clipsPerPrimary))
+		primaryDuration := cutDuration * float64(clipsPerPrimary) + overlapDuration*2
 		
 		if verbose {
-			fmt.Printf("Image %d: %.2fs-%.2fs (%.2fs duration)\n", i+1, startTime, startTime+duration, duration)
+			fmt.Printf("Primary %d: %.2fs-%.2fs (%.2fs duration)\n", primaryIndex+1, primaryStartTime, primaryStartTime+primaryDuration, primaryDuration)
 		}
 		
-		imageAttr := allImages[i]
-		err := addStep1Image(fcpxml, imageAttr.FilePath, startTime, duration, i, config.Format)
+		// Create primary spine video
+		primaryImage := allImages[imageIndex]
+		primaryVideo, err := createStep1PrimaryVideo(fcpxml, primaryImage.FilePath, primaryStartTime, primaryDuration, primaryIndex, config.Format)
 		if err != nil {
 			if verbose {
-				fmt.Printf("Warning: Failed to add image %d: %v\n", i+1, err)
+				fmt.Printf("Warning: Failed to create primary video %d: %v\n", primaryIndex, err)
 			}
 			continue
 		}
+		imageIndex++
+		
+		// Add connected clips to different lanes
+		for clipIndex := 0; clipIndex < clipsPerPrimary && imageIndex < len(allImages); clipIndex++ {
+			clipStartTime := float64(clipIndex) * cutDuration
+			clipDuration := cutDuration + overlapDuration*2
+			lane := clipIndex - 1 // Lanes -1, 0, 1
+			
+			if verbose {
+				fmt.Printf("  Connected %d (Lane %d): %.2fs-%.2fs (%.2fs duration)\n", clipIndex+1, lane, clipStartTime, clipStartTime+clipDuration, clipDuration)
+			}
+			
+			connectedImage := allImages[imageIndex]
+			err := addStep1ConnectedClip(fcpxml, primaryVideo, connectedImage.FilePath, clipStartTime, clipDuration, lane, clipIndex, config.Format)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Warning: Failed to add connected clip %d: %v\n", clipIndex, err)
+				}
+				continue
+			}
+			imageIndex++
+		}
+		
+		// Add to spine
+		spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+		spine.Videos = append(spine.Videos, *primaryVideo)
 	}
 
 	if verbose {
@@ -345,8 +377,8 @@ func addStep1Text(fcpxml *FCPXML, effectID, text string, startTime, duration flo
 	selectedFont := fonts[0]
 	selectedColor := colors[0]
 	
-	// Large font for impact
-	fontSize := 200
+	// Large font for impact - user requested 288
+	fontSize := 288
 
 	fmt.Printf("STEP 1 TEXT: \"%s\" -> Font: %s (Size: %d)\n", text, selectedFont, fontSize)
 
@@ -400,7 +432,146 @@ func addStep1Text(fcpxml *FCPXML, effectID, text string, startTime, duration flo
 	return nil
 }
 
-// addStep1Image adds rapid-fire images with explosive animations
+// createStep1PrimaryVideo creates a primary spine video for step 1
+func createStep1PrimaryVideo(fcpxml *FCPXML, imagePath string, startTime, duration float64, primaryIndex int, format string) (*Video, error) {
+	// Use transaction for asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	width := "1280"
+	height := "720"
+	if format == "vertical" {
+		width = "1080"
+		height = "1920"
+	}
+
+	_, err := tx.CreateFormat(formatID, "Step1Primary", width, height, "1-13-1")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Step1Primary_%d", primaryIndex), "0s", formatID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Create video element (for image)
+	video := &Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Step1Primary_%d", primaryIndex),
+		Lane:     "", // Spine element
+	}
+
+	// Create moderate animation for primary element
+	video.AdjustTransform = createStep1PrimaryAnimation(startTime, duration, primaryIndex)
+
+	return video, nil
+}
+
+// addStep1ConnectedClip adds a connected clip with lane to a primary video
+func addStep1ConnectedClip(fcpxml *FCPXML, primaryVideo *Video, imagePath string, offsetFromPrimary, duration float64, lane, clipIndex int, format string) error {
+	// Use transaction for asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	width := "1280"
+	height := "720"
+	if format == "vertical" {
+		width = "1080"
+		height = "1920"
+	}
+
+	_, err := tx.CreateFormat(formatID, "Step1Connected", width, height, "1-13-1")
+	if err != nil {
+		return fmt.Errorf("failed to create format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Step1Connected_L%d_%d", lane, clipIndex), "0s", formatID)
+	if err != nil {
+		return fmt.Errorf("failed to create asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Create connected video element (nested inside the primary asset-clip)
+	connectedVideo := Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(offsetFromPrimary),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Step1Connected_L%d_%d", lane, clipIndex),
+		Start:    "0s",
+		Lane:     fmt.Sprintf("%d", lane),
+	}
+
+	// Create explosive animation for connected clip
+	connectedVideo.AdjustTransform = createStep1Animation(offsetFromPrimary, duration, clipIndex)
+
+	// Add to primary video's nested videos
+	primaryVideo.NestedVideos = append(primaryVideo.NestedVideos, connectedVideo)
+
+	return nil
+}
+
+// createStep1PrimaryAnimation creates moderate animation for primary spine elements
+func createStep1PrimaryAnimation(startTime, duration float64, primaryIndex int) *AdjustTransform {
+	// Simple Ken Burns effect for primary elements
+	startScale := "1.0 1.0"
+	endScale := "1.2 1.2"
+	if primaryIndex%2 == 1 {
+		startScale = "1.2 1.2"
+		endScale = "1.0 1.0"
+	}
+	
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: startScale,
+							Curve: "linear",
+						},
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime + duration),
+							Value: endScale,
+							Curve: "linear",
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// addStep1Image adds rapid-fire images with explosive animations (legacy function, now unused)
 func addStep1Image(fcpxml *FCPXML, imagePath string, startTime, duration float64, imageIndex int, format string) error {
 	// Use transaction for asset creation
 	registry := NewResourceRegistry(fcpxml)
@@ -502,21 +673,21 @@ func createStep1Animation(startTime, duration float64, imageIndex int) *AdjustTr
 	var startX, startY float64
 	switch direction {
 	case "left":
-		startX, startY = -2000, (localRand.Float64()-0.5)*1000
+		startX, startY = -800, (localRand.Float64()-0.5)*400
 	case "right":
-		startX, startY = 2000, (localRand.Float64()-0.5)*1000
+		startX, startY = 800, (localRand.Float64()-0.5)*400
 	case "top":
-		startX, startY = (localRand.Float64()-0.5)*1000, -2000
+		startX, startY = (localRand.Float64()-0.5)*400, -600
 	case "bottom":
-		startX, startY = (localRand.Float64()-0.5)*1000, 2000
+		startX, startY = (localRand.Float64()-0.5)*400, 600
 	case "top-left":
-		startX, startY = -2000, -2000
+		startX, startY = -800, -600
 	case "top-right":
-		startX, startY = 2000, -2000
+		startX, startY = 800, -600
 	case "bottom-left":
-		startX, startY = -2000, 2000
+		startX, startY = -800, 600
 	case "bottom-right":
-		startX, startY = 2000, 2000
+		startX, startY = 800, 600
 	}
 	
 	// EXPLOSIVE POSITION ANIMATION
