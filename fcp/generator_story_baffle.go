@@ -231,7 +231,7 @@ func buildStoryBaffleTimeline(fcpxml *FCPXML, allImages map[string][]ImageAttrib
 
 		// Create primary spine element  
 		primaryImage := allImagesList[imageIndex%len(allImagesList)]
-		primaryClip, err := createPrimaryStoryElement(fcpxml, primaryImage.FilePath, 
+		primaryVideo, err := createPrimaryStoryElement(fcpxml, primaryImage.FilePath, 
 			primaryStartTime, primaryDuration, primaryIndex, currentPhase, config.Format)
 		if err != nil {
 			if verbose {
@@ -254,7 +254,7 @@ func buildStoryBaffleTimeline(fcpxml *FCPXML, allImages map[string][]ImageAttrib
 			
 			connectedImage := allImagesList[imageIndex%len(allImagesList)]
 			
-			err := addConnectedClipWithLane(fcpxml, primaryClip, connectedImage.FilePath, 
+			err := addConnectedClipWithLane(fcpxml, primaryVideo, connectedImage.FilePath, 
 				cutStartTime-primaryStartTime, cutDuration, laneNumber, 
 				currentPhase, connectedIndex, config.Format)
 			if err != nil {
@@ -276,7 +276,7 @@ func buildStoryBaffleTimeline(fcpxml *FCPXML, allImages map[string][]ImageAttrib
 			}
 		}
 
-		spine.AssetClips = append(spine.AssetClips, *primaryClip)
+		spine.Videos = append(spine.Videos, *primaryVideo)
 	}
 
 	// Step 3: Add rapid-fire standalone spine elements for maximum chaos
@@ -1081,8 +1081,8 @@ func createBackgroundVideo(fcpxml *FCPXML, imagePath string, startTime, duration
 	return video, nil
 }
 
-// createPrimaryStoryElement creates a primary spine asset-clip that will contain nested clips
-func createPrimaryStoryElement(fcpxml *FCPXML, imagePath string, startTime, duration float64, index int, phase StoryPhase, format string) (*AssetClip, error) {
+// createPrimaryStoryElement creates a primary spine video element that will contain nested clips
+func createPrimaryStoryElement(fcpxml *FCPXML, imagePath string, startTime, duration float64, index int, phase StoryPhase, format string) (*Video, error) {
 	// Use transaction for proper asset creation
 	registry := NewResourceRegistry(fcpxml)
 	tx := NewTransaction(registry)
@@ -1117,8 +1117,8 @@ func createPrimaryStoryElement(fcpxml *FCPXML, imagePath string, startTime, dura
 		return nil, fmt.Errorf("failed to commit primary transaction: %v", err)
 	}
 
-	// Create asset-clip (NOT video - we need asset-clip for nested connected clips)
-	clip := &AssetClip{
+	// Create video element (CORRECT for images per CLAUDE.md)
+	video := &Video{
 		Ref:      assetID,
 		Offset:   ConvertSecondsToFCPDuration(startTime),
 		Duration: ConvertSecondsToFCPDuration(duration),
@@ -1128,13 +1128,13 @@ func createPrimaryStoryElement(fcpxml *FCPXML, imagePath string, startTime, dura
 	}
 
 	// Add primary animation based on phase
-	clip.AdjustTransform = createStoryBaffleAnimation(phase.AnimationStyle, startTime, duration, phase.Complexity, index, index)
+	video.AdjustTransform = createStoryBaffleAnimation(phase.AnimationStyle, startTime, duration, phase.Complexity, index, index)
 
-	return clip, nil
+	return video, nil
 }
 
 // addConnectedClipWithLane adds a connected clip with a specific lane to a primary element
-func addConnectedClipWithLane(fcpxml *FCPXML, primaryClip *AssetClip, imagePath string, offsetFromPrimary, duration float64, laneNumber int, phase StoryPhase, index int, format string) error {
+func addConnectedClipWithLane(fcpxml *FCPXML, primaryVideo *Video, imagePath string, offsetFromPrimary, duration float64, laneNumber int, phase StoryPhase, index int, format string) error {
 	// Create asset for connected clip
 	registry := NewResourceRegistry(fcpxml)
 	tx := NewTransaction(registry)
@@ -1182,8 +1182,8 @@ func addConnectedClipWithLane(fcpxml *FCPXML, primaryClip *AssetClip, imagePath 
 	// Create explosive animation for connected clip
 	connectedVideo.AdjustTransform = createExplosiveAnimation(offsetFromPrimary, duration, phase.Complexity, index, laneNumber)
 
-	// Add to primary clip's nested videos
-	primaryClip.Videos = append(primaryClip.Videos, connectedVideo)
+	// Add to primary video's nested videos
+	primaryVideo.NestedVideos = append(primaryVideo.NestedVideos, connectedVideo)
 
 	return nil
 }
