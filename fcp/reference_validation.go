@@ -13,22 +13,24 @@ import (
 
 // ReferenceRegistry tracks all resources and validates references
 type ReferenceRegistry struct {
-	mu           sync.RWMutex
-	assets       map[ID]*Asset
-	formats      map[ID]*Format
-	effects      map[ID]*Effect
-	media        map[ID]*Media
-	danglingRefs map[string][]string // Track what references what for debugging
+	mu             sync.RWMutex
+	assets         map[ID]*Asset
+	formats        map[ID]*Format
+	effects        map[ID]*Effect
+	media          map[ID]*Media
+	danglingRefs   map[string][]string // Track what references what for debugging
+	nextResourceID int                 // Next ID number to generate
 }
 
 // NewReferenceRegistry creates a new reference registry
 func NewReferenceRegistry() *ReferenceRegistry {
 	return &ReferenceRegistry{
-		assets:       make(map[ID]*Asset),
-		formats:      make(map[ID]*Format),
-		effects:      make(map[ID]*Effect),
-		media:        make(map[ID]*Media),
-		danglingRefs: make(map[string][]string),
+		assets:         make(map[ID]*Asset),
+		formats:        make(map[ID]*Format),
+		effects:        make(map[ID]*Effect),
+		media:          make(map[ID]*Media),
+		danglingRefs:   make(map[string][]string),
+		nextResourceID: 1, // Start with r1
 	}
 }
 
@@ -472,3 +474,94 @@ func (r *ReferenceRegistry) GetDanglingReferences(fcpxml *FCPXML) map[string][]s
 	
 	return danglingRefs
 }
+
+// ReleaseID releases a reserved ID (used when transactions are rolled back)
+func (r *ReferenceRegistry) ReleaseID(id string) {
+	r.ReleaseReservedID(ID(id))
+}
+
+// HasFormat checks if a format with the given ID exists
+func (r *ReferenceRegistry) HasFormat(id string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	
+	_, exists := r.formats[ID(id)]
+	return exists
+}
+
+// HasAsset checks if an asset with the given ID exists
+func (r *ReferenceRegistry) HasAsset(id string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	
+	_, exists := r.assets[ID(id)]
+	return exists
+}
+
+// HasEffect checks if an effect with the given ID exists
+func (r *ReferenceRegistry) HasEffect(id string) bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	
+	_, exists := r.effects[ID(id)]
+	return exists
+}
+
+// ReserveIDs reserves multiple IDs for atomic operations
+func (r *ReferenceRegistry) ReserveIDs(count int) []string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	
+	ids := make([]string, count)
+	for i := 0; i < count; i++ {
+		// Generate next available ID
+		id := r.generateNextID()
+		ids[i] = id
+		
+		// Reserve the ID by adding to danglingRefs
+		key := fmt.Sprintf("reserved:%s", id)
+		r.danglingRefs[key] = []string{"reserved"}
+	}
+	
+	return ids
+}
+
+// generateNextID generates the next available resource ID
+func (r *ReferenceRegistry) generateNextID() string {
+	for {
+		id := fmt.Sprintf("r%d", r.nextResourceID)
+		r.nextResourceID++
+		
+		// Check if ID is already in use
+		if !r.isIDInUse(ID(id)) {
+			return id
+		}
+	}
+}
+
+// isIDInUse checks if an ID is already in use by any resource type
+func (r *ReferenceRegistry) isIDInUse(id ID) bool {
+	// Check all resource types
+	if _, exists := r.assets[id]; exists {
+		return true
+	}
+	if _, exists := r.formats[id]; exists {
+		return true
+	}
+	if _, exists := r.effects[id]; exists {
+		return true
+	}
+	if _, exists := r.media[id]; exists {
+		return true
+	}
+	
+	// Check reserved IDs
+	key := fmt.Sprintf("reserved:%s", id)
+	if _, exists := r.danglingRefs[key]; exists {
+		return true
+	}
+	
+	return false
+}
+
+// Note: nextResourceID is now a field in ReferenceRegistry struct
