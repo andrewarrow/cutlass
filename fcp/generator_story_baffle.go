@@ -157,6 +157,443 @@ func GenerateStoryBaffle(config *StoryBaffleConfig, verbose bool) (*FCPXML, erro
 	return fcpxml, nil
 }
 
+// GenerateStoryBaffleStep1 creates step 1: 9 second video with 18 images, 0.5s cuts (Michael Bay style)
+func GenerateStoryBaffleStep1(config *StoryBaffleConfig, verbose bool) (*FCPXML, error) {
+	if config == nil {
+		config = DefaultStoryBaffleConfig()
+		config.Duration = 9.0
+		config.ImageCount = 18
+	}
+
+	if verbose {
+		fmt.Printf("🚀 GENERATING STEP 1: MICHAEL BAY CUTS 🚀\n")
+		fmt.Printf("Duration: %.1f seconds, Images: %d, Cuts every: 0.5s\n", config.Duration, config.ImageCount)
+	}
+
+	// Create base FCPXML
+	fcpxml, err := GenerateEmptyWithFormat("", config.Format)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+
+	// Set up resource management
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Download 18 action-packed images for step 1
+	actionThemes := []string{"explosion", "action", "fast", "energy", "fire", "lightning"}
+	allImages, err := downloadStep1Images(config, actionThemes, verbose)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download images: %v", err)
+	}
+
+	// Create text effect for dramatic text
+	textEffectID := tx.ReserveIDs(1)[0]
+	_, err = tx.CreateEffect(textEffectID, "StepText", ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create text effect: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit resources: %v", err)
+	}
+
+	if verbose {
+		fmt.Printf("Building Michael Bay timeline: 18 images, 0.5s cuts...\n")
+	}
+
+	// Build the Michael Bay timeline
+	if err := buildStep1Timeline(fcpxml, allImages, textEffectID, config, verbose); err != nil {
+		return nil, fmt.Errorf("failed to build timeline: %v", err)
+	}
+
+	// Update sequence duration
+	updateSequenceDuration(fcpxml, config.Duration)
+
+	if verbose {
+		fmt.Printf("✅ Step 1 generation completed! 9 seconds of pure action!\n")
+	}
+
+	return fcpxml, nil
+}
+
+// downloadStep1Images downloads action-packed images for step 1
+func downloadStep1Images(config *StoryBaffleConfig, themes []string, verbose bool) ([]ImageAttribution, error) {
+	var allImages []ImageAttribution
+	
+	imagesPerTheme := config.ImageCount / len(themes)
+	if imagesPerTheme < 1 {
+		imagesPerTheme = 1
+	}
+
+	for i, theme := range themes {
+		// Calculate how many images this theme should get
+		imagesToDownload := imagesPerTheme
+		if i < config.ImageCount%len(themes) {
+			imagesToDownload++ // Distribute remainder
+		}
+		
+		if verbose {
+			fmt.Printf("Downloading %d action images for theme: %s\n", imagesToDownload, theme)
+		}
+		
+		images, err := DownloadImagesFromPixabay(theme, imagesToDownload, config.OutputDir, config.PixabayAPIKey)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Warning: Failed to download images for theme %s: %v\n", theme, err)
+			}
+			continue
+		}
+		
+		allImages = append(allImages, images...)
+		
+		// Stop when we have enough images
+		if len(allImages) >= config.ImageCount {
+			break
+		}
+	}
+
+	if len(allImages) < config.ImageCount {
+		if verbose {
+			fmt.Printf("Warning: Only got %d images instead of %d\n", len(allImages), config.ImageCount)
+		}
+	}
+
+	return allImages, nil
+}
+
+// buildStep1Timeline creates a Michael Bay style timeline: 18 images, 0.5s cuts, pure action
+func buildStep1Timeline(fcpxml *FCPXML, allImages []ImageAttribution, textEffectID string, config *StoryBaffleConfig, verbose bool) error {
+	if verbose {
+		fmt.Printf("🎬 BUILDING MICHAEL BAY STEP 1 TIMELINE 🎬\n")
+		fmt.Printf("Target: 18 images, 0.5s cuts, no black screens, pure action!\n")
+	}
+
+	if len(allImages) == 0 {
+		return fmt.Errorf("no images available for timeline")
+	}
+
+	// Add opening text: "Let me try making a video..."
+	err := addStep1Text(fcpxml, textEffectID, "Let me try making a video...", 0.0, 2.0)
+	if err != nil && verbose {
+		fmt.Printf("Warning: Failed to add opening text: %v\n", err)
+	}
+
+	// Add action text at 3 seconds
+	err = addStep1Text(fcpxml, textEffectID, "MORE ACTION!", 3.0, 2.0)
+	if err != nil && verbose {
+		fmt.Printf("Warning: Failed to add action text: %v\n", err)
+	}
+
+	// Add final text at 7 seconds
+	err = addStep1Text(fcpxml, textEffectID, "MICHAEL BAY STYLE!", 7.0, 2.0)
+	if err != nil && verbose {
+		fmt.Printf("Warning: Failed to add final text: %v\n", err)
+	}
+
+	// Add 18 images with 0.5s cuts, overlapping for no black screens
+	cutDuration := 0.5
+	overlapDuration := 0.1 // Small overlap to prevent black frames
+	
+	for i := 0; i < config.ImageCount && i < len(allImages); i++ {
+		startTime := float64(i) * (cutDuration - overlapDuration)
+		duration := cutDuration + overlapDuration*2 // Extend slightly to ensure overlap
+		
+		if verbose {
+			fmt.Printf("Image %d: %.2fs-%.2fs (%.2fs duration)\n", i+1, startTime, startTime+duration, duration)
+		}
+		
+		imageAttr := allImages[i]
+		err := addStep1Image(fcpxml, imageAttr.FilePath, startTime, duration, i, config.Format)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Warning: Failed to add image %d: %v\n", i+1, err)
+			}
+			continue
+		}
+	}
+
+	if verbose {
+		fmt.Printf("🎆 MICHAEL BAY STEP 1 COMPLETE 🎆\n")
+		actualImages := config.ImageCount
+		if len(allImages) < actualImages {
+			actualImages = len(allImages)
+		}
+		fmt.Printf("Added %d rapid-fire images with 0.5s cuts\n", actualImages)
+	}
+
+	return nil
+}
+
+// addStep1Text adds dramatic text for step 1
+func addStep1Text(fcpxml *FCPXML, effectID, text string, startTime, duration float64) error {
+	// Use existing resource registry  
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Generate unique style ID
+	styleID := GenerateTextStyleID(text, "step1")
+	
+	// Get dramatic fonts and colors
+	fonts := GetRandomFonts()
+	colors := GetRandomHighContrastColors()
+	
+	// Use first dramatic font and color
+	selectedFont := fonts[0]
+	selectedColor := colors[0]
+	
+	// Large font for impact
+	fontSize := 200
+
+	fmt.Printf("STEP 1 TEXT: \"%s\" -> Font: %s (Size: %d)\n", text, selectedFont, fontSize)
+
+	// Create title with no lane (spine element)
+	title := Title{
+		Ref:      effectID,
+		Lane:     "", // No lanes for spine elements
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     "Step1Text",
+		Start:    "86486400/24000s",
+		Text: &TitleText{
+			TextStyles: []TextStyleRef{
+				{
+					Ref:  styleID,
+					Text: text,
+				},
+			},
+		},
+		TextStyleDefs: []TextStyleDef{
+			{
+				ID: styleID,
+				TextStyle: TextStyle{
+					Font:        selectedFont,
+					FontSize:    fmt.Sprintf("%d", fontSize),
+					FontFace:    "Bold",
+					FontColor:   selectedColor.FaceColor,
+					StrokeColor: selectedColor.OutlineColor,
+					StrokeWidth: "-15",
+					Alignment:   "center",
+					LineSpacing: "-15",
+					Bold:        "1",
+					Italic:      "0",
+				},
+			},
+		},
+	}
+
+	// Add dramatic scale animation
+	title.Params = createStep1TextAnimation(startTime, duration)
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit text transaction: %v", err)
+	}
+
+	// Add to spine
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.Titles = append(spine.Titles, title)
+
+	return nil
+}
+
+// addStep1Image adds rapid-fire images with explosive animations
+func addStep1Image(fcpxml *FCPXML, imagePath string, startTime, duration float64, imageIndex int, format string) error {
+	// Use transaction for asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	width := "1280"
+	height := "720"
+	if format == "vertical" {
+		width = "1080"
+		height = "1920"
+	}
+
+	_, err := tx.CreateFormat(formatID, "Step1Image", width, height, "1-13-1")
+	if err != nil {
+		return fmt.Errorf("failed to create format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Step1Image_%d", imageIndex), "0s", formatID)
+	if err != nil {
+		return fmt.Errorf("failed to create asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	// Create video element (for image)
+	video := Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Step1Action_%d", imageIndex),
+		Lane:     "", // Spine element
+	}
+
+	// Create explosive Michael Bay animation
+	video.AdjustTransform = createStep1Animation(startTime, duration, imageIndex)
+
+	// Add to spine
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.Videos = append(spine.Videos, video)
+
+	return nil
+}
+
+// createStep1TextAnimation creates dramatic text animations for step 1
+func createStep1TextAnimation(startTime, duration float64) []Param {
+	var params []Param
+
+	// Dramatic scale animation
+	scaleKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: "0.2 0.2",
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + 0.3),
+			Value: "1.8 1.8",
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: "1.0 1.0",
+			Curve: "linear",
+		},
+	}
+
+	params = append(params, Param{
+		Name: "Scale",
+		Key:  "9999/10003/13260/3296672360/1/100/102",
+		KeyframeAnimation: &KeyframeAnimation{
+			Keyframes: scaleKeyframes,
+		},
+	})
+
+	return params
+}
+
+// createStep1Animation creates Michael Bay style explosive animations
+func createStep1Animation(startTime, duration float64, imageIndex int) *AdjustTransform {
+	// Seed randomness for consistent animations per image
+	randSeed := int64(imageIndex * 42)
+	localRand := rand.New(rand.NewSource(randSeed))
+	
+	// EXPLOSIVE entry from off-screen
+	entryDirections := []string{"left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"}
+	direction := entryDirections[imageIndex%len(entryDirections)]
+	
+	var startX, startY float64
+	switch direction {
+	case "left":
+		startX, startY = -2000, (localRand.Float64()-0.5)*1000
+	case "right":
+		startX, startY = 2000, (localRand.Float64()-0.5)*1000
+	case "top":
+		startX, startY = (localRand.Float64()-0.5)*1000, -2000
+	case "bottom":
+		startX, startY = (localRand.Float64()-0.5)*1000, 2000
+	case "top-left":
+		startX, startY = -2000, -2000
+	case "top-right":
+		startX, startY = 2000, -2000
+	case "bottom-left":
+		startX, startY = -2000, 2000
+	case "bottom-right":
+		startX, startY = 2000, 2000
+	}
+	
+	// EXPLOSIVE POSITION ANIMATION
+	positionKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: fmt.Sprintf("%.1f %.1f", startX, startY),
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + 0.15), // Hit center fast
+			Value: "0 0",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: fmt.Sprintf("%.1f %.1f", (localRand.Float64()-0.5)*200, (localRand.Float64()-0.5)*200),
+		},
+	}
+	
+	// EXPLOSIVE SCALE ANIMATION
+	scaleKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: "0.1 0.1", // Start tiny
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + 0.1),
+			Value: "2.0 2.0", // EXPLODE bigger
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: "1.2 1.2", // Settle at large size
+			Curve: "linear",
+		},
+	}
+	
+	// RAPID ROTATION
+	rotationAmount := (localRand.Float64() - 0.5) * 720 // Up to ±360 degrees
+	rotationKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: fmt.Sprintf("%.1f", (localRand.Float64()-0.5)*180),
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: fmt.Sprintf("%.1f", rotationAmount),
+			Curve: "linear",
+		},
+	}
+	
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: positionKeyframes,
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: scaleKeyframes,
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: rotationKeyframes,
+				},
+			},
+		},
+	}
+}
+
+
 // downloadThemeImages downloads images for all the story themes
 func downloadThemeImages(config *StoryBaffleConfig, verbose bool) (map[string][]ImageAttribution, error) {
 	allImages := make(map[string][]ImageAttribution)

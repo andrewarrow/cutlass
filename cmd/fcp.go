@@ -782,7 +782,7 @@ var storyBaffleCmd = &cobra.Command{
 	Short: "Generate an AI video creation blooper reel - story of chaos and recovery",
 	Long: `Generate an engaging story about an AI trying to make a complex video and everything going wrong!
 
-Creates a 5-minute narrative timeline containing:
+Creates a narrative timeline containing:
 - Story phases: Simple start → Getting excited → Peak chaos → Collapse → Recovery
 - Multi-lane complex animations that build up and fall apart dramatically
 - Dynamic text that gets bigger and crazier as the AI loses control
@@ -800,22 +800,31 @@ The narrative arc:
 This combines the storytelling of 'story' with the complex multi-lane chaos of 'baffle'
 to create something that's both technically impressive AND entertaining to watch.
 
+Steps:
+  --step 1: 9 second video with 18 pixabay images, cuts every 0.5 seconds (Michael Bay style)
+  --step 2+: More complex multi-lane chaos (future implementations)
+
 Examples:
-  cutlass fcp story-baffle                    # Generate story_baffle_timestamp.fcpxml
+  cutlass fcp story-baffle --step 1           # Generate step1_story_baffle_timestamp.fcpxml
   cutlass fcp story-baffle chaos.fcpxml       # Custom filename  
   cutlass fcp story-baffle --duration 300 --images 50 --verbose`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
+		// Get flags first
+		step, _ := cmd.Flags().GetInt("step")
+		
 		// Get output filename
 		var filename string
 		if len(args) > 0 {
 			filename = args[0]
 		} else {
 			timestamp := time.Now().Unix()
-			filename = fmt.Sprintf("story_baffle_%d.fcpxml", timestamp)
+			if step > 0 {
+				filename = fmt.Sprintf("step%d_story_baffle_%d.fcpxml", step, timestamp)
+			} else {
+				filename = fmt.Sprintf("story_baffle_%d.fcpxml", timestamp)
+			}
 		}
-		
-		// Get flags
 		durationStr, _ := cmd.Flags().GetString("duration")
 		imagesStr, _ := cmd.Flags().GetString("images")
 		complexityStr, _ := cmd.Flags().GetString("complexity")
@@ -858,19 +867,39 @@ Examples:
 		}
 		
 		// Create story-baffle configuration
-		config := &fcp.StoryBaffleConfig{
-			Duration:      duration,
-			OutputDir:     outputDir,
-			PixabayAPIKey: apiKey,
-			MaxComplexity: complexity,
-			ImageCount:    totalImages,
-			Format:        format,
+		var config *fcp.StoryBaffleConfig
+		var fcpxml *fcp.FCPXML
+		
+		if step == 1 {
+			// Step 1: 9 second video with 18 pixabay images, cuts every 0.5 seconds
+			fmt.Printf("Generating Step 1: 9 second video with 18 images, 0.5s cuts (Michael Bay style)...\n")
+			
+			config = &fcp.StoryBaffleConfig{
+				Duration:      9.0,    // Fixed 9 seconds for step 1
+				OutputDir:     outputDir,
+				PixabayAPIKey: apiKey,
+				MaxComplexity: 0.8,    // High intensity for Michael Bay style
+				ImageCount:    18,     // Exactly 18 images
+				Format:        format,
+			}
+			
+			fcpxml, err = fcp.GenerateStoryBaffleStep1(config, verbose)
+		} else {
+			// Original full story-baffle implementation
+			config = &fcp.StoryBaffleConfig{
+				Duration:      duration,
+				OutputDir:     outputDir,
+				PixabayAPIKey: apiKey,
+				MaxComplexity: complexity,
+				ImageCount:    totalImages,
+				Format:        format,
+			}
+			
+			// Generate story-baffle timeline
+			fmt.Printf("Generating AI video creation story-baffle (%.1f minutes)...\n", duration/60)
+			
+			fcpxml, err = fcp.GenerateStoryBaffle(config, verbose)
 		}
-		
-		// Generate story-baffle timeline
-		fmt.Printf("Generating AI video creation story-baffle (%.1f minutes)...\n", duration/60)
-		
-		fcpxml, err := fcp.GenerateStoryBaffle(config, verbose)
 		if err != nil {
 			fmt.Printf("Error generating story-baffle timeline: %v\n", err)
 			return
@@ -1048,6 +1077,7 @@ func init() {
 	baffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
 	// Add flags to story-baffle subcommand
+	storyBaffleCmd.Flags().Int("step", 0, "Story-baffle step: 1 = 9s video with 18 images (0.5s cuts), 0 = full story (default 0)")
 	storyBaffleCmd.Flags().String("duration", "300", "Total story duration in seconds (default 300 = 5 minutes)")
 	storyBaffleCmd.Flags().String("images", "50", "Total number of images to download and use (default 50)")
 	storyBaffleCmd.Flags().String("complexity", "0.95", "Maximum chaos complexity from 0.0 to 1.0 (default 0.95)")
