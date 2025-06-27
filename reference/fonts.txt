@@ -70,3 +70,52 @@ Canela Text
 Chalkboard
 Chalkboard SE
 Chalkduster
+Charter
+Cochin
+Comic Sans MS
+Comic Script
+Coolvetica
+Copperplate
+Corsiva Hebrew
+Courier New
+Damascus
+DDT
+DecoType Naskh
+Devanagari MT
+Devanagari Sangam MN
+Didot
+DIN Alternate
+DIN Condensed
+Diwan Kufi
+Diwan Thuluth
+Domaine Display
+Druk
+Druk Wide
+Duality
+Edwardian Script
+Engravers Gothic
+Euphemia UCAS
+Farah
+Farisi
+FLATBUSH
+Forgotten Futurist
+Founders Grotesk
+Futura
+Galvji
+Garamond Rough
+GAZ
+GB18030 Bitmap
+Geeza Pro
+Geneva
+Georgia
+Gill Sans
+Goudy Old Style
+Grantha Sangam MN
+Graphik Compact
+Gujarati MT
+Gujarati Sangam MN
+Gurmukhi MN
+Gurmukhi MT
+Gurmukhi Sangam MN
+Handwriting - Dakota
+Heiti SC

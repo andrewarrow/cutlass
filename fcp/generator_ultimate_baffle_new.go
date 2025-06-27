@@ -245,7 +245,7 @@ type AssetInfo struct {
 	Type     string // "video", "image"
 }
 
-// buildComplexTimeline creates a very complex timeline structure
+// buildComplexTimeline creates a very complex timeline structure with proper multi-lane nesting
 func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, titleEffects []string, config ComplexBaffleConfig, timelineDuration float64) error {
 	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
 	
@@ -253,91 +253,128 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 	totalVideoElements := len(videoAssets) * config.AssetReuseCount
 	totalImageElements := len(imageAssets) * config.AssetReuseCount
 	
-	fmt.Printf("Creating %d video elements, %d image elements, %d titles...\n", 
+	fmt.Printf("Creating %d video elements, %d image elements, %d titles with 8+ lanes...\n", 
 		totalVideoElements, totalImageElements, config.TitleElementCount)
 	
-	// Create video elements across MANY layers - go crazy!
-	elementIndex := 0
-	for _, asset := range videoAssets {
-		for reuse := 0; reuse < config.AssetReuseCount; reuse++ {
-			// 🔥 CRAZY TIMING: Random start times with lots of overlap
-			startTime := (float64(elementIndex) / float64(totalVideoElements)) * timelineDuration * 1.2 // Extends beyond timeline!
+	// 🎬 NEW APPROACH: Create primary spine elements with nested connected clips for multi-lane structure
+	numPrimaryElements := 5 + (len(videoAssets) / 3) // 5-9 primary elements
+	
+	for primaryIndex := 0; primaryIndex < numPrimaryElements && primaryIndex < len(videoAssets); primaryIndex++ {
+		asset := videoAssets[primaryIndex]
+		
+		// 🎬 PRIMARY SPINE ELEMENT: Create main asset-clip (NO lane)
+		primaryStartTime := (float64(primaryIndex) / float64(numPrimaryElements)) * timelineDuration
+		primaryDuration := timelineDuration / float64(numPrimaryElements) * 1.5 // Some overlap
+		
+		primaryClip := AssetClip{
+			Ref:      asset.ID,
+			Offset:   ConvertSecondsToFCPDuration(primaryStartTime),
+			Duration: ConvertSecondsToFCPDuration(primaryDuration),
+			Name:     fmt.Sprintf("Primary_%s", asset.Name),
+			Start:    "0s",
+		}
+		
+		// Add primary element animations
+		primaryClip.AdjustTransform = createComplexAnimation(primaryStartTime, primaryDuration, config.KeyframesPerAnimation, primaryIndex)
+		
+		// 🎬 NESTED CONNECTED CLIPS: Create 6-12 connected clips with lanes inside this primary element
+		numConnectedClips := 6 + (primaryIndex % 7) // 6-12 connected clips per primary
+		
+		for connectedIndex := 0; connectedIndex < numConnectedClips; connectedIndex++ {
+			// Choose assets for connected clips
+			var connectedAsset AssetInfo
+			if connectedIndex%2 == 0 && len(videoAssets) > (connectedIndex/2+1) {
+				// Use different video asset
+				connectedAsset = videoAssets[(primaryIndex+connectedIndex/2+1)%len(videoAssets)]
+			} else if len(imageAssets) > (connectedIndex%len(imageAssets)) {
+				// Use image asset (create nested Video element for images)
+				imageAsset := imageAssets[connectedIndex%len(imageAssets)]
+				
+				// Create nested video element (for image) with lane
+				nestedVideo := Video{
+					Ref:      imageAsset.ID,
+					Offset:   ConvertSecondsToFCPDuration(float64(connectedIndex) * 2.0), // Stagger timing
+					Duration: ConvertSecondsToFCPDuration(5.0 + float64(connectedIndex%10)),
+					Name:     fmt.Sprintf("Connected_Image_%d_%d", primaryIndex, connectedIndex),
+					Lane:     fmt.Sprintf("%d", ((connectedIndex%8)-4)), // Lanes: -4 to +3
+				}
+				nestedVideo.AdjustTransform = createImageAnimation(primaryStartTime+float64(connectedIndex)*2.0, 5.0, connectedIndex)
+				primaryClip.Videos = append(primaryClip.Videos, nestedVideo)
+				continue
+			} else {
+				continue // Skip if no asset available
+			}
 			
-			// 🔥 CRAZY DURATIONS: Very short to very long clips
-			baseDuration := []float64{2.0, 5.0, 8.0, 15.0, 30.0, 45.0, 60.0, 90.0}[elementIndex%8]
-			duration := baseDuration + float64(elementIndex%30) // 2-120 second range
-			
-			// Create asset-clip
-			assetClip := AssetClip{
-				Ref:      asset.ID,
-				Offset:   ConvertSecondsToFCPDuration(startTime),
-				Duration: ConvertSecondsToFCPDuration(duration),
-				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
+			// Create nested asset-clip with lane
+			nestedClip := AssetClip{
+				Ref:      connectedAsset.ID,
+				Offset:   ConvertSecondsToFCPDuration(float64(connectedIndex) * 3.0), // Stagger timing
+				Duration: ConvertSecondsToFCPDuration(8.0 + float64(connectedIndex%15)),
+				Name:     fmt.Sprintf("Connected_%s_%d_%d", connectedAsset.Name, primaryIndex, connectedIndex),
 				Start:    "0s",
+				Lane:     fmt.Sprintf("%d", ((connectedIndex%10)-5)), // Lanes: -5 to +4
 			}
 			
-			// 🚨 FIXED: Spine elements cannot have lanes (per FCPXML architecture)
-			// Lanes are only for connected clips nested within spine elements
-			// All spine elements go on the main timeline without lane attributes
+			// Add animations to connected clips
+			nestedClip.AdjustTransform = createComplexAnimation(
+				primaryStartTime+float64(connectedIndex)*3.0, 
+				8.0+float64(connectedIndex%15), 
+				config.KeyframesPerAnimation/2, 
+				primaryIndex*100+connectedIndex,
+			)
 			
-			// Add complex animations
-			assetClip.AdjustTransform = createComplexAnimation(startTime, duration, config.KeyframesPerAnimation, elementIndex)
-			
-			spine.AssetClips = append(spine.AssetClips, assetClip)
-			elementIndex++
+			primaryClip.NestedAssetClips = append(primaryClip.NestedAssetClips, nestedClip)
 		}
+		
+		// Add nested titles with lanes to primary element
+		for titleIndex := 0; titleIndex < 3 && (primaryIndex*3+titleIndex) < len(titleEffects); titleIndex++ {
+			effectID := titleEffects[primaryIndex*3+titleIndex]
+			
+			nestedTitle := createComplexTitle(
+				effectID, 
+				primaryStartTime+float64(titleIndex)*4.0, 
+				6.0+float64(titleIndex%8), 
+				primaryIndex*10+titleIndex,
+			)
+			
+			// Set lane for nested title (THIS IS CORRECT - nested elements can have lanes)
+			nestedTitle.Lane = fmt.Sprintf("%d", ((titleIndex%6)+5)) // Lanes: +5 to +10
+			
+			primaryClip.Titles = append(primaryClip.Titles, nestedTitle)
+		}
+		
+		spine.AssetClips = append(spine.AssetClips, primaryClip)
 	}
 	
-	// Create image elements across MANY MORE layers - even crazier!
-	elementIndex = 0
-	for _, asset := range imageAssets {
-		for reuse := 0; reuse < config.AssetReuseCount; reuse++ {
-			// 🔥 CRAZY IMAGE TIMING: Staggered and overlapping
-			baseTime := (float64(elementIndex) / float64(totalImageElements)) * timelineDuration
-			startTime := baseTime + float64(elementIndex%20)*2.0 // Stagger by up to 40 seconds
-			
-			// 🔥 CRAZY IMAGE DURATIONS: Mix of very short and long
-			durationPattern := []float64{1.5, 3.0, 6.0, 12.0, 25.0, 40.0, 75.0}[elementIndex%7]
-			duration := durationPattern + float64(elementIndex%15) // 1.5-90 second range
-			
-			// Create video element for image
-			video := Video{
-				Ref:      asset.ID,
-				Offset:   ConvertSecondsToFCPDuration(startTime),
-				Duration: ConvertSecondsToFCPDuration(duration),
-				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
-			}
-			
-			// 🚨 FIXED: Spine video elements cannot have lanes (per FCPXML architecture)
-			// Lanes are only for connected clips nested within spine elements
-			// All spine elements go on the main timeline without lane attributes
-			
-			// Add simpler animations for images (per CLAUDE.md guidance)
-			video.AdjustTransform = createImageAnimation(startTime, duration, elementIndex)
-			
-			spine.Videos = append(spine.Videos, video)
-			elementIndex++
+	// 🎬 ADDITIONAL SPINE ELEMENTS: Add some standalone image and title elements on main spine
+	// These are primary spine elements (NO lanes) to add more complexity
+	
+	// Add a few standalone image elements on main spine
+	numStandaloneImages := 3
+	for i := 0; i < numStandaloneImages && i < len(imageAssets); i++ {
+		asset := imageAssets[i]
+		startTime := timelineDuration * 0.8 + float64(i)*5.0 // Near end of timeline
+		duration := 10.0 + float64(i)*2.0
+		
+		video := Video{
+			Ref:      asset.ID,
+			Offset:   ConvertSecondsToFCPDuration(startTime),
+			Duration: ConvertSecondsToFCPDuration(duration),
+			Name:     fmt.Sprintf("Standalone_Image_%d", i),
 		}
+		
+		video.AdjustTransform = createImageAnimation(startTime, duration, i+1000)
+		spine.Videos = append(spine.Videos, video)
 	}
 	
-	// Create INSANE title elements across ALL possible layers!
-	for i := 0; i < config.TitleElementCount; i++ {
-		effectID := titleEffects[i%len(titleEffects)]
+	// Add a few standalone title elements on main spine  
+	numStandaloneTitles := 2
+	for i := 0; i < numStandaloneTitles && i < len(titleEffects); i++ {
+		effectID := titleEffects[len(titleEffects)-1-i] // Use different effects
+		startTime := timelineDuration * 0.1 + float64(i)*8.0 // Near beginning
+		duration := 12.0 + float64(i)*3.0
 		
-		// 🔥 CRAZY TITLE TIMING: Random scattered placement
-		baseTime := (float64(i) / float64(config.TitleElementCount)) * timelineDuration
-		startTime := baseTime + float64(i%25)*3.0 // Scatter by up to 75 seconds
-		
-		// 🔥 CRAZY TITLE DURATIONS: Very quick flashes to long holds
-		durationOptions := []float64{0.5, 1.0, 2.0, 4.0, 8.0, 15.0, 30.0, 60.0}[i%8]
-		duration := durationOptions + float64(i%10)*0.5 // 0.5-65 second range
-		
-		title := createComplexTitle(effectID, startTime, duration, i)
-		
-		// 🚨 FIXED: Spine title elements cannot have lanes (per FCPXML architecture)
-		// Lanes are only for connected clips nested within spine elements
-		// All spine elements go on the main timeline without lane attributes
-		
+		title := createComplexTitle(effectID, startTime, duration, i+2000)
 		spine.Titles = append(spine.Titles, title)
 	}
 	
