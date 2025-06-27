@@ -394,7 +394,7 @@ func addImageAssetClipToSpineWithFormat(fcpxml *FCPXML, asset *Asset, durationSe
 			// Add zoom scaling for vertical format to fill frame with no empty space
 			if format == "vertical" {
 				video.AdjustTransform = &AdjustTransform{
-					Scale: "1.8 1.8", // Zoom in to fill vertical frame
+					Scale: "3.2 3.2", // Zoom in to fill vertical frame and prevent black gaps
 				}
 			}
 		}

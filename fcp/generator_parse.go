@@ -117,8 +117,8 @@ func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSecon
 	switch format {
 	case "vertical":
 		// Higher zoom for vertical format to fill frame with no empty space
-		startScale = "2.0 2.0"  // Start zoomed in more for vertical
-		endScale = "2.4 2.4"    // End even more zoomed for Ken Burns effect
+		startScale = "3.2 3.2"  // Start zoomed in more for vertical
+		endScale = "3.6 3.6"    // End even more zoomed for Ken Burns effect
 	case "horizontal":
 		fallthrough
 	default:
@@ -228,7 +228,7 @@ func createEnhancedKenBurnsWithFormat(offsetDuration string, totalDurationSecond
 		
 		adjustTransform = &AdjustTransform{
 			Position: "-0.0180805 2.25475",
-			Scale:    "2.52215 2.52215",
+			Scale:    "3.4 3.4",
 		}
 	} else {
 		// For horizontal format, use standard Ken Burns animation
