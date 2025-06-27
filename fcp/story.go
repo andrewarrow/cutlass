@@ -138,6 +138,45 @@ func ReadSentencesFromFile(filepath string) ([]string, error) {
 	return sentences, nil
 }
 
+// HighContrastColor represents a face color and its high-contrast outline color
+type HighContrastColor struct {
+	FaceColor    string // RGBA format "r g b a"
+	OutlineColor string // RGBA format "r g b a"
+	Name         string // Human-readable name for debugging
+}
+
+// GetRandomHighContrastColors returns a list of high-contrast color combinations
+func GetRandomHighContrastColors() []HighContrastColor {
+	return []HighContrastColor{
+		{FaceColor: "1 1 1 1", OutlineColor: "0 0 0 1", Name: "White on Black"},       // White text, black outline
+		{FaceColor: "0 0 0 1", OutlineColor: "1 1 1 1", Name: "Black on White"},       // Black text, white outline
+		{FaceColor: "1 0 0 1", OutlineColor: "1 1 1 1", Name: "Red on White"},         // Red text, white outline
+		{FaceColor: "0 1 0 1", OutlineColor: "0 0 0 1", Name: "Green on Black"},       // Green text, black outline
+		{FaceColor: "0 0 1 1", OutlineColor: "1 1 1 1", Name: "Blue on White"},        // Blue text, white outline
+		{FaceColor: "1 1 0 1", OutlineColor: "0 0 0 1", Name: "Yellow on Black"},      // Yellow text, black outline
+		{FaceColor: "1 0 1 1", OutlineColor: "1 1 1 1", Name: "Magenta on White"},     // Magenta text, white outline
+		{FaceColor: "0 1 1 1", OutlineColor: "0 0 0 1", Name: "Cyan on Black"},        // Cyan text, black outline
+		{FaceColor: "1 0.5 0 1", OutlineColor: "0 0 0 1", Name: "Orange on Black"},    // Orange text, black outline
+		{FaceColor: "0.5 0 1 1", OutlineColor: "1 1 1 1", Name: "Purple on White"},    // Purple text, white outline
+	}
+}
+
+// GetRandomFonts returns a list of fonts to choose from
+func GetRandomFonts() []string {
+	return []string{
+		"Sinzano",
+		"Helvetica Neue",
+		"Arial",
+		"Times New Roman",
+		"Courier New",
+		"Verdana",
+		"Georgia",
+		"Trebuchet MS",
+		"Comic Sans MS",
+		"Impact",
+	}
+}
+
 // DownloadImagesFromPixabay downloads images for a given word from Pixabay or fallback sources
 func DownloadImagesFromPixabay(word string, count int, outputDir string, apiKey string) ([]ImageAttribution, error) {
 	// Create output directory if it doesn't exist
@@ -534,6 +573,14 @@ func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSe
 	// Generate unique text style ID
 	textStyleID := GenerateTextStyleID(text, fmt.Sprintf("story_text_offset_%.1f", offsetSeconds))
 	
+	// Select random colors and font
+	colors := GetRandomHighContrastColors()
+	fonts := GetRandomFonts()
+	
+	rand_math.Seed(time.Now().UnixNano() + int64(offsetSeconds*1000)) // Ensure different seed for each text
+	selectedColor := colors[rand_math.Intn(len(colors))]
+	selectedFont := fonts[rand_math.Intn(len(fonts))]
+	
 	// Convert durations to FCP format
 	offsetDuration := ConvertSecondsToFCPDuration(offsetSeconds)
 	titleDuration := ConvertSecondsToFCPDuration(durationSeconds)
@@ -634,7 +681,33 @@ func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSe
 			{
 				Name:  "Alignment",
 				Key:   "9999/10003/13260/3296672360/2/373",
-				Value: "1 (Center) 1 (Center)",
+				Value: "1 (Center) 1 (Middle)",
+			},
+			// Add stroke parameters for outline effect
+			{
+				Name:  "Size",
+				Key:   "9999/10003/13260/3296672360/5/3296672362/3",
+				Value: "288", // Font size
+			},
+			{
+				Name:  "Color",
+				Key:   "9999/10003/13260/3296672360/5/3296672362/30/32",
+				Value: selectedColor.OutlineColor[:len(selectedColor.OutlineColor)-2], // Remove alpha channel for stroke color
+			},
+			{
+				Name:  "Wrap Mode",
+				Key:   "9999/10003/13260/3296672360/5/3296672362/30/34/5",
+				Value: "1 (Repeat)",
+			},
+			{
+				Name:  "Width",
+				Key:   "9999/10003/13260/3296672360/5/3296672362/30/36",
+				Value: "15", // Stroke width 15.0
+			},
+			{
+				Name:  "Font",
+				Key:   "9999/10003/13260/3296672360/5/3296672362/83",
+				Value: "206 0", // Font selection
 			},
 		},
 		Text: &TitleText{
@@ -649,13 +722,14 @@ func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSe
 			{
 				ID: textStyleID,
 				TextStyle: TextStyle{
-					Font:        "Helvetica Neue",
-					FontSize:    fmt.Sprintf("%d", fontSize), // Use specified font size
-					FontFace:    "Bold",
-					FontColor:   "1 1 1 1", // White text
-					Alignment:   "center",
-					LineSpacing: "-19",
-					Bold:        "1",
+					Font:         selectedFont,
+					FontSize:     "288", // Always use 288 as specified
+					FontFace:     "Regular",
+					FontColor:    selectedColor.FaceColor,
+					StrokeColor:  selectedColor.OutlineColor,
+					StrokeWidth:  "-15", // Negative value for outline
+					Alignment:    "center",
+					LineSpacing:  "-19",
 				},
 			},
 		},
