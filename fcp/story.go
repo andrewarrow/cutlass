@@ -222,8 +222,13 @@ func downloadFromPixabay(word string, count int, outputDir string, apiKey string
 	
 	requestURL := baseURL + "?" + params.Encode()
 	
+	// Create HTTP client with 3 second timeout
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	
 	// Make HTTP request to Pixabay API
-	resp, err := http.Get(requestURL)
+	resp, err := client.Get(requestURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch images from Pixabay: %v", err)
 	}
@@ -333,7 +338,12 @@ func downloadFromLoremPicsum(word string, count int, outputDir string) ([]ImageA
 
 // downloadImage downloads an image from a URL to a local file
 func downloadImage(imageURL, filepath string) error {
-	resp, err := http.Get(imageURL)
+	// Create HTTP client with 3 second timeout
+	client := &http.Client{
+		Timeout: 3 * time.Second,
+	}
+	
+	resp, err := client.Get(imageURL)
 	if err != nil {
 		return fmt.Errorf("failed to fetch image: %v", err)
 	}
