@@ -282,6 +282,10 @@ func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64
 }
 
 func AddImageWithSlideAndFormat(fcpxml *FCPXML, imagePath string, durationSeconds float64, withSlide bool, format string) error {
+	return AddImageWithSlideAndFormatIndex(fcpxml, imagePath, durationSeconds, withSlide, format, 0)
+}
+
+func AddImageWithSlideAndFormatIndex(fcpxml *FCPXML, imagePath string, durationSeconds float64, withSlide bool, format string, imageIndex int) error {
 
 	if !isImageFile(imagePath) {
 		return fmt.Errorf("file is not a supported image format (PNG, JPG, JPEG): %s", imagePath)
@@ -291,7 +295,7 @@ func AddImageWithSlideAndFormat(fcpxml *FCPXML, imagePath string, durationSecond
 
 	if asset, exists := registry.GetOrCreateAsset(imagePath); exists {
 
-		return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, withSlide, format)
+		return addImageAssetClipToSpineWithFormatIndex(fcpxml, asset, durationSeconds, withSlide, format, imageIndex)
 	}
 
 	tx := NewTransaction(registry)
@@ -343,7 +347,7 @@ func AddImageWithSlideAndFormat(fcpxml *FCPXML, imagePath string, durationSecond
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, withSlide, format)
+	return addImageAssetClipToSpineWithFormatIndex(fcpxml, asset, durationSeconds, withSlide, format, imageIndex)
 }
 
 // addImageAssetClipToSpine adds an image Video element to the sequence spine
@@ -365,6 +369,11 @@ func addImageAssetClipToSpineWithSlide(fcpxml *FCPXML, asset *Asset, durationSec
 
 // addImageAssetClipToSpineWithFormat adds an image Video element to the sequence spine with format-aware scaling
 func addImageAssetClipToSpineWithFormat(fcpxml *FCPXML, asset *Asset, durationSeconds float64, withSlide bool, format string) error {
+	return addImageAssetClipToSpineWithFormatIndex(fcpxml, asset, durationSeconds, withSlide, format, 0)
+}
+
+// addImageAssetClipToSpineWithFormatIndex adds an image Video element to the sequence spine with format-aware scaling and alternating Ken Burns direction
+func addImageAssetClipToSpineWithFormatIndex(fcpxml *FCPXML, asset *Asset, durationSeconds float64, withSlide bool, format string, imageIndex int) error {
 
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -384,11 +393,11 @@ func addImageAssetClipToSpineWithFormat(fcpxml *FCPXML, asset *Asset, durationSe
 		if withSlide {
 			// Use enhanced Ken Burns with both crop and transform for vertical format
 			if format == "vertical" {
-				adjustCrop, adjustTransform := createEnhancedKenBurnsWithFormat(currentTimelineDuration, durationSeconds, format)
+				adjustCrop, adjustTransform := createEnhancedKenBurnsWithFormatIndex(currentTimelineDuration, durationSeconds, format, imageIndex)
 				video.AdjustCrop = adjustCrop
 				video.AdjustTransform = adjustTransform
 			} else {
-				video.AdjustTransform = createKenBurnsAnimationWithFormat(currentTimelineDuration, durationSeconds, format)
+				video.AdjustTransform = createKenBurnsAnimationWithFormatIndex(currentTimelineDuration, durationSeconds, format, imageIndex)
 			}
 		} else {
 			// Add zoom scaling for vertical format to fill frame with no empty space

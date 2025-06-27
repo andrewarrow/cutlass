@@ -464,8 +464,8 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 	wordIndex := 0
 	
 	for i, imageAttr := range allImageAttributions {
-		// Add image with proper duration and format
-		err := AddImageWithSlideAndFormat(fcpxml, imageAttr.FilePath, imageDuration, true, config.Format)
+		// Add image with proper duration and format, passing image index for alternating Ken Burns direction
+		err := AddImageWithSlideAndFormatIndex(fcpxml, imageAttr.FilePath, imageDuration, true, config.Format, i)
 		if err != nil {
 			fmt.Printf("Warning: Failed to add image %s: %v\n", imageAttr.FilePath, err)
 			continue

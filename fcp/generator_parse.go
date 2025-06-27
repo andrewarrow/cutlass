@@ -102,6 +102,11 @@ func createKenBurnsAnimation(offsetDuration string, totalDurationSeconds float64
 
 // createKenBurnsAnimationWithFormat creates Ken Burns effect animation with format-aware scaling
 func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSeconds float64, format string) *AdjustTransform {
+	return createKenBurnsAnimationWithFormatIndex(offsetDuration, totalDurationSeconds, format, 0)
+}
+
+// createKenBurnsAnimationWithFormatIndex creates Ken Burns effect animation with format-aware scaling and alternating zoom direction
+func createKenBurnsAnimationWithFormatIndex(offsetDuration string, totalDurationSeconds float64, format string, imageIndex int) *AdjustTransform {
 
 	videoStartFrames := 86399313
 
@@ -112,19 +117,35 @@ func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSecon
 	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
 	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+kenBurnsFrames)
 
-	// Adjust scale values based on format
+	// Adjust scale values based on format and alternate zoom direction based on image index
 	var startScale, endScale string
+	
+	// Determine zoom direction: even indices zoom out, odd indices zoom in
+	zoomOut := (imageIndex % 2 == 0)
+	// Debug logging can be enabled for troubleshooting
+	// fmt.Printf("DEBUG: imageIndex=%d, zoomOut=%t, format=%s\n", imageIndex, zoomOut, format)
+	
 	switch format {
 	case "vertical":
 		// Higher zoom for vertical format to fill frame with no empty space
-		startScale = "3.2 3.2"  // Start zoomed in more for vertical
-		endScale = "3.6 3.6"    // End even more zoomed for Ken Burns effect
+		if zoomOut {
+			startScale = "3.6 3.6"  // Start zoomed in more for zoom-out effect
+			endScale = "3.2 3.2"    // End less zoomed for zoom-out effect
+		} else {
+			startScale = "3.2 3.2"  // Start less zoomed for zoom-in effect
+			endScale = "3.6 3.6"    // End more zoomed for zoom-in effect
+		}
 	case "horizontal":
 		fallthrough
 	default:
-		// Original scaling for horizontal
-		startScale = "1.2 1.2"
-		endScale = "1.5 1.5"
+		// Original scaling for horizontal with alternating direction
+		if zoomOut {
+			startScale = "1.5 1.5"  // Start zoomed in for zoom-out effect
+			endScale = "1.2 1.2"    // End less zoomed for zoom-out effect
+		} else {
+			startScale = "1.2 1.2"  // Start less zoomed for zoom-in effect
+			endScale = "1.5 1.5"    // End more zoomed for zoom-in effect
+		}
 	}
 
 	return &AdjustTransform{
@@ -202,28 +223,58 @@ func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSecon
 // createEnhancedKenBurnsWithFormat creates both adjust-crop and adjust-transform for full-frame image filling
 // Based on the pattern from Info.fcpxml where images are scaled high and use pan-rect for Ken Burns effect
 func createEnhancedKenBurnsWithFormat(offsetDuration string, totalDurationSeconds float64, format string) (*AdjustCrop, *AdjustTransform) {
+	return createEnhancedKenBurnsWithFormatIndex(offsetDuration, totalDurationSeconds, format, 0)
+}
+
+// createEnhancedKenBurnsWithFormatIndex creates both adjust-crop and adjust-transform with alternating zoom direction
+func createEnhancedKenBurnsWithFormatIndex(offsetDuration string, totalDurationSeconds float64, format string, imageIndex int) (*AdjustCrop, *AdjustTransform) {
 	var adjustCrop *AdjustCrop
 	var adjustTransform *AdjustTransform
 	
 	if format == "vertical" {
 		// For vertical format, create both crop and transform like in Info.fcpxml
 		// This ensures images fill the entire 9:16 space with no black borders
-		adjustCrop = &AdjustCrop{
-			Mode: "pan",
-			PanRects: []PanRect{
-				{
-					Left:   "27.0605",
-					Top:    "-20.4557", 
-					Right:  "27.8971",
-					Bottom: "-18.8788",
+		// Alternate zoom direction based on image index
+		zoomOut := (imageIndex % 2 == 0)
+		
+		if zoomOut {
+			// Zoom out effect: start with closer crop, end with wider crop
+			adjustCrop = &AdjustCrop{
+				Mode: "pan",
+				PanRects: []PanRect{
+					{
+						Left:   "0.0227865",  // Start with closer crop
+						Top:    "-67.7966",
+						Right:  "0.667521", 
+						Bottom: "-68.0132",
+					},
+					{
+						Left:   "27.0605",    // End with wider crop
+						Top:    "-20.4557", 
+						Right:  "27.8971",
+						Bottom: "-18.8788",
+					},
 				},
-				{
-					Left:   "0.0227865",
-					Top:    "-67.7966",
-					Right:  "0.667521", 
-					Bottom: "-68.0132",
+			}
+		} else {
+			// Zoom in effect: start with wider crop, end with closer crop
+			adjustCrop = &AdjustCrop{
+				Mode: "pan",
+				PanRects: []PanRect{
+					{
+						Left:   "27.0605",    // Start with wider crop
+						Top:    "-20.4557", 
+						Right:  "27.8971",
+						Bottom: "-18.8788",
+					},
+					{
+						Left:   "0.0227865",  // End with closer crop
+						Top:    "-67.7966",
+						Right:  "0.667521", 
+						Bottom: "-68.0132",
+					},
 				},
-			},
+			}
 		}
 		
 		adjustTransform = &AdjustTransform{
@@ -231,8 +282,8 @@ func createEnhancedKenBurnsWithFormat(offsetDuration string, totalDurationSecond
 			Scale:    "3.4 3.4",
 		}
 	} else {
-		// For horizontal format, use standard Ken Burns animation
-		adjustTransform = createKenBurnsAnimationWithFormat(offsetDuration, totalDurationSeconds, format)
+		// For horizontal format, use standard Ken Burns animation with alternating direction
+		adjustTransform = createKenBurnsAnimationWithFormatIndex(offsetDuration, totalDurationSeconds, format, imageIndex)
 	}
 	
 	return adjustCrop, adjustTransform
