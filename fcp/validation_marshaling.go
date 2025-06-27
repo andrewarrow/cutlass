@@ -72,6 +72,16 @@ func (fcpxml *FCPXML) ValidateStructure() error {
 	}
 	
 	textValidator := NewTextStyleValidator()
+	
+	// Create new security and range validators
+	securityValidator := NewContentSecurityValidator()
+	rangeValidator := NewNumericRangeValidator()
+	boundaryValidator := NewBoundaryValidator()
+	
+	// Validate all text content for security issues
+	if err := fcpxml.validateContentSecurity(securityValidator); err != nil {
+		return fmt.Errorf("content security validation failed: %v", err)
+	}
 
 	// Validate and register all resources first
 	validator := NewStructValidator()
@@ -104,7 +114,7 @@ func (fcpxml *FCPXML) ValidateStructure() error {
 
 	// Validate spine structure
 	spine := &sequence.Spine
-	if err := fcpxml.validateSpine(spine, registry, timelineValidator, textValidator); err != nil {
+	if err := fcpxml.validateSpine(spine, registry, timelineValidator, textValidator, boundaryValidator, rangeValidator); err != nil {
 		return fmt.Errorf("spine validation failed: %v", err)
 	}
 
@@ -122,7 +132,7 @@ func (fcpxml *FCPXML) ValidateStructure() error {
 }
 
 // validateSpine validates all elements within a spine
-func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, timelineValidator *TimelineValidator, textValidator *TextStyleValidator) error {
+func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, timelineValidator *TimelineValidator, textValidator *TextStyleValidator, boundaryValidator *BoundaryValidator, rangeValidator *NumericRangeValidator) error {
 	// Validate all asset clips
 	for i := range spine.AssetClips {
 		clip := &spine.AssetClips[i]
@@ -139,6 +149,19 @@ func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, t
 
 		if err := Duration(clip.Duration).Validate(); err != nil {
 			return fmt.Errorf("asset-clip %d invalid duration: %v", i, err)
+		}
+		
+		// Validate boundary values
+		if err := boundaryValidator.ValidateTimeOffset(clip.Offset); err != nil {
+			return fmt.Errorf("asset-clip %d offset boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateDuration(clip.Duration); err != nil {
+			return fmt.Errorf("asset-clip %d duration boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateLaneNumber(clip.Lane); err != nil {
+			return fmt.Errorf("asset-clip %d lane validation: %v", i, err)
 		}
 
 		// Validate keyframe animations
@@ -166,6 +189,19 @@ func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, t
 		if err := Duration(video.Duration).Validate(); err != nil {
 			return fmt.Errorf("video %d invalid duration: %v", i, err)
 		}
+		
+		// Validate boundary values
+		if err := boundaryValidator.ValidateTimeOffset(video.Offset); err != nil {
+			return fmt.Errorf("video %d offset boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateDuration(video.Duration); err != nil {
+			return fmt.Errorf("video %d duration boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateLaneNumber(video.Lane); err != nil {
+			return fmt.Errorf("video %d lane validation: %v", i, err)
+		}
 
 		if video.AdjustTransform != nil {
 			if err := fcpxml.validateAdjustTransform(video.AdjustTransform); err != nil {
@@ -190,6 +226,19 @@ func (fcpxml *FCPXML) validateSpine(spine *Spine, registry *ReferenceRegistry, t
 
 		if err := Duration(title.Duration).Validate(); err != nil {
 			return fmt.Errorf("title %d invalid duration: %v", i, err)
+		}
+		
+		// Validate boundary values
+		if err := boundaryValidator.ValidateTimeOffset(title.Offset); err != nil {
+			return fmt.Errorf("title %d offset boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateDuration(title.Duration); err != nil {
+			return fmt.Errorf("title %d duration boundary validation: %v", i, err)
+		}
+		
+		if err := boundaryValidator.ValidateLaneNumber(title.Lane); err != nil {
+			return fmt.Errorf("title %d lane validation: %v", i, err)
 		}
 
 		// Basic text validation
@@ -501,4 +550,70 @@ func boolToStatus(b bool) string {
 		return "PASSED"
 	}
 	return "FAILED"
+}
+
+// validateContentSecurity validates all text content for security issues
+func (fcpxml *FCPXML) validateContentSecurity(securityValidator *ContentSecurityValidator) error {
+	// Validate all titles and their text content
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				// Validate titles in spine
+				for i, title := range sequence.Spine.Titles {
+					// Validate title name
+					if err := securityValidator.ValidateStringAttribute("title name", title.Name); err != nil {
+						return fmt.Errorf("title %d name validation failed: %v", i, err)
+					}
+					
+					// Validate text content if present
+					if title.Text != nil {
+						for j, textStyle := range title.Text.TextStyles {
+							if err := securityValidator.ValidateTextContent(textStyle.Text); err != nil {
+								return fmt.Errorf("title %d text-style %d content validation failed: %v", i, j, err)
+							}
+						}
+					}
+					
+					// Validate text style definitions
+					for j, styleDef := range title.TextStyleDefs {
+						if styleDef.TextStyle.Font != "" {
+							if err := securityValidator.ValidateFontName(styleDef.TextStyle.Font); err != nil {
+								return fmt.Errorf("title %d text-style-def %d font validation failed: %v", i, j, err)
+							}
+						}
+						
+						if styleDef.TextStyle.Alignment != "" {
+							if err := securityValidator.ValidateAlignmentValue(styleDef.TextStyle.Alignment); err != nil {
+								return fmt.Errorf("title %d text-style-def %d alignment validation failed: %v", i, j, err)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// Validate effect names and UIDs
+	for i, effect := range fcpxml.Resources.Effects {
+		if err := securityValidator.ValidateStringAttribute("effect name", effect.Name); err != nil {
+			return fmt.Errorf("effect %d name validation failed: %v", i, err)
+		}
+		
+		if err := securityValidator.ValidateStringAttribute("effect UID", effect.UID); err != nil {
+			return fmt.Errorf("effect %d UID validation failed: %v", i, err)
+		}
+	}
+	
+	// Validate asset names and UIDs
+	for i, asset := range fcpxml.Resources.Assets {
+		if err := securityValidator.ValidateStringAttribute("asset name", asset.Name); err != nil {
+			return fmt.Errorf("asset %d name validation failed: %v", i, err)
+		}
+		
+		if err := securityValidator.ValidateStringAttribute("asset UID", asset.UID); err != nil {
+			return fmt.Errorf("asset %d UID validation failed: %v", i, err)
+		}
+	}
+	
+	return nil
 }

@@ -111,13 +111,17 @@ func NewValidatedKeyframe(time Time, value, interp, curve string) (*ValidatedKey
 
 // KeyframeValidator validates keyframes based on parameter types
 type KeyframeValidator struct {
-	rules map[KeyframeParameterType]KeyframeAttributeRules
+	rules             map[KeyframeParameterType]KeyframeAttributeRules
+	rangeValidator    *NumericRangeValidator
+	boundaryValidator *BoundaryValidator
 }
 
 // NewKeyframeValidator creates a new keyframe validator with default rules
 func NewKeyframeValidator() *KeyframeValidator {
 	validator := &KeyframeValidator{
-		rules: make(map[KeyframeParameterType]KeyframeAttributeRules),
+		rules:             make(map[KeyframeParameterType]KeyframeAttributeRules),
+		rangeValidator:    NewNumericRangeValidator(),
+		boundaryValidator: NewBoundaryValidator(),
 	}
 	
 	validator.initializeDefaultRules()
@@ -300,15 +304,9 @@ func (kv *KeyframeValidator) validateUnknownParameterKeyframe(paramName string, 
 
 // validatePositionValue validates position values (should be "x y" format)
 func (kv *KeyframeValidator) validatePositionValue(value string) error {
-	parts := strings.Fields(value)
-	if len(parts) != 2 {
-		return fmt.Errorf("position value must have 2 components (x y): %s", value)
-	}
-	
-	for i, part := range parts {
-		if _, err := strconv.ParseFloat(part, 64); err != nil {
-			return fmt.Errorf("invalid position component %d: %s", i, part)
-		}
+	// Use boundary validator for position validation
+	if err := kv.boundaryValidator.ValidatePosition(value); err != nil {
+		return fmt.Errorf("position boundary validation failed: %v", err)
 	}
 	
 	return nil
@@ -316,25 +314,9 @@ func (kv *KeyframeValidator) validatePositionValue(value string) error {
 
 // validateScale2DValue validates 2D scale values (should be "sx sy" format)
 func (kv *KeyframeValidator) validateScale2DValue(value string) error {
-	parts := strings.Fields(value)
-	if len(parts) != 2 {
-		return fmt.Errorf("scale value must have 2 components (sx sy): %s", value)
-	}
-	
-	for i, part := range parts {
-		scale, err := strconv.ParseFloat(part, 64)
-		if err != nil {
-			return fmt.Errorf("invalid scale component %d: %s", i, part)
-		}
-		
-		// Validate reasonable scale values
-		if scale < 0 {
-			return fmt.Errorf("scale cannot be negative: %f", scale)
-		}
-		
-		if scale > 100 {
-			return fmt.Errorf("scale value seems too large: %f", scale)
-		}
+	// Use range validator for scale validation
+	if err := kv.rangeValidator.ValidateScaleValue(value); err != nil {
+		return fmt.Errorf("scale range validation failed: %v", err)
 	}
 	
 	return nil
@@ -342,9 +324,9 @@ func (kv *KeyframeValidator) validateScale2DValue(value string) error {
 
 // validateSingleFloatValue validates single float values (rotation, etc.)
 func (kv *KeyframeValidator) validateSingleFloatValue(value string) error {
-	_, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return fmt.Errorf("invalid float value: %s", value)
+	// Use range validator for rotation validation
+	if err := kv.rangeValidator.ValidateRotationValue(value); err != nil {
+		return fmt.Errorf("rotation range validation failed: %v", err)
 	}
 	
 	return nil
@@ -352,15 +334,9 @@ func (kv *KeyframeValidator) validateSingleFloatValue(value string) error {
 
 // validate2DValue validates 2D values (should be "x y" format)
 func (kv *KeyframeValidator) validate2DValue(value string) error {
-	parts := strings.Fields(value)
-	if len(parts) != 2 {
-		return fmt.Errorf("2D value must have 2 components: %s", value)
-	}
-	
-	for i, part := range parts {
-		if _, err := strconv.ParseFloat(part, 64); err != nil {
-			return fmt.Errorf("invalid 2D component %d: %s", i, part)
-		}
+	// Use boundary validator for anchor point validation
+	if err := kv.boundaryValidator.ValidateAnchorPoint(value); err != nil {
+		return fmt.Errorf("anchor point boundary validation failed: %v", err)
 	}
 	
 	return nil
@@ -368,13 +344,9 @@ func (kv *KeyframeValidator) validate2DValue(value string) error {
 
 // validateOpacityValue validates opacity values (0.0 to 1.0)
 func (kv *KeyframeValidator) validateOpacityValue(value string) error {
-	opacity, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return fmt.Errorf("invalid opacity value: %s", value)
-	}
-	
-	if opacity < 0.0 || opacity > 1.0 {
-		return fmt.Errorf("opacity must be between 0.0 and 1.0: %f", opacity)
+	// Use range validator for opacity validation
+	if err := kv.rangeValidator.ValidateOpacity(value); err != nil {
+		return fmt.Errorf("opacity range validation failed: %v", err)
 	}
 	
 	return nil
@@ -411,20 +383,9 @@ func (kv *KeyframeValidator) validateVolumeValue(value string) error {
 
 // validateColorValue validates color values (RGBA format)
 func (kv *KeyframeValidator) validateColorValue(value string) error {
-	parts := strings.Fields(value)
-	if len(parts) != 3 && len(parts) != 4 {
-		return fmt.Errorf("color value must have 3 or 4 components (RGB or RGBA): %s", value)
-	}
-	
-	for i, part := range parts {
-		component, err := strconv.ParseFloat(part, 64)
-		if err != nil {
-			return fmt.Errorf("invalid color component %d: %s", i, part)
-		}
-		
-		if component < 0.0 || component > 1.0 {
-			return fmt.Errorf("color component %d out of range [0,1]: %f", i, component)
-		}
+	// Use range validator for color validation
+	if err := kv.rangeValidator.ValidateColorValue(value); err != nil {
+		return fmt.Errorf("color range validation failed: %v", err)
 	}
 	
 	return nil

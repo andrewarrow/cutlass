@@ -125,17 +125,16 @@ func createNestedVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath
 		Name:     "MainBackground",
 	}
 
-	numOverlays := 6 + rand.Intn(8)
+	// 🚨 EXTREME NESTED CHAOS: 50-200 overlays per main video!
+	numOverlays := 50 + rand.Intn(150)
 
 	for i := 1; i <= numOverlays; i++ {
-		overlayStartTime := rand.Float64() * (duration * 0.8)
-		overlayDuration := 3.0 + rand.Float64()*8.0
-
-		if overlayStartTime+overlayDuration > duration {
-			overlayDuration = duration - overlayStartTime
-		}
-
-		lane := 1 + rand.Intn(4)
+		// 🚨 EXTREME: Overlays can start/end anywhere, even negative times
+		overlayStartTime := -duration + rand.Float64()*(duration*3.0)
+		overlayDuration := 0.01 + rand.Float64()*(duration*2.0) // Tiny to huge durations
+		
+		// 🚨 EXTREME: Massive lane numbers, negatives, zero
+		lane := -50 + rand.Intn(200)
 
 		overlayType := rand.Intn(3)
 

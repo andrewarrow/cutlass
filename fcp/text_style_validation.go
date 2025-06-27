@@ -133,17 +133,21 @@ func NewValidatedTextStyle(id string) (*ValidatedTextStyle, error) {
 
 // TextStyleValidator validates text styles based on FCP requirements
 type TextStyleValidator struct {
-	rules        map[TextStyleParameterType]TextStyleValidationRules
-	knownFonts   []string
-	systemFonts  []string
+	rules           map[TextStyleParameterType]TextStyleValidationRules
+	knownFonts      []string
+	systemFonts     []string
+	rangeValidator  *NumericRangeValidator
+	securityValidator *ContentSecurityValidator
 }
 
 // NewTextStyleValidator creates a new text style validator with default rules
 func NewTextStyleValidator() *TextStyleValidator {
 	validator := &TextStyleValidator{
-		rules:       make(map[TextStyleParameterType]TextStyleValidationRules),
-		knownFonts:  make([]string, 0),
-		systemFonts: getSystemFonts(),
+		rules:             make(map[TextStyleParameterType]TextStyleValidationRules),
+		knownFonts:        make([]string, 0),
+		systemFonts:       getSystemFonts(),
+		rangeValidator:    NewNumericRangeValidator(),
+		securityValidator: NewContentSecurityValidator(),
 	}
 	
 	validator.initializeDefaultRules()
@@ -371,6 +375,11 @@ func (tsv *TextStyleValidator) validateFontName(fontName string) error {
 		return fmt.Errorf("font name cannot be empty")
 	}
 	
+	// Use security validator for font name validation
+	if err := tsv.securityValidator.ValidateFontName(fontName); err != nil {
+		return fmt.Errorf("font name security validation failed: %v", err)
+	}
+	
 	// Allow common system fonts and any font name for flexibility
 	// In a production system, you might want to check against system fonts
 	return nil
@@ -384,17 +393,9 @@ func (tsv *TextStyleValidator) validateFontSize(fontSize string) error {
 		sizeStr = fontSize[:len(fontSize)-2]
 	}
 	
-	size, err := strconv.ParseFloat(sizeStr, 64)
-	if err != nil {
-		return fmt.Errorf("invalid font size format: %s", fontSize)
-	}
-	
-	if size <= 0 {
-		return fmt.Errorf("font size must be positive: %f", size)
-	}
-	
-	if size > 500 {
-		return fmt.Errorf("font size too large: %f", size)
+	// Use range validator for font size validation
+	if err := tsv.rangeValidator.ValidateFontSize(sizeStr); err != nil {
+		return fmt.Errorf("font size range validation failed: %v", err)
 	}
 	
 	return nil
@@ -417,20 +418,9 @@ func (tsv *TextStyleValidator) validateFontFace(fontFace string) error {
 
 // validateRGBColor validates RGB color values
 func (tsv *TextStyleValidator) validateRGBColor(color string) error {
-	parts := strings.Fields(color)
-	if len(parts) != 3 && len(parts) != 4 {
-		return fmt.Errorf("RGB color must have 3 or 4 components: %s", color)
-	}
-	
-	for i, part := range parts {
-		component, err := strconv.ParseFloat(part, 64)
-		if err != nil {
-			return fmt.Errorf("invalid color component %d: %s", i, part)
-		}
-		
-		if component < 0.0 || component > 1.0 {
-			return fmt.Errorf("color component %d out of range [0,1]: %f", i, component)
-		}
+	// Use range validator for color validation
+	if err := tsv.rangeValidator.ValidateColorValue(color); err != nil {
+		return fmt.Errorf("color range validation failed: %v", err)
 	}
 	
 	return nil
@@ -451,13 +441,9 @@ func (tsv *TextStyleValidator) validateAlignment(alignment string) error {
 
 // validateLineSpacing validates line spacing values
 func (tsv *TextStyleValidator) validateLineSpacing(lineSpacing string) error {
-	spacing, err := strconv.ParseFloat(lineSpacing, 64)
-	if err != nil {
-		return fmt.Errorf("invalid line spacing format: %s", lineSpacing)
-	}
-	
-	if spacing < 0.5 || spacing > 5.0 {
-		return fmt.Errorf("line spacing out of reasonable range [0.5, 5.0]: %f", spacing)
+	// Use range validator for line spacing validation
+	if err := tsv.rangeValidator.ValidateLineSpacing(lineSpacing); err != nil {
+		return fmt.Errorf("line spacing range validation failed: %v", err)
 	}
 	
 	return nil

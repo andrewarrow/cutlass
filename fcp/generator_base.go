@@ -337,38 +337,64 @@ func createMinimalAnimation(startTime, duration float64) *AdjustTransform {
 }
 
 func createRandomAnimation(startTime, duration float64) *AdjustTransform {
-	endTime := startTime + duration
+	// 🚨 EXTREME: Create 20-100 keyframes with chaotic timing
+	numKeyframes := 20 + rand.Intn(80)
+	
+	positionKeyframes := make([]Keyframe, numKeyframes)
+	scaleKeyframes := make([]Keyframe, numKeyframes)
+	rotationKeyframes := make([]Keyframe, numKeyframes)
+	
+	for i := 0; i < numKeyframes; i++ {
+		// 🚨 EXTREME: Random keyframe times that can be negative or way beyond duration
+		keyTime := startTime + (rand.Float64()-0.5)*duration*3.0
+		
+		positionKeyframes[i] = Keyframe{
+			Time:  ConvertSecondsToFCPDuration(keyTime),
+			Value: fmt.Sprintf("%.0f %.0f", -50000+rand.Float64()*100000, -50000+rand.Float64()*100000), // 🚨 EXTREME: Massive positions
+			// Position keyframes CANNOT have curve attribute per validation rules
+		}
+		
+		scaleKeyframes[i] = Keyframe{
+			Time:  ConvertSecondsToFCPDuration(keyTime),
+			Value: fmt.Sprintf("%.2f %.2f", 0.01+rand.Float64()*50, 0.01+rand.Float64()*50), // 🚨 EXTREME: Tiny to huge scaling (no negatives)
+			Curve: []string{"linear", "smooth", "hold", "badCurve", ""}[rand.Intn(5)], // 🚨 Include bad curves!
+		}
+		
+		rotationKeyframes[i] = Keyframe{
+			Time:  ConvertSecondsToFCPDuration(keyTime),
+			Value: fmt.Sprintf("%.1f", -7200+rand.Float64()*14400), // 🚨 EXTREME: -20 to +20 full rotations
+			Curve: "linear",
+		}
+	}
 
 	return &AdjustTransform{
 		Params: []Param{
 			{
 				Name: "position",
 				KeyframeAnimation: &KeyframeAnimation{
-					Keyframes: []Keyframe{
-						{
-							Time:  ConvertSecondsToFCPDuration(startTime),
-							Value: fmt.Sprintf("%.0f %.0f", -40+rand.Float64()*80, -20+rand.Float64()*40),
-						},
-						{
-							Time:  ConvertSecondsToFCPDuration(endTime),
-							Value: fmt.Sprintf("%.0f %.0f", -40+rand.Float64()*80, -20+rand.Float64()*40),
-						},
-					},
+					Keyframes: positionKeyframes,
 				},
 			},
 			{
-				Name: "scale",
+				Name: "scale", 
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: scaleKeyframes,
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: rotationKeyframes,
+				},
+			},
+			{
+				Name: "anchor",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
 							Time:  ConvertSecondsToFCPDuration(startTime),
-							Value: fmt.Sprintf("%.2f %.2f", 0.8+rand.Float64()*0.4, 0.8+rand.Float64()*0.4),
+							Value: fmt.Sprintf("%.0f %.0f", -1000+rand.Float64()*2000, -1000+rand.Float64()*2000),
 							Curve: "smooth",
-						},
-						{
-							Time:  ConvertSecondsToFCPDuration(endTime),
-							Value: fmt.Sprintf("%.2f %.2f", 0.8+rand.Float64()*0.4, 0.8+rand.Float64()*0.4),
-							Curve: "linear",
 						},
 					},
 				},

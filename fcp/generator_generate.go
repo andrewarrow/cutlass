@@ -404,28 +404,25 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		fmt.Printf("DEBUG: About to create additional main spine elements...\n")
 	}
 
-	numMainElements := 3 + rand.Intn(5)
-	maxLanes := 8
-	currentOffset := totalDuration * 0.2
-
+	// 🚨 EXTREME BAFFLE MODE: Push every possible limit
+	numMainElements := 15 + rand.Intn(35) // 15-50 elements instead of 3-8
+	maxLanes := 50 + rand.Intn(50) // 50-100 lanes instead of 8
+	
 	if verbose {
-		fmt.Printf("Creating %d additional main spine elements with lane distribution...\n", numMainElements)
+		fmt.Printf("🚨 EXTREME BAFFLE: Creating %d main spine elements across %d lanes...\n", numMainElements, maxLanes)
 	}
 
 	for i := 1; i <= numMainElements; i++ {
-		duration := 6.0 + rand.Float64()*15.0
-		startTime := currentOffset
-		currentOffset += duration * 0.4
-
-		if startTime >= totalDuration {
-			break
-		}
-
-		if startTime+duration > totalDuration {
-			duration = totalDuration - startTime
-		}
-
-		lane := (i % maxLanes) + 1
+		// 🚨 EXTREME: Random durations from 0.1s to entire timeline
+		duration := 0.1 + rand.Float64()*(totalDuration*1.5) // Can exceed timeline!
+		
+		// 🚨 EXTREME: Completely random start times, massive overlaps
+		startTime := rand.Float64() * totalDuration * 2.0 // Can start way beyond end!
+		
+		// 🚨 EXTREME: Random lane assignments including negative and huge lanes
+		lane := -100 + rand.Intn(300) // Lanes from -100 to +200
+		
+		// 🚨 EXTREME: No bounds checking - let validation catch it!
 
 		if i%2 == 0 && len(assets.Videos) > 0 {
 			videoPath := assets.Videos[rand.Intn(len(assets.Videos))]
@@ -576,16 +573,26 @@ func createTextOverlay(fcpxml *FCPXML, tx *ResourceTransaction, startTime, durat
 			ID: styleID,
 			TextStyle: TextStyle{
 				Font:        randomFont(),
-				FontSize:    fmt.Sprintf("%.0f", 240+rand.Float64()*240),
+				FontSize:    fmt.Sprintf("%.0f", 1+rand.Float64()*9999), // 🚨 EXTREME: 1px to 10000px fonts!
 				FontColor:   randomColor(),
 				Alignment:   randomAlignment(),
-				LineSpacing: "1.2",
+				LineSpacing: fmt.Sprintf("%.2f", -5.0+rand.Float64()*20.0), // 🚨 EXTREME: Negative to huge line spacing
 			},
 		}},
-		Params: []Param{{
-			Name:  "Opacity",
-			Value: fmt.Sprintf("%.2f", 0.8+rand.Float64()*0.2),
-		}},
+		Params: []Param{
+			{
+				Name:  "Opacity",
+				Value: fmt.Sprintf("%.2f", -2.0+rand.Float64()*5.0), // 🚨 EXTREME: Negative to >100% opacity
+			},
+			{
+				Name:  "Scale",
+				Value: fmt.Sprintf("%.2f %.2f", rand.Float64()*50, rand.Float64()*50), // 🚨 EXTREME: Massive scaling
+			},
+			{
+				Name:  "Position",
+				Value: fmt.Sprintf("%.0f %.0f", -10000+rand.Float64()*20000, -10000+rand.Float64()*20000), // 🚨 EXTREME: Offscreen positions
+			},
+		},
 	}
 
 	return title, nil
