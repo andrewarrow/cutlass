@@ -119,3 +119,27 @@ Gurmukhi MT
 Gurmukhi Sangam MN
 Handwriting - Dakota
 Heiti SC
+Heiti TC
+Helvetica
+Helvetica Neue
+Herculanum
+Hiragino Maru Gothic ProN
+Hiragino Mincho ProN
+Hiragino Sans
+Hiragino Sans GB
+Hoefler Text
+Hooper Script
+Humana Serif
+Impact
+InaiMathi
+ITC Franklin Gothic
+ITF Devanagari
+ITF Devanagari Marathi
+Journal Sans New
+JUNEGULL
+Kailasa
+Kannada MN
+Kannada Sangam MN
+Kefa
+Khmer MN
+Khmer Sangam MN

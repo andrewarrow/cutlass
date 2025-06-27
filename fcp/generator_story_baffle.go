@@ -192,74 +192,106 @@ func downloadThemeImages(config *StoryBaffleConfig, verbose bool) (map[string][]
 	return allImages, nil
 }
 
-// buildStoryBaffleTimeline creates the complete story timeline
+// buildStoryBaffleTimeline creates MICHAEL BAY INTENSITY timeline with rapid cuts and multiple lanes
 func buildStoryBaffleTimeline(fcpxml *FCPXML, allImages map[string][]ImageAttribution, textEffectID string, config *StoryBaffleConfig, verbose bool) error {
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
 	
-	// Track used images to ensure no black spaces
-	usedImages := make(map[string]bool)
+	if verbose {
+		fmt.Printf("🎬 BUILDING MICHAEL BAY TIMELINE 🎬\n")
+		fmt.Printf("Target: 8+ lanes, rapid 0.5-2s cuts, overlapping chaos\n")
+	}
+
+	// Step 1: Add background images that span entire timeline to prevent black screens
+	err := addBackgroundImageLayer(fcpxml, allImages, config.Duration, verbose)
+	if err != nil {
+		return fmt.Errorf("failed to add background layer: %v", err)
+	}
+
+	// Step 2: Create primary spine elements with nested connected clips (like ultimate_baffle)
+	numPrimaryElements := 5 + int(config.Duration/30) // More primary elements for longer videos
+	primaryDuration := config.Duration / float64(numPrimaryElements) * 1.8 // Overlap them
+	
+	allImagesList := flattenImageMap(allImages)
+	if len(allImagesList) == 0 {
+		return fmt.Errorf("no images available for timeline")
+	}
+	
 	imageIndex := 0
 	
-	for phaseIndex, phase := range aiVideoStoryPhases {
+	for primaryIndex := 0; primaryIndex < numPrimaryElements; primaryIndex++ {
+		primaryStartTime := float64(primaryIndex) * config.Duration / float64(numPrimaryElements)
+		
+		// Find the current story phase for this time
+		currentPhase := getCurrentPhase(primaryStartTime)
+		
 		if verbose {
-			fmt.Printf("Creating phase %d: %s (complexity %.1f)\n", phaseIndex+1, phase.Name, phase.Complexity)
+			fmt.Printf("Primary element %d: %.1fs-%.1fs, Phase: %s\n", 
+				primaryIndex, primaryStartTime, primaryStartTime+primaryDuration, currentPhase.Name)
 		}
 
-		// Add story text for this phase
-		err := addStoryBaffleText(fcpxml, textEffectID, phase.Text, phase.StartTime, phase.Duration, phaseIndex)
+		// Create primary spine element  
+		primaryImage := allImagesList[imageIndex%len(allImagesList)]
+		primaryClip, err := createPrimaryStoryElement(fcpxml, primaryImage.FilePath, 
+			primaryStartTime, primaryDuration, primaryIndex, currentPhase, config.Format)
 		if err != nil {
 			if verbose {
+				fmt.Printf("Warning: Failed to create primary element %d: %v\n", primaryIndex, err)
+			}
+			continue
+		}
+		imageIndex++
+
+		// Add 8-15 nested connected clips with RAPID CUTS and multiple lanes
+		numConnected := 8 + int(currentPhase.Complexity*7) // 8-15 connected clips
+		
+		for connectedIndex := 0; connectedIndex < numConnected && imageIndex < len(allImagesList); connectedIndex++ {
+			// RAPID CUT TIMING - 0.5 to 2 seconds max!
+			cutDuration := 0.5 + rand.Float64()*1.5 // 0.5-2.0 seconds
+			cutStartTime := primaryStartTime + rand.Float64()*(primaryDuration-cutDuration)
+			
+			// Multiple lanes: -8 to +8 
+			laneNumber := (connectedIndex % 17) - 8 // Lanes -8 to +8
+			
+			connectedImage := allImagesList[imageIndex%len(allImagesList)]
+			
+			err := addConnectedClipWithLane(fcpxml, primaryClip, connectedImage.FilePath, 
+				cutStartTime-primaryStartTime, cutDuration, laneNumber, 
+				currentPhase, connectedIndex, config.Format)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Warning: Failed to add connected clip %d: %v\n", connectedIndex, err)
+				}
+				continue
+			}
+			imageIndex++
+		}
+
+		// Add story text for this phase (if we're in a new phase)
+		if primaryIndex < len(aiVideoStoryPhases) {
+			phase := aiVideoStoryPhases[primaryIndex]
+			err := addStoryBaffleText(fcpxml, textEffectID, phase.Text, 
+				primaryStartTime, primaryDuration, primaryIndex)
+			if err != nil && verbose {
 				fmt.Printf("Warning: Failed to add text for phase %s: %v\n", phase.Name, err)
 			}
 		}
 
-		// Get images for this phase's theme
-		phaseImages := allImages[phase.ImageTheme]
-		if len(phaseImages) == 0 {
-			// Fallback to any available images
-			for _, images := range allImages {
-				if len(images) > 0 {
-					phaseImages = images
-					break
-				}
-			}
-		}
-
-		// Create image elements based on phase complexity
-		numImages := int(float64(phase.LaneCount) * (1.0 + phase.Complexity*2))
-		if numImages < 1 {
-			numImages = 1
-		}
-
-		for i := 0; i < numImages && len(phaseImages) > 0; i++ {
-			// Select image (cycle through available images)
-			imageAttr := phaseImages[imageIndex%len(phaseImages)]
-			
-			// Calculate timing within phase
-			imageDuration := phase.Duration / float64(numImages) * (1.5 + rand.Float64()) // Some overlap
-			imageStartTime := phase.StartTime + float64(i)*phase.Duration/float64(numImages)
-			
-			// Ensure we don't exceed phase duration
-			if imageStartTime+imageDuration > phase.StartTime+phase.Duration {
-				imageDuration = (phase.StartTime + phase.Duration) - imageStartTime
-			}
-
-			// Add image with animation based on phase style
-			err := addStoryBaffleImage(fcpxml, imageAttr.FilePath, imageStartTime, imageDuration, 
-				phase.AnimationStyle, phase.Complexity, i, phaseIndex, config.Format)
-			if err != nil {
-				if verbose {
-					fmt.Printf("Warning: Failed to add image in phase %s: %v\n", phase.Name, err)
-				}
-				continue
-			}
-
-			usedImages[imageAttr.FilePath] = true
-			imageIndex++
-		}
+		spine.AssetClips = append(spine.AssetClips, *primaryClip)
 	}
 
-	// Fill any remaining gaps with background images to prevent black screens
-	return fillTimelineGaps(fcpxml, allImages, config.Duration, verbose)
+	// Step 3: Add rapid-fire standalone spine elements for maximum chaos
+	err = addRapidFireSpineElements(fcpxml, allImagesList, config.Duration, imageIndex, verbose)
+	if err != nil && verbose {
+		fmt.Printf("Warning: Failed to add rapid-fire elements: %v\n", err)
+	}
+
+	if verbose {
+		fmt.Printf("🎆 MICHAEL BAY TIMELINE COMPLETE 🎆\n")
+		fmt.Printf("Primary elements: %d, Expected connected clips: %d+\n", 
+			numPrimaryElements, numPrimaryElements*10)
+	}
+
+	return nil
 }
 
 // addStoryBaffleText adds narrative text with crazy fonts and animations
@@ -920,40 +952,404 @@ func createOrganizeAnimation(startTime, duration float64, imageIndex int) *Adjus
 	}
 }
 
-// fillTimelineGaps ensures there are always images on screen to prevent black
-func fillTimelineGaps(fcpxml *FCPXML, allImages map[string][]ImageAttribution, totalDuration float64, verbose bool) error {
-	// This is a simplified gap filler - in a real implementation you'd check for actual gaps
-	// For now, we'll add a few background images that span the entire timeline
+// addBackgroundImageLayer adds continuous background images to prevent black screens
+func addBackgroundImageLayer(fcpxml *FCPXML, allImages map[string][]ImageAttribution, totalDuration float64, verbose bool) error {
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
 	
 	// Get any available images for background
 	var backgroundImages []ImageAttribution
 	for _, images := range allImages {
 		backgroundImages = append(backgroundImages, images...)
-		if len(backgroundImages) >= 3 { // Just need a few background images
+		if len(backgroundImages) >= 5 {
 			break
 		}
 	}
 	
 	if len(backgroundImages) == 0 {
-		return nil // No images available
+		return fmt.Errorf("no images available for background")
 	}
 	
-	// Add 3 background images that span most of the timeline
-	for i := 0; i < 3 && i < len(backgroundImages); i++ {
+	// Create 2-3 overlapping background videos that span entire timeline
+	numBackgrounds := 2 + int(totalDuration/60) // More backgrounds for longer videos
+	
+	for i := 0; i < numBackgrounds && i < len(backgroundImages); i++ {
 		imageAttr := backgroundImages[i]
 		
-		// Create background image spanning almost entire timeline
-		startTime := float64(i) * 10.0 // Slight offset
-		duration := totalDuration - startTime + 5.0 // Extend slightly past end
+		startTime := float64(i) * 5.0 // Stagger starts slightly
+		duration := totalDuration + 10.0 // Extend past end
 		
-		err := addStoryBaffleImage(fcpxml, imageAttr.FilePath, startTime, duration, 
-			"simple", 0.1, i+1000, -1, "horizontal")
+		video, err := createBackgroundVideo(fcpxml, imageAttr.FilePath, startTime, duration, i)
 		if err != nil {
 			if verbose {
-				fmt.Printf("Warning: Failed to add background image: %v\n", err)
+				fmt.Printf("Warning: Failed to create background video %d: %v\n", i, err)
 			}
+			continue
 		}
+		
+		spine.Videos = append(spine.Videos, *video)
+	}
+	
+	if verbose {
+		fmt.Printf("Added %d background layers spanning %.1fs\n", numBackgrounds, totalDuration)
 	}
 	
 	return nil
+}
+
+// flattenImageMap converts the theme-based image map to a flat list
+func flattenImageMap(allImages map[string][]ImageAttribution) []ImageAttribution {
+	var result []ImageAttribution
+	for _, images := range allImages {
+		result = append(result, images...)
+	}
+	return result
+}
+
+// getCurrentPhase finds which story phase is active at a given time
+func getCurrentPhase(time float64) StoryPhase {
+	for _, phase := range aiVideoStoryPhases {
+		if time >= phase.StartTime && time < phase.StartTime+phase.Duration {
+			return phase
+		}
+	}
+	// Default to last phase if beyond timeline
+	return aiVideoStoryPhases[len(aiVideoStoryPhases)-1]
+}
+
+// createBackgroundVideo creates a simple background video element
+func createBackgroundVideo(fcpxml *FCPXML, imagePath string, startTime, duration float64, index int) (*Video, error) {
+	// Use transaction for proper asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	_, err := tx.CreateFormat(formatID, "BackgroundImage", "1280", "720", "1-13-1")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create background format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Background_%d", index), "0s", formatID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create background asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit background transaction: %v", err)
+	}
+
+	// Create video element with very subtle animation
+	video := &Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Background_%d", index),
+		Start:    "0s",
+		Lane:     "", // Spine element
+	}
+
+	// Very subtle scale animation to keep it interesting
+	video.AdjustTransform = &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: "1.0 1.0",
+							Curve: "linear",
+						},
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime + duration),
+							Value: "1.1 1.1",
+							Curve: "linear",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return video, nil
+}
+
+// createPrimaryStoryElement creates a primary spine asset-clip that will contain nested clips
+func createPrimaryStoryElement(fcpxml *FCPXML, imagePath string, startTime, duration float64, index int, phase StoryPhase, format string) (*AssetClip, error) {
+	// Use transaction for proper asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	width := "1280"
+	height := "720"
+	if format == "vertical" {
+		width = "1080"
+		height = "1920"
+	}
+
+	_, err := tx.CreateFormat(formatID, "PrimaryStoryImage", width, height, "1-13-1")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create primary format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Primary_%s_%d", phase.Name, index), "0s", formatID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create primary asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit primary transaction: %v", err)
+	}
+
+	// Create asset-clip (NOT video - we need asset-clip for nested connected clips)
+	clip := &AssetClip{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Primary_%s_%d", phase.Name, index),
+		Start:    "0s",
+		Lane:     "", // Primary spine element has no lane
+	}
+
+	// Add primary animation based on phase
+	clip.AdjustTransform = createStoryBaffleAnimation(phase.AnimationStyle, startTime, duration, phase.Complexity, index, index)
+
+	return clip, nil
+}
+
+// addConnectedClipWithLane adds a connected clip with a specific lane to a primary element
+func addConnectedClipWithLane(fcpxml *FCPXML, primaryClip *AssetClip, imagePath string, offsetFromPrimary, duration float64, laneNumber int, phase StoryPhase, index int, format string) error {
+	// Create asset for connected clip
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	width := "1280"
+	height := "720"
+	if format == "vertical" {
+		width = "1080"
+		height = "1920"
+	}
+
+	_, err := tx.CreateFormat(formatID, "ConnectedImage", width, height, "1-13-1")
+	if err != nil {
+		return fmt.Errorf("failed to create connected format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("Connected_%s_L%d_%d", phase.Name, laneNumber, index), "0s", formatID)
+	if err != nil {
+		return fmt.Errorf("failed to create connected asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit connected transaction: %v", err)
+	}
+
+	// Create connected video element (nested inside the primary asset-clip)
+	connectedVideo := Video{
+		Ref:      assetID, // Use real asset ID
+		Offset:   ConvertSecondsToFCPDuration(offsetFromPrimary),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("Connected_%s_L%d_%d", phase.Name, laneNumber, index),
+		Start:    "0s",
+		Lane:     fmt.Sprintf("%d", laneNumber), // This is where the lane magic happens!
+	}
+
+	// Create explosive animation for connected clip
+	connectedVideo.AdjustTransform = createExplosiveAnimation(offsetFromPrimary, duration, phase.Complexity, index, laneNumber)
+
+	// Add to primary clip's nested videos
+	primaryClip.Videos = append(primaryClip.Videos, connectedVideo)
+
+	return nil
+}
+
+// addRapidFireSpineElements adds additional standalone spine elements for maximum chaos
+func addRapidFireSpineElements(fcpxml *FCPXML, allImages []ImageAttribution, totalDuration float64, startIndex int, verbose bool) error {
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	
+	// Add 10-20 rapid-fire standalone videos throughout the timeline
+	numRapidFire := 10 + int(totalDuration/10) // More for longer videos
+	
+	for i := 0; i < numRapidFire && startIndex+i < len(allImages); i++ {
+		imageAttr := allImages[startIndex+i]
+		
+		// Random timing throughout the video
+		startTime := rand.Float64() * totalDuration
+		duration := 0.8 + rand.Float64()*1.7 // 0.8-2.5 seconds
+		
+		video, err := createRapidFireVideo(fcpxml, imageAttr.FilePath, startTime, duration, i)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Warning: Failed to create rapid-fire video %d: %v\n", i, err)
+			}
+			continue
+		}
+		
+		spine.Videos = append(spine.Videos, *video)
+	}
+	
+	if verbose {
+		fmt.Printf("Added %d rapid-fire spine elements\n", numRapidFire)
+	}
+	
+	return nil
+}
+
+// createRapidFireVideo creates a standalone spine video with explosive animation
+func createRapidFireVideo(fcpxml *FCPXML, imagePath string, startTime, duration float64, index int) (*Video, error) {
+	// Use transaction for proper asset creation
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Reserve IDs
+	ids := tx.ReserveIDs(2)
+	assetID := ids[0]
+	formatID := ids[1]
+
+	// Create format for image
+	_, err := tx.CreateFormat(formatID, "RapidFireImage", "1280", "720", "1-13-1")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rapid-fire format: %v", err)
+	}
+
+	// Create asset
+	_, err = tx.CreateAsset(assetID, imagePath, fmt.Sprintf("RapidFire_%d", index), "0s", formatID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rapid-fire asset: %v", err)
+	}
+
+	// Commit resources
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit rapid-fire transaction: %v", err)
+	}
+
+	// Create video element
+	video := &Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(startTime),
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Name:     fmt.Sprintf("RapidFire_%d", index),
+		Start:    "0s",
+		Lane:     "", // Spine element
+	}
+
+	// Create rapid-fire explosive animation
+	video.AdjustTransform = createExplosiveAnimation(startTime, duration, 0.9, index, 0)
+
+	return video, nil
+}
+
+// createExplosiveAnimation creates intense Michael Bay-style animations
+func createExplosiveAnimation(startTime, duration, complexity float64, imageIndex, laneNumber int) *AdjustTransform {
+	// Seed randomness based on index for consistent but varied animations
+	randSeed := int64(imageIndex*1337 + laneNumber*456)
+	localRand := rand.New(rand.NewSource(randSeed))
+	
+	// EXPLOSIVE STARTING POSITION - fly in from way off screen
+	startDistance := 1500 + complexity*1000 // 1500-2500 pixels off screen
+	startX := startDistance * localRand.Float64() * 2 - startDistance // -startDistance to +startDistance
+	startY := startDistance * localRand.Float64() * 2 - startDistance
+	
+	// Target position (slightly off center for chaos)
+	endX := (localRand.Float64() - 0.5) * 400 // -200 to +200
+	endY := (localRand.Float64() - 0.5) * 300 // -150 to +150
+	
+	// RAPID POSITION ANIMATION
+	positionKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: fmt.Sprintf("%.1f %.1f", startX, startY),
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration*0.2), // Hit target fast
+			Value: fmt.Sprintf("%.1f %.1f", endX, endY),
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: fmt.Sprintf("%.1f %.1f", endX+(localRand.Float64()-0.5)*100, endY+(localRand.Float64()-0.5)*100),
+		},
+	}
+	
+	// EXPLOSIVE SCALE ANIMATION
+	scaleKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: "0.1 0.1", // Start tiny
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration*0.3),
+			Value: fmt.Sprintf("%.1f %.1f", 1.5+complexity*0.5, 1.5+complexity*0.5), // EXPLODE bigger
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: fmt.Sprintf("%.1f %.1f", 0.8+localRand.Float64()*0.4, 0.8+localRand.Float64()*0.4),
+			Curve: "linear",
+		},
+	}
+	
+	// CRAZY ROTATION
+	rotationAmount := (localRand.Float64() - 0.5) * 720 * (1 + complexity) // Up to ±720 degrees * complexity
+	rotationKeyframes := []Keyframe{
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime),
+			Value: fmt.Sprintf("%.1f", (localRand.Float64()-0.5)*180), // Random start rotation
+			Curve: "linear",
+		},
+		{
+			Time:  ConvertSecondsToFCPDuration(startTime + duration),
+			Value: fmt.Sprintf("%.1f", rotationAmount),
+			Curve: "linear",
+		},
+	}
+	
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "position",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: positionKeyframes,
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: scaleKeyframes,
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: rotationKeyframes,
+				},
+			},
+		},
+	}
 }
