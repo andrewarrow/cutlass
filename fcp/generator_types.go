@@ -3,7 +3,6 @@ package fcp
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/xml"
 	"fmt"
 
 	"math"
@@ -261,11 +260,12 @@ func GenerateEmptyWithFormat(filename string, format string) (*FCPXML, error) {
 // 🚨 CLAUDE.md Rule: NO XML STRING TEMPLATES → USE xml.MarshalIndent() function
 // - After writing, VALIDATE with: xmllint --dtdvalid FCPXMLv1_13.dtd filename
 // - Before commits, CHECK with: ValidateClaudeCompliance() function
+// WriteToFile writes FCPXML to file using the new validation-first architecture
 func WriteToFile(fcpxml *FCPXML, filename string) error {
-
-	output, err := xml.MarshalIndent(fcpxml, "", "    ")
+	// Use the validation-first marshaling from Step 17
+	output, err := fcpxml.ValidateAndMarshal()
 	if err != nil {
-		return fmt.Errorf("failed to marshal XML: %v", err)
+		return fmt.Errorf("validation and marshaling failed: %v", err)
 	}
 
 	xmlHeader := `<?xml version="1.0" encoding="UTF-8"?>
