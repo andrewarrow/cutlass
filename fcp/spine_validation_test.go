@@ -1,6 +1,7 @@
 package fcp
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -363,18 +364,18 @@ func TestSpineBuilder(t *testing.T) {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}
 
-	// Add elements
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1))
+	// Add elements (all must use lane 0 for spine)
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("unexpected error adding asset clip: %v", err)
 	}
 
-	err = builder.AddVideo("r2", "Video1", Time("240240/24000s"), Duration("240240/24000s"), Lane(2))
+	err = builder.AddVideo("r2", "Video1", Time("240240/24000s"), Duration("240240/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("unexpected error adding video: %v", err)
 	}
 
-	err = builder.AddTitle("r3", "Title1", Time("480480/24000s"), Duration("240240/24000s"), Lane(3))
+	err = builder.AddTitle("r3", "Title1", Time("480480/24000s"), Duration("240240/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("unexpected error adding title: %v", err)
 	}
@@ -411,6 +412,17 @@ func TestSpineBuilder(t *testing.T) {
 	if spine.Titles[0].Name != "Title1" {
 		t.Errorf("expected first title to be Title1, got %s", spine.Titles[0].Name)
 	}
+
+	// Verify no lane attributes in spine elements
+	if spine.AssetClips[0].Lane != "" {
+		t.Errorf("spine asset-clip should not have lane attribute, got: %s", spine.AssetClips[0].Lane)
+	}
+	if spine.Videos[0].Lane != "" {
+		t.Errorf("spine video should not have lane attribute, got: %s", spine.Videos[0].Lane)
+	}
+	if spine.Titles[0].Lane != "" {
+		t.Errorf("spine title should not have lane attribute, got: %s", spine.Titles[0].Lane)
+	}
 }
 
 func TestSpineBuilder_OverlapValidation(t *testing.T) {
@@ -420,29 +432,107 @@ func TestSpineBuilder_OverlapValidation(t *testing.T) {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}
 
-	// Add first element
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1))
+	// Add first element (lane 0 - valid for spine)
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("unexpected error adding first clip: %v", err)
 	}
 
 	// Try to add overlapping element in same lane (should fail)
-	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(1))
+	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(0))
 	if err == nil {
 		t.Errorf("expected error adding overlapping clip")
 	}
 
-	// Add overlapping element in different lane (should succeed)
-	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(2))
-	if err != nil {
-		t.Errorf("unexpected error adding clip in different lane: %v", err)
+	// Try to add element with non-zero lane (should fail - spine structural validation)
+	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(1))
+	if err == nil {
+		t.Errorf("expected error adding clip with lane 1 - spine elements cannot have lanes")
 	}
 
-	// Allow overlaps and try again in same lane
+	// Allow overlaps and try again in same lane (lane 0)
 	builder.SetAllowOverlaps(true)
-	err = builder.AddAssetClip("r3", "Clip3", Time("60060/24000s"), Duration("240240/24000s"), Lane(1))
+	err = builder.AddAssetClip("r3", "Clip3", Time("60060/24000s"), Duration("240240/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("unexpected error adding overlapping clip with overlaps allowed: %v", err)
+	}
+}
+
+func TestSpineBuilder_SpineStructuralValidation(t *testing.T) {
+	registry := NewReferenceRegistry()
+	builder, err := NewSpineBuilder(Duration("720720/24000s"), registry) // 30 seconds
+	if err != nil {
+		t.Fatalf("failed to create spine builder: %v", err)
+	}
+
+	// Test 1: Spine asset-clip with lane should fail
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1))
+	if err == nil {
+		t.Errorf("expected error adding asset-clip with lane 1 - spine elements cannot have lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine asset-clip cannot have lane") {
+		t.Errorf("expected spine structural validation error, got: %v", err)
+	}
+
+	// Test 2: Spine video with lane should fail
+	err = builder.AddVideo("r2", "Video1", Time("0s"), Duration("240240/24000s"), Lane(2))
+	if err == nil {
+		t.Errorf("expected error adding video with lane 2 - spine elements cannot have lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine video cannot have lane") {
+		t.Errorf("expected spine structural validation error, got: %v", err)
+	}
+
+	// Test 3: Spine title with lane should fail
+	err = builder.AddTitle("r3", "Title1", Time("0s"), Duration("240240/24000s"), Lane(3))
+	if err == nil {
+		t.Errorf("expected error adding title with lane 3 - spine elements cannot have lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine title cannot have lane") {
+		t.Errorf("expected spine structural validation error, got: %v", err)
+	}
+
+	// Test 4: Spine generator-clip with lane should fail
+	err = builder.AddGeneratorClip("r4", "Generator1", Time("0s"), Duration("240240/24000s"), Lane(4))
+	if err == nil {
+		t.Errorf("expected error adding generator-clip with lane 4 - spine elements cannot have lanes")
+	}
+	if err != nil && !strings.Contains(err.Error(), "spine generator-clip cannot have lane") {
+		t.Errorf("expected spine structural validation error, got: %v", err)
+	}
+
+	// Test 5: Valid spine elements with lane 0 should succeed
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
+	if err != nil {
+		t.Errorf("unexpected error adding asset-clip with lane 0: %v", err)
+	}
+
+	err = builder.AddVideo("r2", "Video1", Time("240240/24000s"), Duration("240240/24000s"), Lane(0))
+	if err != nil {
+		t.Errorf("unexpected error adding video with lane 0: %v", err)
+	}
+
+	err = builder.AddTitle("r3", "Title1", Time("480480/24000s"), Duration("240240/24000s"), Lane(0))
+	if err != nil {
+		t.Errorf("unexpected error adding title with lane 0: %v", err)
+	}
+
+	// Test 6: Build should succeed and create spine with no lane attributes
+	spine, err := builder.Build()
+	if err != nil {
+		t.Errorf("unexpected error building spine: %v", err)
+		return
+	}
+
+	// Verify no lane attributes in generated spine elements
+	if len(spine.AssetClips) > 0 && spine.AssetClips[0].Lane != "" {
+		t.Errorf("spine asset-clip should not have lane attribute, got: %s", spine.AssetClips[0].Lane)
+	}
+	if len(spine.Videos) > 0 && spine.Videos[0].Lane != "" {
+		t.Errorf("spine video should not have lane attribute, got: %s", spine.Videos[0].Lane)
+	}
+	if len(spine.Titles) > 0 && spine.Titles[0].Lane != "" {
+		t.Errorf("spine title should not have lane attribute, got: %s", spine.Titles[0].Lane)
 	}
 }
 
@@ -453,11 +543,11 @@ func TestSpineBuilder_GetStatistics(t *testing.T) {
 		t.Fatalf("failed to create spine builder: %v", err)
 	}
 
-	// Add elements
-	builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1))
-	builder.AddAssetClip("r2", "Clip2", Time("240240/24000s"), Duration("240240/24000s"), Lane(2))
-	builder.AddVideo("r3", "Video1", Time("480480/24000s"), Duration("240240/24000s"), Lane(1))
-	builder.AddTitle("r4", "Title1", Time("0s"), Duration("720720/24000s"), Lane(3))
+	// Add elements (all must use lane 0 for spine)
+	builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("120120/24000s"), Lane(0))
+	builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("120120/24000s"), Lane(0))
+	builder.AddVideo("r3", "Video1", Time("240240/24000s"), Duration("120120/24000s"), Lane(0))
+	builder.AddTitle("r4", "Title1", Time("360360/24000s"), Duration("120120/24000s"), Lane(0))
 
 	stats := builder.GetStatistics()
 
@@ -479,8 +569,8 @@ func TestSpineBuilder_GetStatistics(t *testing.T) {
 		t.Errorf("expected 1 title, got %d", stats.ElementsByType["title"])
 	}
 
-	// Check used lanes
-	expectedLanes := []int{1, 2, 3}
+	// Check used lanes (all should be lane 0 for spine)
+	expectedLanes := []int{0}
 	if len(stats.UsedLanes) != len(expectedLanes) {
 		t.Errorf("expected %d used lanes, got %d", len(expectedLanes), len(stats.UsedLanes))
 	}

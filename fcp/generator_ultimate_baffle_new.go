@@ -255,15 +255,18 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 	fmt.Printf("Creating %d video elements, %d image elements, %d titles...\n", 
 		totalVideoElements, totalImageElements, config.TitleElementCount)
 	
-	// Create video elements across multiple layers
+	// Create video elements across MANY layers - go crazy!
 	elementIndex := 0
 	for _, asset := range videoAssets {
 		for reuse := 0; reuse < config.AssetReuseCount; reuse++ {
-			// Calculate timing - spread across timeline
-			startTime := (float64(elementIndex) / float64(totalVideoElements)) * timelineDuration * 0.8
-			duration := 15.0 + float64(elementIndex%20) // 15-35 second clips
+			// 🔥 CRAZY TIMING: Random start times with lots of overlap
+			startTime := (float64(elementIndex) / float64(totalVideoElements)) * timelineDuration * 1.2 // Extends beyond timeline!
 			
-			// Create asset-clip - main spine elements have NO lane attribute
+			// 🔥 CRAZY DURATIONS: Very short to very long clips
+			baseDuration := []float64{2.0, 5.0, 8.0, 15.0, 30.0, 45.0, 60.0, 90.0}[elementIndex%8]
+			duration := baseDuration + float64(elementIndex%30) // 2-120 second range
+			
+			// Create asset-clip
 			assetClip := AssetClip{
 				Ref:      asset.ID,
 				Offset:   ConvertSecondsToFCPDuration(startTime),
@@ -272,10 +275,30 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 				Start:    "0s",
 			}
 			
-			// Only use lanes for secondary elements (smaller subset)
-			if elementIndex > 5 && elementIndex%3 == 0 {
-				lane := -1 // Background lane like working samples
-				assetClip.Lane = fmt.Sprintf("%d", lane)
+			// 🔥 CRAZY LANE ASSIGNMENT: Multiple lanes above and below main track
+			if elementIndex == 0 {
+				// First element: main spine (no lane)
+			} else {
+				// All other elements: distribute across lanes
+				lanePattern := elementIndex % 12
+				switch lanePattern {
+				case 1, 2:
+					assetClip.Lane = "1" // Above main track
+				case 3, 4:
+					assetClip.Lane = "2" // Higher above
+				case 5:
+					assetClip.Lane = "3" // Even higher
+				case 6, 7:
+					assetClip.Lane = "-1" // Below main track
+				case 8, 9:
+					assetClip.Lane = "-2" // Lower below
+				case 10:
+					assetClip.Lane = "-3" // Even lower
+				case 11:
+					assetClip.Lane = "4" // Way above
+				default:
+					assetClip.Lane = "-4" // Way below
+				}
 			}
 			
 			// Add complex animations
@@ -286,15 +309,19 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 		}
 	}
 	
-	// Create image elements (using Video elements for images per architecture)
+	// Create image elements across MANY MORE layers - even crazier!
 	elementIndex = 0
 	for _, asset := range imageAssets {
 		for reuse := 0; reuse < config.AssetReuseCount; reuse++ {
-			// Calculate timing
-			startTime := (float64(elementIndex) / float64(totalImageElements)) * timelineDuration * 0.9
-			duration := 8.0 + float64(elementIndex%12) // 8-20 second displays
+			// 🔥 CRAZY IMAGE TIMING: Staggered and overlapping
+			baseTime := (float64(elementIndex) / float64(totalImageElements)) * timelineDuration
+			startTime := baseTime + float64(elementIndex%20)*2.0 // Stagger by up to 40 seconds
 			
-			// Create video element for image - main spine elements have NO lane
+			// 🔥 CRAZY IMAGE DURATIONS: Mix of very short and long
+			durationPattern := []float64{1.5, 3.0, 6.0, 12.0, 25.0, 40.0, 75.0}[elementIndex%7]
+			duration := durationPattern + float64(elementIndex%15) // 1.5-90 second range
+			
+			// Create video element for image
 			video := Video{
 				Ref:      asset.ID,
 				Offset:   ConvertSecondsToFCPDuration(startTime),
@@ -302,9 +329,23 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 				Name:     fmt.Sprintf("%s_Use_%d", asset.Name, reuse),
 			}
 			
-			// Only use lanes for secondary elements 
-			if elementIndex > 10 && elementIndex%4 == 0 {
-				video.Lane = "-1" // Background lane like working samples
+			// 🔥 CRAZY IMAGE LANE DISTRIBUTION: Use different lanes than videos
+			lanePattern := elementIndex % 14
+			switch lanePattern {
+			case 0, 1:
+				// Some images on main spine (no lane)
+			case 2, 3, 4:
+				video.Lane = "5" // High above videos
+			case 5, 6:
+				video.Lane = "6" // Even higher
+			case 7:
+				video.Lane = "7" // Top layer
+			case 8, 9, 10:
+				video.Lane = "-5" // Deep below videos  
+			case 11, 12:
+				video.Lane = "-6" // Even deeper
+			default:
+				video.Lane = "-7" // Bottom layer
 			}
 			
 			// Add simpler animations for images (per CLAUDE.md guidance)
@@ -315,15 +356,45 @@ func buildComplexTimeline(fcpxml *FCPXML, videoAssets, imageAssets []AssetInfo, 
 		}
 	}
 	
-	// Create complex title elements
+	// Create INSANE title elements across ALL possible layers!
 	for i := 0; i < config.TitleElementCount; i++ {
 		effectID := titleEffects[i%len(titleEffects)]
 		
-		// Calculate timing - spread evenly
-		startTime := (float64(i) / float64(config.TitleElementCount)) * timelineDuration
-		duration := 5.0 + float64(i%8) // 5-13 second titles
+		// 🔥 CRAZY TITLE TIMING: Random scattered placement
+		baseTime := (float64(i) / float64(config.TitleElementCount)) * timelineDuration
+		startTime := baseTime + float64(i%25)*3.0 // Scatter by up to 75 seconds
+		
+		// 🔥 CRAZY TITLE DURATIONS: Very quick flashes to long holds
+		durationOptions := []float64{0.5, 1.0, 2.0, 4.0, 8.0, 15.0, 30.0, 60.0}[i%8]
+		duration := durationOptions + float64(i%10)*0.5 // 0.5-65 second range
 		
 		title := createComplexTitle(effectID, startTime, duration, i)
+		
+		// 🔥 CRAZY TITLE LANE DISTRIBUTION: Use yet more different lanes!
+		lanePattern := i % 16
+		switch lanePattern {
+		case 0, 1, 2:
+			// Some titles on main spine (no lane)
+		case 3, 4:
+			title.Lane = "8" // Higher than images
+		case 5:
+			title.Lane = "9" // Even higher
+		case 6:
+			title.Lane = "10" // Top text layer
+		case 7, 8, 9:
+			title.Lane = "-8" // Below images
+		case 10, 11:
+			title.Lane = "-9" // Even lower
+		case 12:
+			title.Lane = "-10" // Bottom text layer
+		case 13:
+			title.Lane = "11" // Extreme top
+		case 14:
+			title.Lane = "-11" // Extreme bottom
+		default:
+			title.Lane = "12" // Stratospheric text!
+		}
+		
 		spine.Titles = append(spine.Titles, title)
 	}
 	
@@ -479,10 +550,7 @@ func createComplexTitle(effectID string, startTime, duration float64, index int)
 		},
 	}
 	
-	// Only some titles use lanes (like working samples)
-	if index > 5 && index%5 == 0 {
-		title.Lane = "-1" // Background lane
-	}
+	// Lane assignment will be done by caller - don't set here
 	
 	return title
 }

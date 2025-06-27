@@ -8,7 +8,6 @@ package fcp
 import (
 	"fmt"
 	"sort"
-	"strconv"
 )
 
 // SpineElementType represents different types of spine elements
@@ -440,22 +439,24 @@ func (sb *SpineBuilder) SetAllowOverlaps(allow bool) {
 
 // AddAssetClip adds an asset clip to the spine
 func (sb *SpineBuilder) AddAssetClip(ref, name string, offset Time, duration Duration, lane Lane) error {
+	// 🚨 CRITICAL: Spine elements cannot have lanes - this violates FCPXML structure
+	if lane != Lane(0) {
+		return fmt.Errorf("spine asset-clip cannot have lane %d - spine elements must be lane 0 (connected clips should be nested inside primary elements)", lane.Int())
+	}
+	
 	// Create validated spine element
 	element, err := NewValidatedSpineElement(SpineElementAssetClip, offset, duration, lane, name)
 	if err != nil {
 		return fmt.Errorf("failed to create asset clip element: %v", err)
 	}
 	
-	// Create asset clip data
+	// Create asset clip data (no lane attribute for spine elements)
 	assetClip := &AssetClip{
 		Ref:      ref,
 		Offset:   offset.String(),
 		Duration: duration.String(),
 		Name:     name,
-	}
-	
-	if lane != Lane(0) {
-		assetClip.Lane = strconv.Itoa(lane.Int())
+		// Lane is intentionally omitted - spine elements cannot have lanes
 	}
 	
 	if err := element.SetAssetClip(assetClip); err != nil {
@@ -473,22 +474,24 @@ func (sb *SpineBuilder) AddAssetClip(ref, name string, offset Time, duration Dur
 
 // AddVideo adds a video element to the spine
 func (sb *SpineBuilder) AddVideo(ref, name string, offset Time, duration Duration, lane Lane) error {
+	// 🚨 CRITICAL: Spine elements cannot have lanes - this violates FCPXML structure
+	if lane != Lane(0) {
+		return fmt.Errorf("spine video cannot have lane %d - spine elements must be lane 0 (connected clips should be nested inside primary elements)", lane.Int())
+	}
+	
 	// Create validated spine element
 	element, err := NewValidatedSpineElement(SpineElementVideo, offset, duration, lane, name)
 	if err != nil {
 		return fmt.Errorf("failed to create video element: %v", err)
 	}
 	
-	// Create video data
+	// Create video data (no lane attribute for spine elements)
 	video := &Video{
 		Ref:      ref,
 		Offset:   offset.String(),
 		Duration: duration.String(),
 		Name:     name,
-	}
-	
-	if lane != Lane(0) {
-		video.Lane = strconv.Itoa(lane.Int())
+		// Lane is intentionally omitted - spine elements cannot have lanes
 	}
 	
 	if err := element.SetVideo(video); err != nil {
@@ -506,22 +509,24 @@ func (sb *SpineBuilder) AddVideo(ref, name string, offset Time, duration Duratio
 
 // AddTitle adds a title element to the spine
 func (sb *SpineBuilder) AddTitle(ref, name string, offset Time, duration Duration, lane Lane) error {
+	// 🚨 CRITICAL: Spine elements cannot have lanes - this violates FCPXML structure
+	if lane != Lane(0) {
+		return fmt.Errorf("spine title cannot have lane %d - spine elements must be lane 0 (connected clips should be nested inside primary elements)", lane.Int())
+	}
+	
 	// Create validated spine element
 	element, err := NewValidatedSpineElement(SpineElementTitle, offset, duration, lane, name)
 	if err != nil {
 		return fmt.Errorf("failed to create title element: %v", err)
 	}
 	
-	// Create title data
+	// Create title data (no lane attribute for spine elements)
 	title := &Title{
 		Ref:      ref,
 		Offset:   offset.String(),
 		Duration: duration.String(),
 		Name:     name,
-	}
-	
-	if lane != Lane(0) {
-		title.Lane = strconv.Itoa(lane.Int())
+		// Lane is intentionally omitted - spine elements cannot have lanes
 	}
 	
 	if err := element.SetTitle(title); err != nil {
@@ -539,22 +544,24 @@ func (sb *SpineBuilder) AddTitle(ref, name string, offset Time, duration Duratio
 
 // AddGeneratorClip adds a generator clip to the spine
 func (sb *SpineBuilder) AddGeneratorClip(ref, name string, offset Time, duration Duration, lane Lane) error {
+	// 🚨 CRITICAL: Spine elements cannot have lanes - this violates FCPXML structure
+	if lane != Lane(0) {
+		return fmt.Errorf("spine generator-clip cannot have lane %d - spine elements must be lane 0 (connected clips should be nested inside primary elements)", lane.Int())
+	}
+	
 	// Create validated spine element
 	element, err := NewValidatedSpineElement(SpineElementGeneratorClip, offset, duration, lane, name)
 	if err != nil {
 		return fmt.Errorf("failed to create generator clip element: %v", err)
 	}
 	
-	// Create generator clip data
+	// Create generator clip data (no lane attribute for spine elements)
 	generatorClip := &GeneratorClip{
 		Ref:      ref,
 		Offset:   offset.String(),
 		Duration: duration.String(),
 		Name:     name,
-	}
-	
-	if lane != Lane(0) {
-		generatorClip.Lane = strconv.Itoa(lane.Int())
+		// Lane is intentionally omitted - spine elements cannot have lanes
 	}
 	
 	if err := element.SetGeneratorClip(generatorClip); err != nil {
@@ -611,7 +618,61 @@ func (sb *SpineBuilder) Build() (*Spine, error) {
 		return nil, fmt.Errorf("element sorting failed: %v", err)
 	}
 	
-	// Create spine structure
+	// 🚨 CRITICAL: Validate spine structure before building
+	if err := sb.validateSpineStructure(sortedElements); err != nil {
+		return nil, fmt.Errorf("spine structure validation failed: %v", err)
+	}
+	
+	// Create spine structure with proper architecture
+	spine, err := sb.buildValidatedSpine(sortedElements)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build validated spine: %v", err)
+	}
+	
+	return spine, nil
+}
+
+// validateSpineStructure validates FCPXML spine architecture rules
+func (sb *SpineBuilder) validateSpineStructure(elements []*ValidatedSpineElement) error {
+	var primaryElement *ValidatedSpineElement
+	var connectedElements []*ValidatedSpineElement
+	
+	// Separate primary (lane 0) and connected (lane > 0) elements
+	for _, element := range elements {
+		if element.Lane == Lane(0) {
+			if primaryElement == nil {
+				primaryElement = element
+			} else {
+				// Multiple primary elements need to be properly sequenced
+				// For now, we'll take the first one as primary
+			}
+		} else {
+			connectedElements = append(connectedElements, element)
+		}
+	}
+	
+	// Rule 1: Spine elements cannot have lane attributes
+	// This is the critical bug - current validation allows this!
+	for _, element := range elements {
+		if element.Lane != Lane(0) {
+			return fmt.Errorf("spine element '%s' (type: %s) has lane %d - spine elements cannot have lanes, they must be nested inside primary elements", 
+				element.Name, element.Type.String(), element.Lane.Int())
+		}
+	}
+	
+	// Rule 2: All elements in spine must be lane 0 (primary timeline)
+	// Connected clips with lanes must be nested inside primary elements
+	if len(connectedElements) > 0 {
+		return fmt.Errorf("found %d connected elements with lanes in spine - these must be nested inside primary spine elements", len(connectedElements))
+	}
+	
+	return nil
+}
+
+// buildValidatedSpine creates a spine with proper FCPXML architecture
+func (sb *SpineBuilder) buildValidatedSpine(elements []*ValidatedSpineElement) (*Spine, error) {
+	// Since validateSpineStructure ensures all elements have lane 0,
+	// we can safely build the spine with all elements as primary
 	spine := &Spine{
 		AssetClips: make([]AssetClip, 0),
 		Videos:     make([]Video, 0),
@@ -619,19 +680,25 @@ func (sb *SpineBuilder) Build() (*Spine, error) {
 		Gaps:       make([]Gap, 0),
 	}
 	
-	// Add elements to spine in sorted order
-	for _, element := range sortedElements {
+	// Add elements to spine in sorted order (all are primary now)
+	for _, element := range elements {
 		switch element.Type {
 		case SpineElementAssetClip:
 			if element.AssetClip != nil {
+				// Remove lane attribute since spine elements can't have lanes
+				element.AssetClip.Lane = ""
 				spine.AssetClips = append(spine.AssetClips, *element.AssetClip)
 			}
 		case SpineElementVideo:
 			if element.Video != nil {
+				// Remove lane attribute since spine elements can't have lanes
+				element.Video.Lane = ""
 				spine.Videos = append(spine.Videos, *element.Video)
 			}
 		case SpineElementTitle:
 			if element.Title != nil {
+				// Remove lane attribute since spine elements can't have lanes
+				element.Title.Lane = ""
 				spine.Titles = append(spine.Titles, *element.Title)
 			}
 		case SpineElementGeneratorClip:
