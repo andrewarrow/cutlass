@@ -777,6 +777,118 @@ that might not occur in normal usage.`,
 	},
 }
 
+var storyBaffleCmd = &cobra.Command{
+	Use:   "story-baffle [output-filename]",
+	Short: "Generate an AI video creation blooper reel - story of chaos and recovery",
+	Long: `Generate an engaging story about an AI trying to make a complex video and everything going wrong!
+
+Creates a 5-minute narrative timeline containing:
+- Story phases: Simple start → Getting excited → Peak chaos → Collapse → Recovery
+- Multi-lane complex animations that build up and fall apart dramatically
+- Dynamic text that gets bigger and crazier as the AI loses control
+- Images flying in from all directions, then crashing down
+- Pixabay images themed to match each story phase
+- Never any black screens - always something happening!
+
+The narrative arc:
+1. "Let me make a simple video..." (calm beginning)
+2. "Actually, let me add more images!" (excitement building)
+3. "MOAR LAYERS! MOAR EFFECTS!" (complete chaos)
+4. "Oh no! Everything is falling!" (dramatic collapse)
+5. "Well, that was educational!" (quiet recovery)
+
+This combines the storytelling of 'story' with the complex multi-lane chaos of 'baffle'
+to create something that's both technically impressive AND entertaining to watch.
+
+Examples:
+  cutlass fcp story-baffle                    # Generate story_baffle_timestamp.fcpxml
+  cutlass fcp story-baffle chaos.fcpxml       # Custom filename  
+  cutlass fcp story-baffle --duration 300 --images 50 --verbose`,
+	Args: cobra.RangeArgs(0, 1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get output filename
+		var filename string
+		if len(args) > 0 {
+			filename = args[0]
+		} else {
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("story_baffle_%d.fcpxml", timestamp)
+		}
+		
+		// Get flags
+		durationStr, _ := cmd.Flags().GetString("duration")
+		imagesStr, _ := cmd.Flags().GetString("images")
+		complexityStr, _ := cmd.Flags().GetString("complexity")
+		outputDir, _ := cmd.Flags().GetString("output-dir")
+		apiKey, _ := cmd.Flags().GetString("api-key")
+		format, _ := cmd.Flags().GetString("format")
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		
+		// Parse duration
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Parse total images
+		totalImages, err := strconv.Atoi(imagesStr)
+		if err != nil {
+			fmt.Printf("Error parsing images '%s': %v\n", imagesStr, err)
+			return
+		}
+		
+		// Parse complexity
+		complexity, err := strconv.ParseFloat(complexityStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing complexity '%s': %v\n", complexityStr, err)
+			return
+		}
+		
+		// Validate format parameter
+		if format != "horizontal" && format != "vertical" {
+			fmt.Printf("Error: format must be 'horizontal' or 'vertical', got '%s'\n", format)
+			return
+		}
+		
+		// Validate complexity
+		if complexity < 0.0 || complexity > 1.0 {
+			fmt.Printf("Error: complexity must be between 0.0 and 1.0, got %.2f\n", complexity)
+			return
+		}
+		
+		// Create story-baffle configuration
+		config := &fcp.StoryBaffleConfig{
+			Duration:      duration,
+			OutputDir:     outputDir,
+			PixabayAPIKey: apiKey,
+			MaxComplexity: complexity,
+			ImageCount:    totalImages,
+			Format:        format,
+		}
+		
+		// Generate story-baffle timeline
+		fmt.Printf("Generating AI video creation story-baffle (%.1f minutes)...\n", duration/60)
+		
+		fcpxml, err := fcp.GenerateStoryBaffle(config, verbose)
+		if err != nil {
+			fmt.Printf("Error generating story-baffle timeline: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated AI video creation story-baffle: %s\n", filename)
+		fmt.Printf("Images saved to: %s\n", config.OutputDir)
+		fmt.Printf("Import this into Final Cut Pro for a wild ride!\n")
+	},
+}
+
 var storyCmd = &cobra.Command{
 	Use:   "story [output-filename]",
 	Short: "Generate a 3-minute story video using random words and Pixabay images",
@@ -935,6 +1047,15 @@ func init() {
 	baffleCmd.Flags().String("max-duration", "540", "Maximum timeline duration in seconds (default 540 = 9 minutes)")
 	baffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
+	// Add flags to story-baffle subcommand
+	storyBaffleCmd.Flags().String("duration", "300", "Total story duration in seconds (default 300 = 5 minutes)")
+	storyBaffleCmd.Flags().String("images", "50", "Total number of images to download and use (default 50)")
+	storyBaffleCmd.Flags().String("complexity", "0.95", "Maximum chaos complexity from 0.0 to 1.0 (default 0.95)")
+	storyBaffleCmd.Flags().String("output-dir", "./story_baffle_assets", "Directory to save downloaded images (default ./story_baffle_assets)")
+	storyBaffleCmd.Flags().String("api-key", "", "Pixabay API key for higher rate limits (optional)")
+	storyBaffleCmd.Flags().String("format", "horizontal", "Video format: 'horizontal' (1280x720) or 'vertical' (1080x1920) (default 'horizontal')")
+	storyBaffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
+
 	// Add flags to story subcommand
 	storyCmd.Flags().String("duration", "180", "Total story duration in seconds (default 180 = 3 minutes)")
 	storyCmd.Flags().String("images", "90", "Total number of images to download and use (default 90)")
@@ -957,5 +1078,6 @@ func init() {
 	fcpCmd.AddCommand(addTxtCmd)
 	fcpCmd.AddCommand(addConversationCmd)
 	fcpCmd.AddCommand(baffleCmd)
+	fcpCmd.AddCommand(storyBaffleCmd)
 	fcpCmd.AddCommand(storyCmd)
 }
