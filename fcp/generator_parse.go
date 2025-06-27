@@ -97,6 +97,11 @@ func addDurations(duration1, duration2 string) string {
 // - Position keyframes: NO attributes (no interp/curve)
 // - Scale/Rotation/Anchor keyframes: Only curve attribute (no interp)
 func createKenBurnsAnimation(offsetDuration string, totalDurationSeconds float64) *AdjustTransform {
+	return createKenBurnsAnimationWithFormat(offsetDuration, totalDurationSeconds, "horizontal")
+}
+
+// createKenBurnsAnimationWithFormat creates Ken Burns effect animation with format-aware scaling
+func createKenBurnsAnimationWithFormat(offsetDuration string, totalDurationSeconds float64, format string) *AdjustTransform {
 
 	videoStartFrames := 86399313
 
@@ -106,6 +111,21 @@ func createKenBurnsAnimation(offsetDuration string, totalDurationSeconds float64
 
 	startTime := fmt.Sprintf("%d/24000s", videoStartFrames)
 	endTime := fmt.Sprintf("%d/24000s", videoStartFrames+kenBurnsFrames)
+
+	// Adjust scale values based on format
+	var startScale, endScale string
+	switch format {
+	case "vertical":
+		// Higher zoom for vertical format to fill frame with no empty space
+		startScale = "2.0 2.0"  // Start zoomed in more for vertical
+		endScale = "2.4 2.4"    // End even more zoomed for Ken Burns effect
+	case "horizontal":
+		fallthrough
+	default:
+		// Original scaling for horizontal
+		startScale = "1.2 1.2"
+		endScale = "1.5 1.5"
+	}
 
 	return &AdjustTransform{
 		Params: []Param{
@@ -164,12 +184,12 @@ func createKenBurnsAnimation(offsetDuration string, totalDurationSeconds float64
 					Keyframes: []Keyframe{
 						{
 							Time:  startTime,
-							Value: "1.2 1.2",
+							Value: startScale,
 							Curve: "linear",
 						},
 						{
 							Time:  endTime,
-							Value: "1.35 1.35",
+							Value: endScale,
 							Curve: "linear",
 						},
 					},

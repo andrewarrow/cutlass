@@ -820,6 +820,7 @@ Examples:
 		showAttribution, _ := cmd.Flags().GetBool("attribution")
 		attributionOutput, _ := cmd.Flags().GetString("attribution-output")
 		inputFile, _ := cmd.Flags().GetString("input-file")
+		format, _ := cmd.Flags().GetString("format")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		
 		// Parse duration
@@ -843,6 +844,12 @@ Examples:
 			return
 		}
 		
+		// Validate format parameter
+		if format != "horizontal" && format != "vertical" {
+			fmt.Printf("Error: format must be 'horizontal' or 'vertical', got '%s'\n", format)
+			return
+		}
+		
 		// Create story configuration
 		config := &fcp.StoryConfig{
 			Duration:         duration,
@@ -853,6 +860,7 @@ Examples:
 			ShowAttribution:  showAttribution,
 			AttributionOutput: attributionOutput,
 			InputFile:        inputFile,
+			Format:           format,
 		}
 		
 		// Generate story timeline
@@ -936,6 +944,7 @@ func init() {
 	storyCmd.Flags().Bool("attribution", true, "Show attribution text for Pixabay images (default true)")
 	storyCmd.Flags().String("attribution-output", "video", "Where to output attribution: 'video' (text elements), 'stdout' (console), 'both', or 'none' (default 'video')")
 	storyCmd.Flags().String("input-file", "", "Text file with sentences (one per line) to use instead of random words")
+	storyCmd.Flags().String("format", "horizontal", "Video format: 'horizontal' (1280x720) or 'vertical' (1080x1920) (default 'horizontal')")
 	storyCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 	
 	fcpCmd.AddCommand(createEmptyCmd)

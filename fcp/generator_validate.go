@@ -278,6 +278,10 @@ func AddImage(fcpxml *FCPXML, imagePath string, durationSeconds float64) error {
 // ❌ NEVER: fmt.Sprintf("<asset-clip ref='%s'...") - CRITICAL VIOLATION!
 // ✅ ALWAYS: Use ResourceRegistry/Transaction pattern for proper resource management
 func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64, withSlide bool) error {
+	return AddImageWithSlideAndFormat(fcpxml, imagePath, durationSeconds, withSlide, "horizontal")
+}
+
+func AddImageWithSlideAndFormat(fcpxml *FCPXML, imagePath string, durationSeconds float64, withSlide bool, format string) error {
 
 	if !isImageFile(imagePath) {
 		return fmt.Errorf("file is not a supported image format (PNG, JPG, JPEG): %s", imagePath)
@@ -287,7 +291,7 @@ func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64
 
 	if asset, exists := registry.GetOrCreateAsset(imagePath); exists {
 
-		return addImageAssetClipToSpine(fcpxml, asset, durationSeconds)
+		return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, withSlide, format)
 	}
 
 	tx := NewTransaction(registry)
@@ -311,7 +315,18 @@ func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64
 
 	frameDuration := ConvertSecondsToFCPDuration(durationSeconds)
 
-	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "1280", "720", "1-13-1")
+	// Set format dimensions based on format type
+	var width, height string
+	switch format {
+	case "vertical":
+		width, height = "1080", "1920"
+	case "horizontal":
+		fallthrough
+	default:
+		width, height = "1280", "720"
+	}
+
+	_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", width, height, "1-13-1")
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to create image format: %v", err)
@@ -328,7 +343,7 @@ func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
-	return addImageAssetClipToSpineWithSlide(fcpxml, asset, durationSeconds, withSlide)
+	return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, withSlide, format)
 }
 
 // addImageAssetClipToSpine adds an image Video element to the sequence spine
@@ -336,7 +351,7 @@ func AddImageWithSlide(fcpxml *FCPXML, imagePath string, durationSeconds float64
 // Analysis of working samples/png.fcpxml shows images use <video> in spine
 // This prevents addAssetClip:toObject:parentFormatID crashes in FCP
 func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds float64) error {
-	return addImageAssetClipToSpineWithSlide(fcpxml, asset, durationSeconds, false)
+	return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, false, "horizontal")
 }
 
 // addImageAssetClipToSpineWithSlide adds an image Video element to the sequence spine with optional slide animation
@@ -345,6 +360,11 @@ func addImageAssetClipToSpine(fcpxml *FCPXML, asset *Asset, durationSeconds floa
 // This prevents addAssetClip:toObject:parentFormatID crashes in FCP
 // Keyframe animations match samples/slide.fcpxml pattern for sliding motion
 func addImageAssetClipToSpineWithSlide(fcpxml *FCPXML, asset *Asset, durationSeconds float64, withSlide bool) error {
+	return addImageAssetClipToSpineWithFormat(fcpxml, asset, durationSeconds, withSlide, "horizontal")
+}
+
+// addImageAssetClipToSpineWithFormat adds an image Video element to the sequence spine with format-aware scaling
+func addImageAssetClipToSpineWithFormat(fcpxml *FCPXML, asset *Asset, durationSeconds float64, withSlide bool, format string) error {
 
 	if len(fcpxml.Library.Events) > 0 && len(fcpxml.Library.Events[0].Projects) > 0 && len(fcpxml.Library.Events[0].Projects[0].Sequences) > 0 {
 		sequence := &fcpxml.Library.Events[0].Projects[0].Sequences[0]
@@ -362,7 +382,14 @@ func addImageAssetClipToSpineWithSlide(fcpxml *FCPXML, asset *Asset, durationSec
 		}
 
 		if withSlide {
-			video.AdjustTransform = createKenBurnsAnimation(currentTimelineDuration, durationSeconds)
+			video.AdjustTransform = createKenBurnsAnimationWithFormat(currentTimelineDuration, durationSeconds, format)
+		} else {
+			// Add zoom scaling for vertical format to fill frame with no empty space
+			if format == "vertical" {
+				video.AdjustTransform = &AdjustTransform{
+					Scale: "1.8 1.8", // Zoom in to fill vertical frame
+				}
+			}
 		}
 
 		sequence.Spine.Videos = append(sequence.Spine.Videos, video)

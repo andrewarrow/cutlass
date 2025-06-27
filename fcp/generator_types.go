@@ -142,20 +142,40 @@ func ConvertSecondsToFCPDuration(seconds float64) string {
 
 // GenerateEmpty creates an empty FCPXML file structure and returns a pointer to it
 func GenerateEmpty(filename string) (*FCPXML, error) {
+	return GenerateEmptyWithFormat(filename, "horizontal")
+}
+
+// GenerateEmptyWithFormat creates an empty FCPXML file structure with specified format
+func GenerateEmptyWithFormat(filename string, format string) (*FCPXML, error) {
+	var formatConfig Format
+	
+	switch format {
+	case "vertical":
+		formatConfig = Format{
+			ID:            "r1",
+			Name:          "FFVideoFormat1080p2398_Vertical",
+			FrameDuration: "1001/24000s",
+			Width:         "1080",
+			Height:        "1920",
+			ColorSpace:    "1-1-1 (Rec. 709)",
+		}
+	case "horizontal":
+		fallthrough
+	default:
+		formatConfig = Format{
+			ID:            "r1",
+			Name:          "FFVideoFormat720p2398",
+			FrameDuration: "1001/24000s",
+			Width:         "1280",
+			Height:        "720",
+			ColorSpace:    "1-1-1 (Rec. 709)",
+		}
+	}
 
 	fcpxml := &FCPXML{
 		Version: "1.13",
 		Resources: Resources{
-			Formats: []Format{
-				{
-					ID:            "r1",
-					Name:          "FFVideoFormat720p2398",
-					FrameDuration: "1001/24000s",
-					Width:         "1280",
-					Height:        "720",
-					ColorSpace:    "1-1-1 (Rec. 709)",
-				},
-			},
+			Formats: []Format{formatConfig},
 		},
 		Library: Library{
 			Location: "file:///Users/aa/Movies/Untitled.fcpbundle/",

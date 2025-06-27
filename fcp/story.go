@@ -76,6 +76,7 @@ type StoryConfig struct {
 	ShowAttribution  bool    // Whether to show attribution text for Pixabay images (default: true)
 	AttributionOutput string  // Where to output attribution: "video", "stdout", "both", or "none" (default: "video")
 	InputFile        string  // Path to text file with sentences (one per line) to use instead of random words
+	Format           string  // Video format: "horizontal" (1280x720) or "vertical" (1080x1920) (default: "horizontal")
 }
 
 // DefaultStoryConfig returns a default configuration for story generation
@@ -87,6 +88,7 @@ func DefaultStoryConfig() *StoryConfig {
 		OutputDir:        "./story_assets",
 		ShowAttribution:  true,   // Enable attribution by default
 		AttributionOutput: "video", // Default to video text elements
+		Format:           "horizontal", // Default to horizontal format
 	}
 }
 
@@ -363,8 +365,8 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 		config = DefaultStoryConfig()
 	}
 	
-	// Create base FCPXML structure
-	fcpxml, err := GenerateEmpty("")
+	// Create base FCPXML structure with specified format
+	fcpxml, err := GenerateEmptyWithFormat("", config.Format)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
@@ -452,8 +454,8 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 	wordIndex := 0
 	
 	for i, imageAttr := range allImageAttributions {
-		// Add image with proper duration
-		err := AddImageWithSlide(fcpxml, imageAttr.FilePath, imageDuration, true)
+		// Add image with proper duration and format
+		err := AddImageWithSlideAndFormat(fcpxml, imageAttr.FilePath, imageDuration, true, config.Format)
 		if err != nil {
 			fmt.Printf("Warning: Failed to add image %s: %v\n", imageAttr.FilePath, err)
 			continue
@@ -470,8 +472,8 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 				fontSize = 150 // Smaller font for sentences
 			}
 			
-			// Add text with appropriate font size
-			err = AddStoryText(fcpxml, textContent, textOffset, imageDuration, fontSize)
+			// Add text with appropriate font size and format
+			err = AddStoryTextWithFormat(fcpxml, textContent, textOffset, imageDuration, fontSize, config.Format)
 			if err != nil {
 				if verbose {
 					textType := "word"
@@ -546,6 +548,11 @@ func min(a, b int) int {
 
 // AddStoryText adds a single text element to the story timeline with specified font size
 func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSeconds float64, fontSize int) error {
+	return AddStoryTextWithFormat(fcpxml, text, offsetSeconds, durationSeconds, fontSize, "horizontal")
+}
+
+// AddStoryTextWithFormat adds a single text element to the story timeline with specified font size and format
+func AddStoryTextWithFormat(fcpxml *FCPXML, text string, offsetSeconds float64, durationSeconds float64, fontSize int, format string) error {
 	// Use the existing resource registry
 	registry := NewResourceRegistry(fcpxml)
 	tx := NewTransaction(registry)
@@ -646,22 +653,22 @@ func AddStoryText(fcpxml *FCPXML, text string, offsetSeconds float64, durationSe
 			{
 				Name:  "Left Margin",
 				Key:   "9999/10003/13260/3296672360/2/323",
-				Value: "-1730",
+				Value: getLeftMargin(format),
 			},
 			{
 				Name:  "Right Margin", 
 				Key:   "9999/10003/13260/3296672360/2/324",
-				Value: "1730",
+				Value: getRightMargin(format),
 			},
 			{
 				Name:  "Top Margin",
 				Key:   "9999/10003/13260/3296672360/2/325",
-				Value: "960",
+				Value: getTopMargin(format),
 			},
 			{
 				Name:  "Bottom Margin",
 				Key:   "9999/10003/13260/3296672360/2/326",
-				Value: "-960",
+				Value: getBottomMargin(format),
 			},
 			{
 				Name:  "Alignment",
@@ -922,4 +929,41 @@ func AddAttributionText(fcpxml *FCPXML, attributionText string, offsetSeconds fl
 	}
 
 	return nil
+}
+
+// Helper functions for format-specific text positioning
+func getLeftMargin(format string) string {
+	switch format {
+	case "vertical":
+		return "-970"  // Narrower margins for vertical (1080 width)
+	default:
+		return "-1730" // Original for horizontal (1280 width)
+	}
+}
+
+func getRightMargin(format string) string {
+	switch format {
+	case "vertical":
+		return "970"   // Narrower margins for vertical (1080 width)
+	default:
+		return "1730"  // Original for horizontal (1280 width)
+	}
+}
+
+func getTopMargin(format string) string {
+	switch format {
+	case "vertical":
+		return "1540"  // Higher top margin for vertical (1920 height)
+	default:
+		return "960"   // Original for horizontal (720 height)
+	}
+}
+
+func getBottomMargin(format string) string {
+	switch format {
+	case "vertical":
+		return "-1540" // Lower bottom margin for vertical (1920 height)
+	default:
+		return "-960"  // Original for horizontal (720 height)
+	}
 }
