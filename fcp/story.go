@@ -6,6 +6,7 @@
 package fcp
 
 import (
+	"bufio"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -74,6 +75,7 @@ type StoryConfig struct {
 	PixabayAPIKey    string  // Pixabay API key (optional, uses public API if empty)
 	ShowAttribution  bool    // Whether to show attribution text for Pixabay images (default: true)
 	AttributionOutput string  // Where to output attribution: "video", "stdout", "both", or "none" (default: "video")
+	InputFile        string  // Path to text file with sentences (one per line) to use instead of random words
 }
 
 // DefaultStoryConfig returns a default configuration for story generation
@@ -105,6 +107,35 @@ func GenerateRandomWords(count int) []string {
 	}
 	
 	return words
+}
+
+// ReadSentencesFromFile reads sentences from a text file, one per line
+func ReadSentencesFromFile(filepath string) ([]string, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %v", filepath, err)
+	}
+	defer file.Close()
+
+	var sentences []string
+	scanner := bufio.NewScanner(file)
+	
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" { // Skip empty lines
+			sentences = append(sentences, line)
+		}
+	}
+	
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error reading file %s: %v", filepath, err)
+	}
+	
+	if len(sentences) == 0 {
+		return nil, fmt.Errorf("no sentences found in file %s", filepath)
+	}
+	
+	return sentences, nil
 }
 
 // DownloadImagesFromPixabay downloads images for a given word from Pixabay or fallback sources
@@ -310,31 +341,53 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 		fmt.Printf("Target images: %d\n", config.TotalImages)
 	}
 	
-	// Calculate how many words we need
-	wordsNeeded := config.TotalImages / config.ImagesPerWord
-	if config.TotalImages%config.ImagesPerWord != 0 {
-		wordsNeeded++
-	}
-	
-	// Generate random words
-	words := GenerateRandomWords(wordsNeeded)
-	if verbose {
-		fmt.Printf("Generated %d words: %s\n", len(words), strings.Join(words[:min(5, len(words))], ", "))
-		if len(words) > 5 {
-			fmt.Printf("... and %d more\n", len(words)-5)
+	// Get words/sentences based on input source
+	var words []string
+	if config.InputFile != "" {
+		// Read sentences from input file
+		sentences, err := ReadSentencesFromFile(config.InputFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read input file: %v", err)
 		}
-	}
-	
-	// Download images for each word
-	var allImageAttributions []ImageAttribution
-	for i, word := range words {
+		words = sentences
 		if verbose {
-			fmt.Printf("Downloading images for word %d/%d: %s\n", i+1, len(words), word)
+			fmt.Printf("Read %d sentences from file: %s\n", len(words), config.InputFile)
+			fmt.Printf("First few sentences: %s\n", strings.Join(words[:min(3, len(words))], " | "))
+			if len(words) > 3 {
+				fmt.Printf("... and %d more\n", len(words)-3)
+			}
+		}
+	} else {
+		// Calculate how many words we need for random generation
+		wordsNeeded := config.TotalImages / config.ImagesPerWord
+		if config.TotalImages%config.ImagesPerWord != 0 {
+			wordsNeeded++
 		}
 		
-		imageAttributions, err := DownloadImagesFromPixabay(word, config.ImagesPerWord, config.OutputDir, config.PixabayAPIKey)
+		// Generate random words
+		words = GenerateRandomWords(wordsNeeded)
+		if verbose {
+			fmt.Printf("Generated %d words: %s\n", len(words), strings.Join(words[:min(5, len(words))], ", "))
+			if len(words) > 5 {
+				fmt.Printf("... and %d more\n", len(words)-5)
+			}
+		}
+	}
+	
+	// Download images for each word/sentence
+	var allImageAttributions []ImageAttribution
+	for i, searchTerm := range words {
+		searchType := "word"
+		if config.InputFile != "" {
+			searchType = "sentence"
+		}
+		if verbose {
+			fmt.Printf("Downloading images for %s %d/%d: %s\n", searchType, i+1, len(words), searchTerm)
+		}
+		
+		imageAttributions, err := DownloadImagesFromPixabay(searchTerm, config.ImagesPerWord, config.OutputDir, config.PixabayAPIKey)
 		if err != nil {
-			fmt.Printf("Warning: Failed to download images for word '%s': %v\n", word, err)
+			fmt.Printf("Warning: Failed to download images for %s '%s': %v\n", searchType, searchTerm, err)
 			continue
 		}
 		
@@ -367,19 +420,33 @@ func GenerateStoryTimeline(config *StoryConfig, verbose bool) (*FCPXML, error) {
 			continue
 		}
 		
-		// Add text overlay for corresponding word (one word per images-per-word images)
+		// Add text overlay for corresponding word/sentence (one per images-per-word images)
 		if i%config.ImagesPerWord == 0 && wordIndex < len(words) {
 			textOffset := float64(i) * imageDuration
-			word := words[wordIndex]
+			textContent := words[wordIndex]
 			
-			// Add text with 290 font size (similar to baffle)
-			err = AddStoryText(fcpxml, word, textOffset, imageDuration, 290)
+			// Use smaller font size for sentences to fit better
+			fontSize := 290
+			if config.InputFile != "" {
+				fontSize = 150 // Smaller font for sentences
+			}
+			
+			// Add text with appropriate font size
+			err = AddStoryText(fcpxml, textContent, textOffset, imageDuration, fontSize)
 			if err != nil {
 				if verbose {
-					fmt.Printf("Warning: Failed to add text '%s' at offset %.1fs: %v\n", word, textOffset, err)
+					textType := "word"
+					if config.InputFile != "" {
+						textType = "sentence"
+					}
+					fmt.Printf("Warning: Failed to add %s '%s' at offset %.1fs: %v\n", textType, textContent, textOffset, err)
 				}
 			} else if verbose {
-				fmt.Printf("Added text '%s' at offset %.1fs\n", word, textOffset)
+				textType := "word"
+				if config.InputFile != "" {
+					textType = "sentence"
+				}
+				fmt.Printf("Added %s '%s' at offset %.1fs\n", textType, textContent, textOffset)
 			}
 			
 			wordIndex++
