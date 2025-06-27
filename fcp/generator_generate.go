@@ -242,58 +242,53 @@ func AddPipVideo(fcpxml *FCPXML, pipVideoPath string, offsetSeconds float64) err
 	return nil
 }
 
-// GenerateBaffleTimeline creates a random complex timeline for stress testing
+// GenerateBaffleTimeline creates a complex but valid timeline for stress testing
 func GenerateBaffleTimeline(minDuration, maxDuration float64, verbose bool) (*FCPXML, error) {
-
-	fcpxml, err := GenerateEmpty("")
+	// Create a temporary file for the new baffle implementation
+	timestamp := time.Now().Unix()
+	tempFile := fmt.Sprintf("temp_baffle_%d.fcpxml", timestamp)
+	
+	// Convert duration from seconds to minutes for the new config
+	durationMinutes := int((minDuration + maxDuration) / 2 / 60)
+	if durationMinutes < 1 {
+		durationMinutes = 1
+	}
+	
+	// Create config for complex but valid FCPXML
+	config := ComplexBaffleConfig{
+		TimelineDurationMinutes: durationMinutes,
+		VideoAssetCount:        12,
+		ImageAssetCount:        20,
+		TitleElementCount:      30,
+		MaxLayers:             15,
+		KeyframesPerAnimation:  20,
+		AssetReuseCount:       6,
+		ComplexityFactor:      0.8,
+	}
+	
+	if verbose {
+		fmt.Printf("Using new complex baffle generator with %d minute timeline\n", durationMinutes)
+	}
+	
+	// Generate using the new implementation
+	err := GenerateComplexBaffle(tempFile, config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
+		return nil, fmt.Errorf("failed to generate complex baffle: %v", err)
 	}
-
-	registry := NewResourceRegistry(fcpxml)
-	tx := NewTransaction(registry)
-	defer tx.Rollback()
-
-	if verbose {
-		fmt.Printf("Starting baffle timeline generation...\n")
-	}
-
-	assetsDir := "./assets"
-	assets, err := scanAssetsDirectory(assetsDir)
+	
+	// Read the generated FCPXML back
+	fcpxml, err := ReadFromFile(tempFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to scan assets directory: %v", err)
+		return nil, fmt.Errorf("failed to read generated baffle: %v", err)
 	}
-
-	if len(assets.Images) == 0 && len(assets.Videos) == 0 {
-		return nil, fmt.Errorf("no assets found in %s directory", assetsDir)
-	}
-
+	
+	// Clean up temp file
+	os.Remove(tempFile)
+	
 	if verbose {
-		fmt.Printf("Found %d images and %d videos in assets directory\n", len(assets.Images), len(assets.Videos))
+		fmt.Printf("Complex baffle timeline generation completed successfully\n")
 	}
-
-	rand.Seed(time.Now().UnixNano())
-	totalDuration := minDuration + rand.Float64()*(maxDuration-minDuration)
-
-	if verbose {
-		fmt.Printf("Target timeline duration: %.1f seconds (%.1f minutes)\n", totalDuration, totalDuration/60)
-	}
-
-	err = generateRandomTimelineElements(fcpxml, tx, assets, totalDuration, verbose)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate timeline elements: %v", err)
-	}
-
-	updateSequenceDuration(fcpxml, totalDuration)
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %v", err)
-	}
-
-	if verbose {
-		fmt.Printf("Baffle timeline generation completed successfully\n")
-	}
-
+	
 	return fcpxml, nil
 }
 
