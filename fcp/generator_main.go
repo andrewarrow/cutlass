@@ -134,7 +134,7 @@ func createNestedVideoElement(fcpxml *FCPXML, tx *ResourceTransaction, videoPath
 		overlayDuration := 0.01 + rand.Float64()*(duration*2.0) // Tiny to huge durations
 		
 		// 🚨 EXTREME: Massive lane numbers, negatives, zero
-		lane := -50 + rand.Intn(200)
+		lane := -10 + rand.Intn(21) // Valid range: -10 to +10
 
 		overlayType := rand.Intn(3)
 

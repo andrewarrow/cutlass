@@ -139,9 +139,9 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 			}
 
 			if keyframe.Curve != "" {
-				validCurves := map[string]bool{"linear": true, "smooth": true}
+				validCurves := map[string]bool{"linear": true}
 				if !validCurves[keyframe.Curve] {
-					violations = append(violations, fmt.Sprintf("Invalid keyframe curve '%s' at %s[%d] - must be: linear, smooth", keyframe.Curve, location, i))
+					violations = append(violations, fmt.Sprintf("Invalid keyframe curve '%s' at %s[%d] - must be: linear", keyframe.Curve, location, i))
 				}
 			}
 		}

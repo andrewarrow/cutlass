@@ -322,7 +322,7 @@ func createMinimalAnimation(startTime, duration float64) *AdjustTransform {
 						{
 							Time:  ConvertSecondsToFCPDuration(startTime),
 							Value: fmt.Sprintf("%.2f %.2f", 0.95+rand.Float64()*0.1, 0.95+rand.Float64()*0.1),
-							Curve: "smooth",
+							Curve: "linear",
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(endTime),
@@ -357,12 +357,12 @@ func createRandomAnimation(startTime, duration float64) *AdjustTransform {
 		scaleKeyframes[i] = Keyframe{
 			Time:  ConvertSecondsToFCPDuration(keyTime),
 			Value: fmt.Sprintf("%.2f %.2f", 0.01+rand.Float64()*50, 0.01+rand.Float64()*50), // 🚨 EXTREME: Tiny to huge scaling (no negatives)
-			Curve: []string{"linear", "smooth", "hold", "badCurve", ""}[rand.Intn(5)], // 🚨 Include bad curves!
+			Curve: "linear", // Only "linear" is valid per DTD validation
 		}
 		
 		rotationKeyframes[i] = Keyframe{
 			Time:  ConvertSecondsToFCPDuration(keyTime),
-			Value: fmt.Sprintf("%.1f", -7200+rand.Float64()*14400), // 🚨 EXTREME: -20 to +20 full rotations
+			Value: fmt.Sprintf("%.1f", -3600+rand.Float64()*7200), // Valid range: -3600 to +3600 degrees
 			Curve: "linear",
 		}
 	}
@@ -393,8 +393,8 @@ func createRandomAnimation(startTime, duration float64) *AdjustTransform {
 					Keyframes: []Keyframe{
 						{
 							Time:  ConvertSecondsToFCPDuration(startTime),
-							Value: fmt.Sprintf("%.0f %.0f", -1000+rand.Float64()*2000, -1000+rand.Float64()*2000),
-							Curve: "smooth",
+							Value: fmt.Sprintf("%.2f %.2f", -5.0+rand.Float64()*10.0, -5.0+rand.Float64()*10.0), // Valid range: -5.0 to +5.0
+							Curve: "linear",
 						},
 					},
 				},

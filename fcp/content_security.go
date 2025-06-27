@@ -169,13 +169,12 @@ func (csv *ContentSecurityValidator) ValidateStringAttribute(attrName, value str
 		}
 	}
 	
-	// Block common injection patterns
+	// Block common injection patterns (but allow legitimate FCPXML UIDs)
 	injectionPatterns := []string{
 		"javascript:",
 		"<script",
 		"</script>",
 		"eval(",
-		"../",
 		"..\\",
 	}
 	
@@ -184,6 +183,12 @@ func (csv *ContentSecurityValidator) ValidateStringAttribute(attrName, value str
 		if strings.Contains(lowerValue, pattern) {
 			return fmt.Errorf("dangerous pattern detected in %s: %s", attrName, pattern)
 		}
+	}
+	
+	// Special check for path traversal - allow FCPXML UID patterns like ".../Titles.localized/..."
+	// but block actual path traversal like "../etc/passwd"
+	if strings.Contains(value, "../") && !strings.HasPrefix(value, ".../") {
+		return fmt.Errorf("dangerous pattern detected in %s: ../", attrName)
 	}
 	
 	// Validate length

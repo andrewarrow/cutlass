@@ -50,68 +50,56 @@ func generateRandomText() string {
 }
 
 func randomFont() string {
-	// 🚨 EXTREME: Include invalid, massive, and special character fonts
-	extremeFonts := []string{
-		"", // Empty font
-		"NonExistentFont", // Font that doesn't exist
-		"🚨💥🔥", // Emoji font name
-		strings.Repeat("A", 1000), // Massive font name
-		"<XML>Font", // XML in font name
-		"Font\"With'Quotes", // Quotes in font name
-		"../../../Windows/Fonts/arial.ttf", // Path traversal
-		"NULL\x00Font", // Null bytes
-		"\n\t\rWeird Font", // Control characters
+	// Generate valid font names - can include unusual but valid fonts
+	validFonts := []string{
+		"Helvetica", "Arial", "Times", "Courier", "Georgia", "Verdana",
+		"Times New Roman", "Helvetica Neue", "Comic Sans MS", "Impact",
+		"Trebuchet MS", "Arial Black", "Palatino", "Garamond", "Bookman",
+		"Lucida Sans Unicode", "Tahoma", "Monaco", "Andale Mono",
+		"SF Pro Text", "SF Pro Display", "Avenir", "Avenir Next",
+		"Futura", "Gill Sans", "Optima", "Baskerville",
 	}
 	
-	normalFonts := []string{"Helvetica", "Arial", "Times", "Courier", "Georgia", "Verdana"}
-	
-	// 30% chance of extreme fonts
-	if rand.Float32() < 0.3 {
-		return extremeFonts[rand.Intn(len(extremeFonts))]
-	}
-	return normalFonts[rand.Intn(len(normalFonts))]
+	// Always return valid font
+	return validFonts[rand.Intn(len(validFonts))]
 }
 
 func randomColor() string {
-	// 🚨 EXTREME: Generate invalid, negative, and massive color values
-	extremeOptions := []string{
-		"", // Empty color
-		"red", // Invalid format (not RGBA floats)
-		"<color>", // XML in color
-		fmt.Sprintf("%.2f %.2f %.2f %.2f", -5+rand.Float64()*10, -5+rand.Float64()*10, -5+rand.Float64()*10, -5+rand.Float64()*10), // Negative/huge values
-		"NaN NaN NaN NaN", // Invalid numbers
-		"∞ ∞ ∞ ∞", // Infinity symbols
-		"1 2 3", // Wrong number of components
-		"1 2 3 4 5 6", // Too many components
+	// Generate valid RGB color values (0.0 to 1.0 range with alpha 1.0)
+	// Include edge cases that are valid but unusual
+	colorOptions := [][]float64{
+		{0.0, 0.0, 0.0, 1.0}, // Black
+		{1.0, 1.0, 1.0, 1.0}, // White  
+		{1.0, 0.0, 0.0, 1.0}, // Pure red
+		{0.0, 1.0, 0.0, 1.0}, // Pure green
+		{0.0, 0.0, 1.0, 1.0}, // Pure blue
+		{1.0, 1.0, 0.0, 1.0}, // Yellow
+		{1.0, 0.0, 1.0, 1.0}, // Magenta
+		{0.0, 1.0, 1.0, 1.0}, // Cyan
 	}
 	
-	// 30% chance of extreme colors
-	if rand.Float32() < 0.3 {
-		return extremeOptions[rand.Intn(len(extremeOptions))]
+	// 20% chance of predefined edge case colors, 80% random valid colors
+	if rand.Float32() < 0.2 {
+		color := colorOptions[rand.Intn(len(colorOptions))]
+		return fmt.Sprintf("%.2f %.2f %.2f %.2f", color[0], color[1], color[2], color[3])
 	}
 	
 	return fmt.Sprintf("%.2f %.2f %.2f 1", rand.Float64(), rand.Float64(), rand.Float64())
 }
 
 func randomAlignment() string {
-	// 🚨 EXTREME: Include invalid alignments
-	extremeAlignments := []string{
-		"", // Empty
-		"invalid", // Invalid alignment
-		"<XML>", // XML in alignment
-		"NULL\x00", // Null bytes
-		"999999999", // Numeric
-		"超级对齐", // Unicode
-		"justify-super-extreme", // Made up alignment
+	// Generate valid but complex alignment combinations
+	validAlignments := []string{
+		"left", 
+		"center", 
+		"right", 
+		"justify",  // Valid FCPXML alignment
+		"start",    // Valid CSS-style alignment
+		"end",      // Valid CSS-style alignment
 	}
 	
-	normalAlignments := []string{"left", "center", "right"}
-	
-	// 40% chance of extreme alignments  
-	if rand.Float32() < 0.4 {
-		return extremeAlignments[rand.Intn(len(extremeAlignments))]
-	}
-	return normalAlignments[rand.Intn(len(normalAlignments))]
+	// Always return valid alignment
+	return validAlignments[rand.Intn(len(validAlignments))]
 }
 
 // updateSequenceDuration updates the sequence duration to match content

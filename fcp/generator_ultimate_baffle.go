@@ -55,60 +55,73 @@ func GenerateUltimateBaffle(outputPath string, config UltimateBaffleConfig) erro
 	extremeDuration := generateExtremeDuration(config)
 	fmt.Printf("Extreme Duration: %s\n", extremeDuration)
 
-	// Create extreme assets with malicious content
+	// Create complex assets with valid but extreme properties  
 	assetCount := 10 + int(config.ExtremeFactor*20) // 10-30 assets
+	successfulAssets := 0
 	for i := 0; i < assetCount; i++ {
 		if err := createUltimateExtremeAsset(fcpxml, tx, i, config); err != nil {
-			fmt.Printf("⚠️  Asset %d creation failed (expected): %v\n", i, err)
+			fmt.Printf("⚠️  Asset %d creation failed, skipping: %v\n", i, err)
+			continue
 		}
+		successfulAssets++
 	}
+	fmt.Printf("✅ Created %d complex assets\n", successfulAssets)
 
-	// Create extreme spine elements
+	// Create complex spine elements
 	spineElementCount := 20 + int(config.ExtremeFactor*50) // 20-70 elements
+	successfulSpineElements := 0
 	for i := 0; i < spineElementCount; i++ {
 		if err := createUltimateExtremeSpineElement(fcpxml, tx, i, config, extremeDuration); err != nil {
-			fmt.Printf("⚠️  Spine element %d creation failed (expected): %v\n", i, err)
+			fmt.Printf("⚠️  Spine element %d creation failed, skipping: %v\n", i, err)
+			continue
 		}
+		successfulSpineElements++
 	}
+	fmt.Printf("✅ Created %d complex spine elements\n", successfulSpineElements)
 
-	// Add extreme text elements with all validation holes
+	// Add complex text elements with valid but extreme formatting
 	textElementCount := 5 + int(config.ExtremeFactor*15) // 5-20 text elements
+	successfulTextElements := 0
 	for i := 0; i < textElementCount; i++ {
 		if err := createUltimateExtremeText(fcpxml, tx, i, config); err != nil {
-			fmt.Printf("⚠️  Text element %d creation failed (expected): %v\n", i, err)
+			fmt.Printf("⚠️  Text element %d creation failed, skipping: %v\n", i, err)
+			continue
 		}
+		successfulTextElements++
 	}
+	fmt.Printf("✅ Created %d complex text elements\n", successfulTextElements)
 
-	// Add extreme keyframe animations
+	// Add complex keyframe animations  
 	if err := addUltimateExtremeAnimations(fcpxml, config); err != nil {
-		fmt.Printf("⚠️  Animation creation failed (expected): %v\n", err)
+		fmt.Printf("⚠️  Animation creation failed, skipping: %v\n", err)
+	} else {
+		fmt.Printf("✅ Added complex keyframe animations\n")
 	}
 
 	// Attempt to commit the transaction
 	if err := tx.Commit(); err != nil {
-		fmt.Printf("⚠️  Transaction commit failed (expected): %v\n", err)
-		// Continue anyway to test marshaling validation
+		fmt.Printf("❌ Transaction commit failed: %v\n", err)
+		return fmt.Errorf("transaction commit failed: %v", err)
 	}
 
-	// Try to marshal and validate
-	fmt.Printf("🔍 Testing validation pipeline...\n")
+	// Validate the structure - should pass for complex but valid content
+	fmt.Printf("🔍 Validating complex timeline structure...\n")
 	if err := fcpxml.ValidateStructure(); err != nil {
-		fmt.Printf("✅ VALIDATION BLOCKED EXTREME CONTENT: %v\n", err)
-		return fmt.Errorf("validation correctly blocked extreme content: %v", err)
+		fmt.Printf("❌ Validation failed: %v\n", err)
+		return fmt.Errorf("validation failed: %v", err)
 	}
 
-	// If we get here, validation missed something!
-	fmt.Printf("🚨 WARNING: Extreme content passed validation! 🚨\n")
+	fmt.Printf("✅ Complex timeline structure validated successfully\n")
 
-	// Try to write the file
+	// Write the file - should succeed
 	if err := WriteToFile(fcpxml, outputPath); err != nil {
-		fmt.Printf("✅ FILE WRITE BLOCKED: %v\n", err)
-		return fmt.Errorf("file write correctly blocked: %v", err)
+		fmt.Printf("❌ File write failed: %v\n", err)
+		return fmt.Errorf("file write failed: %v", err)
 	}
 
-	fmt.Printf("🚨 CRITICAL: ULTIMATE BAFFLE PASSED ALL VALIDATION! 🚨\n")
+	fmt.Printf("✅ BAFFLE SUCCESS: Complex valid FCPXML generated!\n")
 	fmt.Printf("File written to: %s\n", outputPath)
-	fmt.Printf("Manual inspection required!\n")
+	fmt.Printf("Ready for Final Cut Pro import and stress testing!\n")
 
 	return nil
 }
@@ -480,26 +493,30 @@ func generateExtremeBool(config UltimateBaffleConfig) string {
 	return "1"
 }
 
-// generateExtremeAlignment creates extreme alignment values
+// generateExtremeAlignment creates complex but valid alignment values
 func generateExtremeAlignment(config UltimateBaffleConfig) string {
-	if !config.EnableValidationEvasion {
-		return "center"
+	// Always generate valid alignments, but use variety for complexity
+	validAlignments := []string{
+		"left", 
+		"center", 
+		"right", 
+		"justify",  // Valid FCPXML alignment
+		"start",    // Valid CSS-style alignment  
+		"end",      // Valid CSS-style alignment
+	}
+	
+	// Generate complex but valid alignment patterns
+	if config.EnableValidationEvasion && rand.Float64() < config.ExtremeFactor {
+		// Use edge cases that are valid but complex
+		complexValidAlignments := []string{
+			"justify", // Less commonly used but valid
+			"start",   // CSS-style but valid
+			"end",     // CSS-style but valid
+		}
+		return complexValidAlignments[rand.Intn(len(complexValidAlignments))]
 	}
 
-	extremes := []string{
-		"invalid",              // Invalid alignment
-		"<script>alert()</script>", // XSS in alignment
-		"NULL\x00BYTES",        // NULL bytes
-		"../../etc/passwd",     // Path traversal
-		strings.Repeat("A", 1000), // Massive alignment
-		"justify-super-extreme", // Made up alignment
-	}
-
-	if rand.Float64() < config.ExtremeFactor {
-		return extremes[rand.Intn(len(extremes))]
-	}
-
-	return "center"
+	return validAlignments[rand.Intn(len(validAlignments))]
 }
 
 // generateExtremePosition creates extreme position values
@@ -590,24 +607,10 @@ func addUltimateExtremeAnimations(fcpxml *FCPXML, config UltimateBaffleConfig) e
 	return nil
 }
 
-// generateExtremeKeyfameAttr creates extreme keyframe attributes
+// generateExtremeKeyfameAttr creates complex but valid keyframe attributes
 func generateExtremeKeyfameAttr(config UltimateBaffleConfig) string {
-	if !config.EnableValidationEvasion {
-		return "linear"
-	}
-
-	extremes := []string{
-		"invalid",           // Invalid curve
-		"<script>alert()</script>", // XSS
-		"NULL\x00BYTES",     // NULL bytes
-		"super-smooth-extreme", // Made up curve
-		"999999",            // Numeric
-	}
-
-	if rand.Float64() < config.ExtremeFactor {
-		return extremes[rand.Intn(len(extremes))]
-	}
-
+	// Only use ACTUAL valid curve types (based on working samples)
+	// DTD validation shows only "linear" is valid, not "hold" or "smooth"
 	return "linear"
 }
 

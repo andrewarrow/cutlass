@@ -406,7 +406,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 
 	// 🚨 EXTREME BAFFLE MODE: Push every possible limit
 	numMainElements := 15 + rand.Intn(35) // 15-50 elements instead of 3-8
-	maxLanes := 50 + rand.Intn(50) // 50-100 lanes instead of 8
+	maxLanes := 8 + rand.Intn(12) // 8-20 lanes (complex but valid)
 	
 	if verbose {
 		fmt.Printf("🚨 EXTREME BAFFLE: Creating %d main spine elements across %d lanes...\n", numMainElements, maxLanes)
@@ -420,7 +420,7 @@ func generateRandomTimelineElements(fcpxml *FCPXML, tx *ResourceTransaction, ass
 		startTime := rand.Float64() * totalDuration * 2.0 // Can start way beyond end!
 		
 		// 🚨 EXTREME: Random lane assignments including negative and huge lanes
-		lane := -100 + rand.Intn(300) // Lanes from -100 to +200
+		lane := -10 + rand.Intn(21) // Valid range: -10 to +10
 		
 		// 🚨 EXTREME: No bounds checking - let validation catch it!
 

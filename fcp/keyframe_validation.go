@@ -144,7 +144,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      false,
 		AllowCurve:       true,
 		ValidInterpValues: []string{},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validateScale2DValue,
 	}
 	
@@ -153,7 +153,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      false,
 		AllowCurve:       true,
 		ValidInterpValues: []string{},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validateSingleFloatValue,
 	}
 	
@@ -162,7 +162,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      false,
 		AllowCurve:       true,
 		ValidInterpValues: []string{},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validate2DValue,
 	}
 	
@@ -171,7 +171,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      true,
 		AllowCurve:       true,
 		ValidInterpValues: []string{"linear", "easeIn", "easeOut", "easeInOut"},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validateOpacityValue,
 	}
 	
@@ -180,7 +180,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      true,
 		AllowCurve:       true,
 		ValidInterpValues: []string{"linear", "easeIn", "easeOut", "easeInOut"},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validateVolumeValue,
 	}
 	
@@ -189,7 +189,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      true,
 		AllowCurve:       true,
 		ValidInterpValues: []string{"linear", "easeIn", "easeOut", "easeInOut"},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validateColorValue,
 	}
 	
@@ -198,7 +198,7 @@ func (kv *KeyframeValidator) initializeDefaultRules() {
 		AllowInterp:      false,
 		AllowCurve:       true,
 		ValidInterpValues: []string{},
-		ValidCurveValues:  []string{"linear", "smooth", "hold"},
+		ValidCurveValues:  []string{"linear"}, // Only "linear" is valid per DTD validation
 		ValueValidator:   kv.validate2DValue,
 	}
 }
@@ -291,7 +291,7 @@ func (kv *KeyframeValidator) validateUnknownParameterKeyframe(paramName string, 
 	}
 	
 	if keyframe.Curve != "" {
-		validCurves := []string{"linear", "smooth", "hold"}
+		validCurves := []string{"linear"} // Only "linear" is valid per DTD validation
 		if !containsString(validCurves, keyframe.Curve) {
 			return fmt.Errorf("unknown curve value for %s: %s", paramName, keyframe.Curve)
 		}
