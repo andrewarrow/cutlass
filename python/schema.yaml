@@ -1,0 +1,370 @@
+fcpxml_rules:
+  version: "1.0"
+  description: "Comprehensive FCPXML generation rules extracted from Go/Swift implementations"
+  
+  # Core principles that must never be violated
+  critical_principles:
+    - name: "NO_XML_TEMPLATES"
+      description: "Never generate XML from hardcoded string templates with placeholders"
+      enforcement: "MANDATORY"
+      rationale: "XML escaping issues, namespace problems, attribute ordering, validation failures"
+      examples:
+        bad:
+          - 'xml = f"<video ref=\"{ref}\">{content}</video>"'
+          - 'fmt.Sprintf("<asset-clip ref=\"%s\" name=\"%s\"/>", ref, name)'
+        good:
+          - "Use structured data classes that serialize to XML"
+    
+    - name: "CHANGE_CODE_NOT_XML"
+      description: "Never manually edit generated XML files, always fix the generation code"
+      enforcement: "MANDATORY"
+      rationale: "Temporary fixes disappear on next generation, causes inconsistent output"
+    
+    - name: "STRUCT_BASED_GENERATION"
+      description: "All FCPXML generation must use structured data objects"
+      enforcement: "MANDATORY"
+      rationale: "Ensures proper XML structure, namespaces, and validation"
+
+  # Timing system constants and rules
+  timing:
+    frame_rate: 23.976023976023976
+    timebase: 24000
+    frame_duration: 1001
+    frame_increment: 1001
+    
+    validation_rules:
+      - name: "frame_alignment"
+        description: "All durations must be frame-aligned"
+        pattern: "^(0s|\\d+/24000s)$"
+        logic: |
+          if duration == "0s": return True
+          if not duration.endswith("s"): return False
+          if "/" not in duration: return False
+          num, denom = parse_rational(duration.rstrip("s"))
+          return denom == 24000 and num % 1001 == 0
+        error: "Duration not frame-aligned: {duration}"
+      
+      - name: "rational_format"
+        description: "Time values must use rational number format"
+        pattern: "^(0s|\\d+/\\d+s)$"
+        error: "Time must be in rational format: {time}"
+
+  # Media type definitions and constraints
+  media_types:
+    image:
+      extensions: ["png", "jpg", "jpeg", "gif", "bmp", "tiff", "tif", "webp"]
+      asset_constraints:
+        duration: 
+          value: "0s"
+          required: true
+          reason: "Images have no intrinsic duration"
+        has_video: "1"
+        video_sources: "1"
+        has_audio: null
+        audio_sources: null
+      format_constraints:
+        frame_duration:
+          forbidden: true
+          reason: "Images don't have frame rates"
+        width: "required"
+        height: "required"
+        color_space: "optional"
+      spine_element: "video"
+      crash_patterns:
+        - element: "asset-clip"
+          error: "addAssetClip:toObject:parentFormatID crash"
+          fix: "Use video element instead"
+    
+    video:
+      extensions: ["mp4", "mov", "avi", "mkv", "m4v", "webm", "mpg", "mpeg"]
+      asset_constraints:
+        duration: "auto_detect"
+        has_video: "1"
+        has_audio: "auto_detect"
+        audio_sources: "auto_detect"
+        audio_channels: "auto_detect"
+        audio_rate: "auto_detect"
+      format_constraints:
+        frame_duration: "required"
+        width: "required"
+        height: "required"
+        color_space: "optional"
+      spine_element: "asset-clip"
+      
+    audio:
+      extensions: ["mp3", "wav", "aac", "m4a", "flac", "ogg", "wma"]
+      asset_constraints:
+        duration: "auto_detect"
+        has_audio: "1"
+        audio_sources: "1"
+        audio_channels: "auto_detect"
+        audio_rate: "auto_detect"
+        has_video: null
+      spine_element: "audio"
+
+  # Element definitions and validation rules
+  elements:
+    fcpxml:
+      required_attributes: ["version"]
+      version_pattern: "^1\\.[1-9]\\d*$"
+      
+    resources:
+      children: ["asset", "format", "effect", "media"]
+      
+    asset:
+      required_attributes: ["id", "name", "uid", "start", "duration"]
+      id_pattern: "^r\\d+$"
+      uid_pattern: "^[A-F0-9-]+$"
+      
+    format:
+      required_attributes: ["id"]
+      id_pattern: "^r\\d+$"
+      
+    effect:
+      required_attributes: ["id", "name"]
+      id_pattern: "^r\\d+$"
+
+  # Keyframe interpolation rules
+  keyframe_rules:
+    position:
+      supported_attributes: ["time", "value"]
+      forbidden_attributes: ["interp", "curve"]
+      reason: "Position interpolation handled by Final Cut Pro's spatial engine"
+      
+    scale:
+      supported_attributes: ["time", "value", "curve"]
+      forbidden_attributes: ["interp"]
+      curve_values: ["linear", "smooth", "hold"]
+      default_curve: "smooth"
+      
+    rotation:
+      supported_attributes: ["time", "value", "curve"]
+      forbidden_attributes: ["interp"]
+      curve_values: ["linear", "smooth", "hold"]
+      default_curve: "smooth"
+      
+    anchor:
+      supported_attributes: ["time", "value", "curve"]
+      forbidden_attributes: ["interp"]
+      curve_values: ["linear", "smooth", "hold"]
+      
+    opacity:
+      supported_attributes: ["time", "value", "interp", "curve"]
+      interp_values: ["linear", "easeIn", "easeOut", "easeInOut"]
+      curve_values: ["linear", "smooth"]
+      default_interp: "linear"
+      
+    volume:
+      supported_attributes: ["time", "value", "interp", "curve"]
+      interp_values: ["linear", "easeIn", "easeOut", "easeInOut"]
+      curve_values: ["linear", "smooth"]
+
+  # Verified effect UIDs that are known to work
+  effect_uids:
+    built_in_video:
+      - name: "Gaussian Blur"
+        uid: "FFGaussianBlur"
+      - name: "Motion Blur"
+        uid: "FFMotionBlur"
+      - name: "Color Correction"
+        uid: "FFColorCorrection"
+      - name: "Saturation"
+        uid: "FFSaturation"
+        
+    built_in_audio:
+      - name: "Gain"
+        uid: "FFAudioGain"
+      - name: "EQ"
+        uid: "FFAudioEQ"
+        
+    motion_templates:
+      - name: "Text Title"
+        uid: ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"
+      - name: "Vivid Generator"
+        uid: ".../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn"
+        
+    masks:
+      - name: "Shape Mask"
+        uid: "FFSuperEllipseMask"
+      - name: "Rectangle Mask"
+        uid: "FFRectangleMask"
+
+  # Lane system rules
+  lanes:
+    main_lane: 0
+    max_lanes: 8
+    lane_range: [-10, 10]
+    numbering: "consecutive"
+    validation_rules:
+      - name: "no_lane_gaps"
+        description: "Lanes must be numbered consecutively"
+        error: "Lane gap detected: expected consecutive numbering"
+      - name: "lane_bounds"
+        description: "Lanes must be within acceptable range"
+        error: "Lane {lane} out of range [{min}, {max}]"
+
+  # Resource ID management
+  resource_ids:
+    pattern: "^r\\d+$"
+    sequence: "sequential"
+    collision_prevention: "mandatory"
+    validation_rules:
+      - name: "unique_ids"
+        description: "All resource IDs must be unique within document"
+        error: "Duplicate resource ID: {id}"
+      - name: "valid_references"
+        description: "All references must point to existing resources"
+        error: "Reference to unknown resource: {ref}"
+
+  # Text and title system
+  text_system:
+    required_elements:
+      - effect_resource
+      - title_element
+      - text_content
+      - text_style_definition
+    style_attributes:
+      font: "string"
+      font_size: "number"
+      font_color: "rgba_0_1"
+      alignment: ["left", "center", "right", "justified"]
+      line_spacing: "number"
+    validation_rules:
+      - name: "style_reference_exists"
+        description: "Text style references must have matching definitions"
+        error: "Unknown text style reference: {ref}"
+      - name: "color_range"
+        description: "Color values must be in 0.0-1.0 range"
+        error: "Color component out of range [0,1]: {value}"
+
+  # Color spaces
+  color_spaces:
+    valid_values:
+      - "1-1-1 (Rec. 709)"
+      - "1-13-1"
+      - "1-1-1"
+      - "9-1-1 (Rec. 2020)"
+      - "1-14-18 (Rec. 2020 HLG)"
+      - "1-16-18 (Rec. 2020 PQ)"
+
+  # Audio rates
+  audio_rates:
+    valid_values: ["44100", "48000", "96000", "192000"]
+
+  # Common crash patterns to avoid
+  crash_patterns:
+    - pattern: "asset_clip_for_images"
+      description: "Using AssetClip element for image media"
+      crash: "addAssetClip:toObject:parentFormatID"
+      fix: "Use Video element for images"
+      
+    - pattern: "frame_duration_on_images"
+      description: "Adding frameDuration to image formats"
+      crash: "performAudioPreflightCheckForObject"
+      fix: "Omit frameDuration from image formats"
+      
+    - pattern: "unsupported_keyframe_attributes"
+      description: "Adding unsupported attributes to keyframes"
+      warning: "param element was ignored"
+      fix: "Use only supported attributes for each parameter type"
+      
+    - pattern: "fictional_effect_uids"
+      description: "Creating non-existent effect UIDs"
+      crash: "The effect ID is invalid"
+      fix: "Use only verified effect UIDs from schema"
+      
+    - pattern: "missing_resource_references"
+      description: "Referencing non-existent resources"
+      error: "Resource not found"
+      fix: "Ensure all referenced resources exist in document"
+
+  # Validation functions (pseudocode for implementation)
+  validation_functions:
+    frame_alignment:
+      input: "duration_string"
+      returns: "boolean"
+      logic: |
+        if duration == "0s": return True
+        if not duration.endswith("s"): return False
+        if "/" not in duration: return False
+        parts = duration.rstrip("s").split("/")
+        if len(parts) != 2: return False
+        try:
+          numerator = int(parts[0])
+          denominator = int(parts[1])
+        except ValueError:
+          return False
+        return denominator == 24000 and numerator % 1001 == 0
+    
+    validate_id:
+      input: "id_string"
+      returns: "boolean"
+      logic: |
+        import re
+        return bool(re.match(r"^r\d+$", id_string))
+    
+    validate_uid:
+      input: "uid_string"
+      returns: "boolean"
+      logic: |
+        import re
+        return bool(re.match(r"^[A-F0-9-]+$", uid_string))
+    
+    detect_media_type:
+      input: "file_path"
+      returns: "media_type"
+      logic: |
+        extension = file_path.lower().split(".")[-1]
+        for media_type, config in media_types.items():
+          if extension in config["extensions"]:
+            return media_type
+        return "unknown"
+
+  # Template structure for empty FCPXML
+  templates:
+    empty_project:
+      version: "1.11"
+      resources:
+        formats:
+          - id: "r1"
+            name: "FFVideoFormat1080p2997"
+            frame_duration: "1001/30000s"
+            width: "1920"
+            height: "1080"
+            color_space: "1-1-1 (Rec. 709)"
+      library:
+        events:
+          - name: "New Event"
+            uid: "EVENT-UID-{timestamp}"
+            projects:
+              - name: "New Project"
+                uid: "PROJECT-UID-{timestamp}"
+                sequences:
+                  - format: "r1"
+                    duration: "0s"
+                    tc_start: "0s"
+                    tc_format: "NDF"
+                    audio_layout: "stereo"
+                    audio_rate: "48000"
+                    spine: []
+
+# Usage guidelines for implementers
+implementation_guidelines:
+  language_agnostic_principles:
+    - "Use typed data structures that map to XML elements"
+    - "Validate at construction time, not serialization time"
+    - "Implement frame alignment conversion functions"
+    - "Provide media type detection utilities"
+    - "Include crash pattern validation"
+    
+  python_specific:
+    - "Use dataclasses or Pydantic models for type safety"
+    - "Implement __post_init__ validation in dataclasses"
+    - "Use xml.etree.ElementTree for XML generation"
+    - "Provide context managers for resource ID management"
+    
+  testing_requirements:
+    - "Validate generated XML against DTD"
+    - "Test import in actual Final Cut Pro"
+    - "Verify frame alignment calculations"
+    - "Test all crash pattern detection"
