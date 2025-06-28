@@ -365,7 +365,7 @@ func TestSpineBuilder(t *testing.T) {
 	}
 
 	// Add elements (all must use lane 0 for spine)
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0), "f1")
 	if err != nil {
 		t.Errorf("unexpected error adding asset clip: %v", err)
 	}
@@ -433,26 +433,26 @@ func TestSpineBuilder_OverlapValidation(t *testing.T) {
 	}
 
 	// Add first element (lane 0 - valid for spine)
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0), "f1")
 	if err != nil {
 		t.Errorf("unexpected error adding first clip: %v", err)
 	}
 
 	// Try to add overlapping element in same lane (should fail)
-	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(0))
+	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(0), "f2")
 	if err == nil {
 		t.Errorf("expected error adding overlapping clip")
 	}
 
 	// Try to add element with non-zero lane (should fail - spine structural validation)
-	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(1))
+	err = builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("240240/24000s"), Lane(1), "f2")
 	if err == nil {
 		t.Errorf("expected error adding clip with lane 1 - spine elements cannot have lanes")
 	}
 
 	// Allow overlaps and try again in same lane (lane 0)
 	builder.SetAllowOverlaps(true)
-	err = builder.AddAssetClip("r3", "Clip3", Time("60060/24000s"), Duration("240240/24000s"), Lane(0))
+	err = builder.AddAssetClip("r3", "Clip3", Time("60060/24000s"), Duration("240240/24000s"), Lane(0), "f3")
 	if err != nil {
 		t.Errorf("unexpected error adding overlapping clip with overlaps allowed: %v", err)
 	}
@@ -466,7 +466,7 @@ func TestSpineBuilder_SpineStructuralValidation(t *testing.T) {
 	}
 
 	// Test 1: Spine asset-clip with lane should fail
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1))
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(1), "f1")
 	if err == nil {
 		t.Errorf("expected error adding asset-clip with lane 1 - spine elements cannot have lanes")
 	}
@@ -502,7 +502,7 @@ func TestSpineBuilder_SpineStructuralValidation(t *testing.T) {
 	}
 
 	// Test 5: Valid spine elements with lane 0 should succeed
-	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0))
+	err = builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("240240/24000s"), Lane(0), "f1")
 	if err != nil {
 		t.Errorf("unexpected error adding asset-clip with lane 0: %v", err)
 	}
@@ -544,8 +544,8 @@ func TestSpineBuilder_GetStatistics(t *testing.T) {
 	}
 
 	// Add elements (all must use lane 0 for spine)
-	builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("120120/24000s"), Lane(0))
-	builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("120120/24000s"), Lane(0))
+	builder.AddAssetClip("r1", "Clip1", Time("0s"), Duration("120120/24000s"), Lane(0), "f1")
+	builder.AddAssetClip("r2", "Clip2", Time("120120/24000s"), Duration("120120/24000s"), Lane(0), "f2")
 	builder.AddVideo("r3", "Video1", Time("240240/24000s"), Duration("120120/24000s"), Lane(0))
 	builder.AddTitle("r4", "Title1", Time("360360/24000s"), Duration("120120/24000s"), Lane(0))
 

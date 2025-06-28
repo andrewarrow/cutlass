@@ -146,6 +146,7 @@ type TimelineValidator struct {
 	laneAssignments   map[Lane][]*ValidatedTimelineElement
 	maxLanes          int
 	allowGaps         bool
+	allowOverlaps     bool
 }
 
 // NewTimelineValidator creates a new timeline validator
@@ -166,6 +167,7 @@ func NewTimelineValidator(totalDuration Duration) (*TimelineValidator, error) {
 		laneAssignments: make(map[Lane][]*ValidatedTimelineElement),
 		maxLanes:        10, // Default maximum lanes
 		allowGaps:       false, // Default: require continuous lane numbering
+		allowOverlaps:   false, // Default: disallow overlaps
 	}, nil
 }
 
@@ -177,6 +179,11 @@ func (tv *TimelineValidator) SetMaxLanes(maxLanes int) {
 // SetAllowGaps controls whether lane gaps are allowed
 func (tv *TimelineValidator) SetAllowGaps(allowGaps bool) {
 	tv.allowGaps = allowGaps
+}
+
+// SetAllowOverlaps controls whether overlapping elements in the same lane are allowed
+func (tv *TimelineValidator) SetAllowOverlaps(allowOverlaps bool) {
+	tv.allowOverlaps = allowOverlaps
 }
 
 // AddElement adds an element to the timeline for validation
@@ -361,9 +368,11 @@ func (tv *TimelineValidator) ValidateComplete() error {
 		return fmt.Errorf("lane structure validation failed: %v", err)
 	}
 	
-	// Validate overlaps
-	if err := tv.ValidateOverlaps(); err != nil {
-		return fmt.Errorf("overlap validation failed: %v", err)
+	// Validate overlaps (only if not allowed)
+	if !tv.allowOverlaps {
+		if err := tv.ValidateOverlaps(); err != nil {
+			return fmt.Errorf("overlap validation failed: %v", err)
+		}
 	}
 	
 	return nil

@@ -72,38 +72,32 @@ func TestKeyframeAnimation(t *testing.T) {
 
 	// Create sophisticated keyframe animations
 	
-	// Complex position animation with easing
+	// Complex position animation - position keyframes cannot have curve attributes
 	positionKeyframes := &KeyframeAnimation{
 		Keyframes: []Keyframe{
 			{
 				Time:  "0s",
 				Value: "-1000 -500", // Start off-screen top-left
-				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(3.0),
 				Value: "0 0", // Move to center
-				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(8.0),
 				Value: "300 -200", // Move to upper right
-				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(12.0),
 				Value: "-400 300", // Move to lower left
-				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(18.0),
 				Value: "500 200", // Move to lower right
-				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "0 0", // Return to center
-				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
@@ -124,11 +118,13 @@ func TestKeyframeAnimation(t *testing.T) {
 				Time:  ConvertSecondsToFCPDuration(2.0),
 				Value: "1.2 1.2", // Scale up dramatically
 				Curve:  "smooth",
+				Interp: "easeOut",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(6.0),
 				Value: "0.8 0.8", // Contract (breathing)
 				Curve:  "smooth",
+				Interp: "ease",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),

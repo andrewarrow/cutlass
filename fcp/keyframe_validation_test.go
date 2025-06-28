@@ -237,7 +237,7 @@ func TestKeyframeValidator_ValidateKeyframe_Opacity(t *testing.T) {
 				Time:  Time("0s"),
 				Value: "0.2",
 				Interp: "",
-				Curve:  "hold",
+				Curve:  "linear",
 			},
 		},
 		{

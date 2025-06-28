@@ -435,10 +435,11 @@ func NewSpineBuilder(totalDuration Duration, registry *ReferenceRegistry) (*Spin
 // SetAllowOverlaps controls whether overlaps are allowed
 func (sb *SpineBuilder) SetAllowOverlaps(allow bool) {
 	sb.sorter.SetAllowOverlaps(allow)
+	sb.timelineValidator.SetAllowOverlaps(allow)
 }
 
 // AddAssetClip adds an asset clip to the spine
-func (sb *SpineBuilder) AddAssetClip(ref, name string, offset Time, duration Duration, lane Lane) error {
+func (sb *SpineBuilder) AddAssetClip(ref, name string, offset Time, duration Duration, lane Lane, formatID string) error {
 	// 🚨 CRITICAL: Spine elements cannot have lanes - this violates FCPXML structure
 	if lane != Lane(0) {
 		return fmt.Errorf("spine asset-clip cannot have lane %d - spine elements must be lane 0 (connected clips should be nested inside primary elements)", lane.Int())
@@ -456,6 +457,7 @@ func (sb *SpineBuilder) AddAssetClip(ref, name string, offset Time, duration Dur
 		Offset:   offset.String(),
 		Duration: duration.String(),
 		Name:     name,
+		Format:   formatID, // Asset clips must use same format as their referenced asset
 		// Lane is intentionally omitted - spine elements cannot have lanes
 	}
 	

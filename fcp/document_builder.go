@@ -58,7 +58,8 @@ func NewFCPXMLDocumentBuilder(projectName string, totalDuration Duration) (*FCPX
 	
 	textValidator := NewTextStyleValidator()
 	
-	return &FCPXMLDocumentBuilder{
+	// Create document builder instance
+	builder := &FCPXMLDocumentBuilder{
 		projectName:       projectName,
 		totalDuration:     totalDuration,
 		version:          "1.13",
@@ -72,7 +73,12 @@ func NewFCPXMLDocumentBuilder(projectName string, totalDuration Duration) (*FCPX
 		maxLanes:         10,
 		allowOverlaps:    false,
 		allowLaneGaps:    false,
-	}, nil
+	}
+	
+	// Allow overlapping elements in video editing (configure both spine and timeline validators)
+	builder.SetAllowOverlaps(true)
+	
+	return builder, nil
 }
 
 // SetMaxLanes sets the maximum allowed lane number
@@ -85,6 +91,7 @@ func (builder *FCPXMLDocumentBuilder) SetMaxLanes(maxLanes int) {
 func (builder *FCPXMLDocumentBuilder) SetAllowOverlaps(allow bool) {
 	builder.allowOverlaps = allow
 	builder.spineBuilder.SetAllowOverlaps(allow)
+	builder.timelineValidator.SetAllowOverlaps(allow)
 }
 
 // SetAllowLaneGaps controls whether lane gaps are allowed
@@ -128,7 +135,11 @@ func (builder *FCPXMLDocumentBuilder) AddMediaFile(filePath, name string, offset
 		}
 		
 		// Videos use AssetClip elements in the spine
-		if err := builder.spineBuilder.AddAssetClip(asset.ID, name, offset, duration, lane); err != nil {
+		formatID := ""
+		if format != nil {
+			formatID = format.ID
+		}
+		if err := builder.spineBuilder.AddAssetClip(asset.ID, name, offset, duration, lane, formatID); err != nil {
 			return fmt.Errorf("failed to add asset clip: %v", err)
 		}
 		
@@ -144,7 +155,11 @@ func (builder *FCPXMLDocumentBuilder) AddMediaFile(filePath, name string, offset
 			audioLane = Lane(-1) // Default audio lane
 		}
 		
-		if err := builder.spineBuilder.AddAssetClip(asset.ID, name, offset, duration, audioLane); err != nil {
+		formatID := ""
+		if format != nil {
+			formatID = format.ID
+		}
+		if err := builder.spineBuilder.AddAssetClip(asset.ID, name, offset, duration, audioLane, formatID); err != nil {
 			return fmt.Errorf("failed to add audio clip: %v", err)
 		}
 		

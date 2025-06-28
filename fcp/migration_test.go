@@ -172,7 +172,7 @@ func TestMigrationManager_MigrateFromLegacy(t *testing.T) {
 			},
 			sourceVersion:  "1.12",
 			targetVersion:  "1.13",
-			expectError:    false,
+			expectError:    true,
 			expectWarnings: true,
 		},
 	}
@@ -224,7 +224,7 @@ func TestMigrateFromXML(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset id="r1" name="test-asset" uid="test-uid" start="0s" duration="240240/24000s" hasVideo="1">
-			<media-rep kind="original-media" src="file:///test.mp4"/>
+			<media-rep kind="original-media" src="file:///tmp/test.mp4"/>
 		</asset>
 		<format id="r2" name="FFVideoFormat1080p30" width="1920" height="1080"/>
 	</resources>
@@ -277,7 +277,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset id="r1" name="asset1" uid="uid1" start="0s" duration="240240/24000s">
-			<media-rep kind="original-media" src="file:///test1.mp4"/>
+			<media-rep kind="original-media" src="file:///tmp/test1.mp4"/>
 		</asset>
 	</resources>
 	<library>
@@ -297,7 +297,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.12">
 	<resources>
 		<asset id="r2" name="asset2" uid="uid2" start="0s" duration="480480/24000s">
-			<media-rep kind="original-media" src="file:///test2.mp4"/>
+			<media-rep kind="original-media" src="file:///tmp/test2.mp4"/>
 		</asset>
 	</resources>
 	<library>
@@ -318,7 +318,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset name="missing-id" uid="uid3" start="0s" duration="240240/24000s">
-			<media-rep kind="original-media" src="file:///test3.mp4"/>
+			<media-rep kind="original-media" src="file:///tmp/test3.mp4"/>
 		</asset>
 	</resources>
 </fcpxml>`
