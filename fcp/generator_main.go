@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"math"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -375,10 +376,30 @@ func addBaffleImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 	return nil
 }
 
+// PngPileConfig holds configuration for PNG pile generation  
+type PngPileConfig struct {
+	Duration      float64 // Total duration in seconds
+	TotalImages   int     // Number of images to download/use
+	OutputDir     string  // Directory to store downloaded images
+	PixabayAPIKey string  // Pixabay API key (optional)
+	UseExisting   bool    // Use existing images in OutputDir instead of downloading
+}
+
 // GeneratePngPile creates a PNG pile effect similar to Info.fcpxml with base video and sliding PNGs
 func GeneratePngPile(duration float64, totalImages int, inputDir string, verbose bool) (*FCPXML, error) {
+	config := &PngPileConfig{
+		Duration:    duration,
+		TotalImages: totalImages,
+		OutputDir:   inputDir,
+		UseExisting: true, // Use existing files for backward compatibility
+	}
+	return GeneratePngPileWithConfig(config, verbose)
+}
+
+// GeneratePngPileWithConfig creates a PNG pile effect with full configuration options
+func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, error) {
 	if verbose {
-		fmt.Printf("Generating PNG pile with %.1fs duration, %d images from %s\n", duration, totalImages, inputDir)
+		fmt.Printf("Generating PNG pile with %.1fs duration, %d images\n", config.Duration, config.TotalImages)
 	}
 
 	// Create base FCPXML structure
@@ -406,7 +427,7 @@ func GeneratePngPile(duration float64, totalImages int, inputDir string, verbose
 	videoAssetID := ids[0]
 	videoFormatID := ids[1]
 
-	err = tx.CreateVideoAssetWithDetection(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(duration), videoFormatID)
+	err = tx.CreateVideoAssetWithDetection(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(config.Duration), videoFormatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base video asset: %v", err)
 	}
@@ -416,30 +437,43 @@ func GeneratePngPile(duration float64, totalImages int, inputDir string, verbose
 		Ref:      videoAssetID,
 		Offset:   "0s",
 		Name:     "164240-830460859",
-		Duration: ConvertSecondsToFCPDuration(duration),
+		Duration: ConvertSecondsToFCPDuration(config.Duration),
 		Format:   videoFormatID,
 		AdjustTransform: &AdjustTransform{
 			Scale: "3.27127 3.27127", // Match Info.fcpxml scaling
 		},
 	}
 
-	// Get PNG files from input directory
-	pngFiles, err := getPngFiles(inputDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get PNG files: %v", err)
+	// Get or download PNG files
+	var pngFiles []string
+	if config.UseExisting {
+		// Use existing files from directory
+		pngFiles, err = getPngFiles(config.OutputDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get PNG files: %v", err)
+		}
+		if verbose {
+			fmt.Printf("Found %d existing PNG files in %s\n", len(pngFiles), config.OutputDir)
+		}
+	} else {
+		// Download themed images from Pixabay
+		pngFiles, err = downloadThemedImagesForPile(config, verbose)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download themed images: %v", err)
+		}
 	}
 
 	if len(pngFiles) == 0 {
-		return nil, fmt.Errorf("no PNG files found in %s", inputDir)
+		return nil, fmt.Errorf("no PNG files available")
 	}
 
 	// Limit to requested number of images
-	if len(pngFiles) > totalImages {
-		pngFiles = pngFiles[:totalImages]
+	if len(pngFiles) > config.TotalImages {
+		pngFiles = pngFiles[:config.TotalImages]
 	}
 
 	if verbose {
-		fmt.Printf("Found %d PNG files, using %d images\n", len(pngFiles), len(pngFiles))
+		fmt.Printf("Using %d images for PNG pile\n", len(pngFiles))
 	}
 
 	// Create border effect like Info.fcpxml
@@ -451,7 +485,7 @@ func GeneratePngPile(duration float64, totalImages int, inputDir string, verbose
 	}
 
 	// Calculate timing progression (starts slow, speeds up)
-	imageTimings := calculateProgessiveTiming(len(pngFiles), duration)
+	imageTimings := calculateProgessiveTiming(len(pngFiles), config.Duration)
 
 	// Add PNG images with increasing pace and varied directions
 	for i, pngFile := range pngFiles {
@@ -672,4 +706,91 @@ func getPngFiles(dir string) ([]string, error) {
 	sort.Strings(pngFiles)
 	
 	return pngFiles, nil
+}
+
+// downloadThemedImagesForPile downloads themed images for PNG pile effect
+func downloadThemedImagesForPile(config *PngPileConfig, verbose bool) ([]string, error) {
+	if verbose {
+		fmt.Printf("Downloading %d themed images to %s\n", config.TotalImages, config.OutputDir)
+	}
+
+	// Create output directory
+	if err := os.MkdirAll(config.OutputDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	// Story-based theme progression like the original concept
+	themes := []string{
+		// Nature/peaceful start (15 images)
+		"forest", "mountain", "lake", "sunrise", "flowers", 
+		"meadow", "stream", "peaceful", "calm", "serenity",
+		"butterfly", "bird", "deer", "waterfall", "garden",
+		
+		// Journey begins (15 images) 
+		"path", "road", "journey", "adventure", "exploration",
+		"compass", "map", "backpack", "hiking", "travel",
+		"bridge", "stairs", "door", "gate", "horizon",
+		
+		// Action/movement (30 images)
+		"running", "flying", "soaring", "eagle", "freedom",
+		"wind", "motion", "speed", "racing", "energy",
+		"waves", "ocean", "storm", "lightning", "fire",
+		"explosion", "burst", "jump", "dance", "celebration",
+		"festival", "party", "music", "concert", "lights",
+		"fireworks", "rainbow", "color", "vibrant", "bright",
+		
+		// Discovery/wonder (15 images)
+		"magic", "mystical", "galaxy", "stars", "universe",
+		"crystal", "gem", "treasure", "ancient", "castle",
+		"portal", "mystery", "wonder", "dream", "fantasy",
+		
+		// Resolution/peace (15 images)  
+		"sunset", "tranquil", "harmony", "balance", "zen",
+		"meditation", "reflection", "wisdom", "peace", "home",
+		"family", "love", "happiness", "smile", "heart",
+	}
+
+	// Ensure we don't exceed available themes
+	if config.TotalImages > len(themes) {
+		// Repeat themes if needed
+		originalLen := len(themes)
+		for len(themes) < config.TotalImages {
+			themes = append(themes, themes[len(themes)%originalLen])
+		}
+	}
+
+	// Download images for each theme
+	var allFiles []string
+	imagesPerTheme := 1 // One image per theme word
+	
+	for i, theme := range themes[:config.TotalImages] {
+		if verbose && (i < 5 || i%10 == 0) {
+			fmt.Printf("Downloading theme %d/%d: %s\n", i+1, config.TotalImages, theme)
+		}
+		
+		// Use existing Pixabay download function
+		attributions, err := DownloadImagesFromPixabay(theme, imagesPerTheme, config.OutputDir, config.PixabayAPIKey)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Warning: Failed to download images for theme '%s': %v\n", theme, err)
+			}
+			continue
+		}
+		
+		// Extract file paths
+		for _, attr := range attributions {
+			allFiles = append(allFiles, attr.FilePath)
+		}
+		
+		// Stop if we have enough images
+		if len(allFiles) >= config.TotalImages {
+			break
+		}
+	}
+
+	if verbose {
+		fmt.Printf("Successfully downloaded %d themed images\n", len(allFiles))
+	}
+
+	return allFiles, nil
 }

@@ -936,10 +936,15 @@ The animation pattern:
 4. All images have black border effects
 5. Creates a visual story arc through image themes
 
+Image Sources:
+- Default: Uses existing PNG files in --input-dir
+- With --download: Downloads themed images from Pixabay API
+- Themes progress: nature → journey → action → discovery → peace
+
 Examples:
-  cutlass fcp png-pile                       # Generate png_pile_timestamp.fcpxml
-  cutlass fcp png-pile mypile.fcpxml         # Custom filename
-  cutlass fcp png-pile --duration 30 --images 90  # 30 seconds with 90 images`,
+  cutlass fcp png-pile                               # Use existing PNGs
+  cutlass fcp png-pile --download --api-key YOUR_KEY  # Download from Pixabay
+  cutlass fcp png-pile --duration 30 --images 90      # 30 seconds with 90 images`,
 	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Get output filename
@@ -955,6 +960,8 @@ Examples:
 		durationStr, _ := cmd.Flags().GetString("duration")
 		imagesStr, _ := cmd.Flags().GetString("images")
 		inputDir, _ := cmd.Flags().GetString("input-dir")
+		apiKey, _ := cmd.Flags().GetString("api-key")
+		download, _ := cmd.Flags().GetBool("download")
 		verbose, _ := cmd.Flags().GetBool("verbose")
 		
 		// Parse duration
@@ -974,7 +981,22 @@ Examples:
 		// Generate PNG pile timeline
 		fmt.Printf("Generating PNG pile timeline (%.1f seconds with %d images)...\n", duration, totalImages)
 		
-		fcpxml, err := fcp.GeneratePngPile(duration, totalImages, inputDir, verbose)
+		var fcpxml *fcp.FCPXML
+		if download {
+			// Download themed images from Pixabay
+			config := &fcp.PngPileConfig{
+				Duration:      duration,
+				TotalImages:   totalImages,
+				OutputDir:     inputDir,
+				PixabayAPIKey: apiKey,
+				UseExisting:   false,
+			}
+			fcpxml, err = fcp.GeneratePngPileWithConfig(config, verbose)
+		} else {
+			// Use existing images
+			fcpxml, err = fcp.GeneratePngPile(duration, totalImages, inputDir, verbose)
+		}
+		
 		if err != nil {
 			fmt.Printf("Error generating PNG pile timeline: %v\n", err)
 			return
@@ -988,6 +1010,9 @@ Examples:
 		}
 		
 		fmt.Printf("Generated PNG pile timeline: %s\n", filename)
+		if download {
+			fmt.Printf("Images downloaded to: %s\n", inputDir)
+		}
 		fmt.Printf("Import this into Final Cut Pro to view the sliding PNG pile effect.\n")
 	},
 }
@@ -1164,6 +1189,8 @@ func init() {
 	pngPileCmd.Flags().String("duration", "30", "Total PNG pile duration in seconds (default 30)")
 	pngPileCmd.Flags().String("images", "90", "Total number of PNG images to use (default 90)")
 	pngPileCmd.Flags().String("input-dir", "./png_pile_assets", "Directory containing PNG images (default ./png_pile_assets)")
+	pngPileCmd.Flags().String("api-key", "", "Pixabay API key for downloading images (optional)")
+	pngPileCmd.Flags().Bool("download", false, "Download themed images from Pixabay instead of using existing files")
 	pngPileCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 
 	// Add flags to story subcommand
