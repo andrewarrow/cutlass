@@ -315,8 +315,8 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 "ref": asset_id,
                 "lane": lane_num,
                 "duration": tile_duration,
-                "offset": "0s",
-                "start": "3600s",  # Required for image elements
+                "offset": "3600s",  # Match safe.fcpxml pattern
+                "start": "86486400/24000s",  # Match safe.fcpxml pattern for nested elements
                 "name": f"{png_file.stem}_tile_{lane_num}_{tile_num}",
                 "adjust_transform": {
                     "position": f"{x_pos:.3f} {y_pos:.3f}",
