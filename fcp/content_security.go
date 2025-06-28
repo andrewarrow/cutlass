@@ -2,6 +2,7 @@ package fcp
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -16,6 +17,15 @@ func NewContentSecurityValidator() *ContentSecurityValidator {
 
 // ValidateTextContent validates text content for security issues
 func (csv *ContentSecurityValidator) ValidateTextContent(text string) error {
+	// Try to URL decode to catch double-encoded attacks
+	decodedText := text
+	if decoded, err := url.QueryUnescape(text); err == nil {
+		decodedText = decoded
+		// Double decode for double-encoded attacks
+		if doubleDecoded, err := url.QueryUnescape(decoded); err == nil {
+			decodedText = doubleDecoded
+		}
+	}
 	// Block script injection patterns
 	scriptPatterns := []string{
 		"javascript:",
@@ -32,17 +42,56 @@ func (csv *ContentSecurityValidator) ValidateTextContent(text string) error {
 		"onmouseover=",
 	}
 	
-	lowerText := strings.ToLower(text)
-	for _, pattern := range scriptPatterns {
-		if strings.Contains(lowerText, pattern) {
-			return fmt.Errorf("script injection detected in text content: %s", pattern)
+	// Check both original and decoded text for patterns
+	// Also create normalized versions without whitespace to catch bypass attempts
+	normalizeText := func(s string) string {
+		// Remove all whitespace and control characters
+		result := strings.ReplaceAll(s, " ", "")
+		result = strings.ReplaceAll(result, "\t", "")
+		result = strings.ReplaceAll(result, "\n", "")
+		result = strings.ReplaceAll(result, "\r", "")
+		result = strings.ReplaceAll(result, "\v", "")
+		result = strings.ReplaceAll(result, "\f", "")
+		return result
+	}
+	
+	textsToCheck := []string{
+		strings.ToLower(text), 
+		strings.ToLower(decodedText),
+		normalizeText(strings.ToLower(text)),
+		normalizeText(strings.ToLower(decodedText)),
+	}
+	for _, textToCheck := range textsToCheck {
+		for _, pattern := range scriptPatterns {
+			if strings.Contains(textToCheck, pattern) {
+				return fmt.Errorf("script injection detected in text content: %s", pattern)
+			}
 		}
 	}
 	
-	// Block NULL bytes and control characters
-	for i, char := range text {
-		if char == 0 || (char < 32 && char != 9 && char != 10 && char != 13) {
-			return fmt.Errorf("null bytes or control characters not allowed in text content at position %d", i)
+	// Block LDAP injection patterns
+	ldapPatterns := []string{
+		"${jndi:",
+		"${ldap:",
+		"jndi:ldap:",
+		"jndi:rmi:",
+		"jndi:dns:",
+	}
+	for _, textToCheck := range textsToCheck {
+		for _, pattern := range ldapPatterns {
+			if strings.Contains(textToCheck, pattern) {
+				return fmt.Errorf("LDAP injection detected in text content: %s", pattern)
+			}
+		}
+	}
+	
+	// Block NULL bytes and control characters (check both original and decoded)
+	allTexts := []string{text, decodedText}
+	for _, textToCheck := range allTexts {
+		for i, char := range textToCheck {
+			if char == 0 || (char < 32 && char != 9 && char != 10 && char != 13) {
+				return fmt.Errorf("null bytes or control characters not allowed in text content at position %d", i)
+			}
 		}
 	}
 	
@@ -58,9 +107,11 @@ func (csv *ContentSecurityValidator) ValidateTextContent(text string) error {
 		"&#47;",
 		"&#92;",
 	}
-	for _, entity := range dangerousEntities {
-		if strings.Contains(lowerText, entity) {
-			return fmt.Errorf("dangerous HTML entity detected: %s", entity)
+	for _, textToCheck := range textsToCheck {
+		for _, entity := range dangerousEntities {
+			if strings.Contains(textToCheck, entity) {
+				return fmt.Errorf("dangerous HTML entity detected: %s", entity)
+			}
 		}
 	}
 	
@@ -76,10 +127,13 @@ func (csv *ContentSecurityValidator) ValidateTextContent(text string) error {
 		"c:\\",
 		"\\windows\\",
 		"\\system32\\",
+		"\\\\", // UNC paths
 	}
-	for _, pattern := range pathPatterns {
-		if strings.Contains(lowerText, pattern) {
-			return fmt.Errorf("file system path detected in text content: %s", pattern)
+	for _, textToCheck := range textsToCheck {
+		for _, pattern := range pathPatterns {
+			if strings.Contains(textToCheck, pattern) {
+				return fmt.Errorf("path traversal detected in text content: %s", pattern)
+			}
 		}
 	}
 	

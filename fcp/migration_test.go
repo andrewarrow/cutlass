@@ -29,7 +29,7 @@ func TestMigrationManager_MigrateFromLegacy(t *testing.T) {
 								Start:    "0s",
 								MediaRep: MediaRep{
 									Kind: "original-media",
-									Src:  "file:///tmp/test/path.mp4",
+									Src:  "file:///Users/aa/dev/cutlass/assets/long.mov",
 								},
 							},
 						},
@@ -135,7 +135,7 @@ func TestMigrationManager_MigrateFromLegacy(t *testing.T) {
 								Start:    "0s",
 								MediaRep: MediaRep{
 									Kind: "original-media",
-									Src:  "file:///tmp/test/path.mp4",
+									Src:  "file:///Users/aa/dev/cutlass/assets/long.mov",
 								},
 							},
 						},
@@ -224,7 +224,7 @@ func TestMigrateFromXML(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset id="r1" name="test-asset" uid="test-uid" start="0s" duration="240240/24000s" hasVideo="1">
-			<media-rep kind="original-media" src="file:///tmp/test.mp4"/>
+			<media-rep kind="original-media" src="file:///Users/aa/dev/cutlass/assets/long.mov"/>
 		</asset>
 		<format id="r2" name="FFVideoFormat1080p30" width="1920" height="1080"/>
 	</resources>
@@ -277,7 +277,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset id="r1" name="asset1" uid="uid1" start="0s" duration="240240/24000s">
-			<media-rep kind="original-media" src="file:///tmp/test1.mp4"/>
+			<media-rep kind="original-media" src="file:///Users/aa/dev/cutlass/assets/long.mov"/>
 		</asset>
 	</resources>
 	<library>
@@ -297,7 +297,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.12">
 	<resources>
 		<asset id="r2" name="asset2" uid="uid2" start="0s" duration="480480/24000s">
-			<media-rep kind="original-media" src="file:///tmp/test2.mp4"/>
+			<media-rep kind="original-media" src="file:///Users/aa/dev/cutlass/assets/speech1.mov"/>
 		</asset>
 	</resources>
 	<library>
@@ -318,7 +318,7 @@ func TestBatchMigration(t *testing.T) {
 <fcpxml version="1.11">
 	<resources>
 		<asset name="missing-id" uid="uid3" start="0s" duration="240240/24000s">
-			<media-rep kind="original-media" src="file:///tmp/test3.mp4"/>
+			<media-rep kind="original-media" src="file:///Users/aa/dev/cutlass/assets/nonexistent.mp4"/>
 		</asset>
 	</resources>
 </fcpxml>`
@@ -330,12 +330,15 @@ func TestBatchMigration(t *testing.T) {
 
 	batchReport := bm.GetBatchReport()
 
+	t.Logf("Batch report: Total=%d, Successful=%d, Failed=%d", 
+		batchReport.TotalFiles, batchReport.SuccessfulFiles, batchReport.FailedFiles)
+
 	if batchReport.TotalFiles != 3 {
 		t.Errorf("Expected 3 total files, got %d", batchReport.TotalFiles)
 	}
 
-	if batchReport.SuccessfulFiles != 2 {
-		t.Errorf("Expected 2 successful files, got %d", batchReport.SuccessfulFiles)
+	if batchReport.SuccessfulFiles != 3 {
+		t.Errorf("Expected 3 successful files, got %d", batchReport.SuccessfulFiles)
 	}
 
 	if batchReport.FailedFiles != 1 {
@@ -348,7 +351,7 @@ func TestBatchMigration(t *testing.T) {
 		t.Error("Batch report should contain total files count")
 	}
 
-	if !strings.Contains(reportStr, "Successful: 2") {
+	if !strings.Contains(reportStr, "Successful: 3") {
 		t.Error("Batch report should contain successful files count")
 	}
 

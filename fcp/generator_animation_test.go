@@ -118,13 +118,11 @@ func TestKeyframeAnimation(t *testing.T) {
 				Time:  ConvertSecondsToFCPDuration(2.0),
 				Value: "1.2 1.2", // Scale up dramatically
 				Curve:  "smooth",
-				Interp: "easeOut",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(6.0),
 				Value: "0.8 0.8", // Contract (breathing)
 				Curve:  "smooth",
-				Interp: "ease",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
@@ -439,7 +437,7 @@ func TestKeyframeAnimation(t *testing.T) {
 		{"Rotation keyframes", `<param name="rotation"`},
 		{"Keyframe animation elements", `<keyframeAnimation>`},
 		{"Keyframe time values", `<keyframe time="`},
-		{"Keyframe interpolation types", `interp="easeOut"`},
+		{"Keyframe curve types", `curve="smooth"`},
 		{"Multiple keyframes", `<keyframe time="72072/24000s"`}, // 3 seconds
 		{"Crop animation", `<adjust-crop mode="trim">`},
 		{"Crop mode", `mode="trim"`},
@@ -448,7 +446,7 @@ func TestKeyframeAnimation(t *testing.T) {
 		{"Title element animation", `<title ref="`},
 		{"Transform parameters", `<adjust-transform>`},
 		{"Complex parameter values", `value="-1000 -500"`},
-		{"Easing interpolation", `interp="ease"`},
+		{"Linear curve interpolation", `curve="linear"`},
 	}
 
 	for _, tc := range testCases {

@@ -29,7 +29,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected security exploits to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -53,7 +53,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected numerical extremes to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -77,7 +77,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected boundary violations to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -101,7 +101,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected memory exhaustion attempts to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -125,7 +125,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected validation evasion attempts to be blocked")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -141,7 +141,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected comprehensive extreme content to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -165,7 +165,7 @@ func TestUltimateBaffle(t *testing.T) {
 			t.Error("Expected moderate extreme content to be blocked by validation")
 		}
 
-		if err != nil && !strings.Contains(err.Error(), "validation correctly blocked") {
+		if err != nil && !strings.Contains(err.Error(), "validation failed") {
 			t.Errorf("Unexpected error: %v", err)
 		}
 
@@ -200,7 +200,7 @@ func TestUltimateBaffleValidationHoles(t *testing.T) {
 				t.Errorf("🚨 VALIDATION HOLE FOUND at extreme factor %.1f - content was not blocked!", factor)
 				t.Errorf("File generated at: %s", outputPath)
 				t.Error("Manual inspection required to identify the validation gap!")
-			} else if !strings.Contains(err.Error(), "validation correctly blocked") {
+			} else if !strings.Contains(err.Error(), "validation failed") {
 				t.Logf("✅ Validation correctly blocked extreme content at factor %.1f: %v", factor, err)
 			}
 

@@ -337,7 +337,14 @@ func (builder *FCPXMLDocumentBuilder) Build() (*FCPXML, error) {
 	tx := NewSafeTransaction(builder.registry)
 	defer tx.Rollback()
 	
-	mainFormat, err := tx.CreateFormat("r1", "FFVideoFormat1080p30", "1920", "1080", "1-1-1 (Rec. 709)")
+	// Reserve proper ID for main format
+	ids := tx.ReserveIDs(1)
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("failed to reserve ID for main format")
+	}
+	mainFormatID := string(ids[0])
+	
+	mainFormat, err := tx.CreateFormat(mainFormatID, "FFVideoFormat1080p30", "1920", "1080", "1-1-1 (Rec. 709)")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create main format: %v", err)
 	}
