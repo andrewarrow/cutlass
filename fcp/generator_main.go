@@ -427,9 +427,17 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 	videoAssetID := ids[0]
 	videoFormatID := ids[1]
 
-	err = tx.CreateVideoAssetWithDetection(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(config.Duration), videoFormatID)
+	// Use CreateAsset with consistent UID instead of CreateVideoAssetWithDetection with random UID
+	// This prevents FCP cache conflicts when importing the same video multiple times
+	_, err = tx.CreateAsset(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(config.Duration), videoFormatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base video asset: %v", err)
+	}
+	
+	// Create video format manually since CreateAsset doesn't handle video formats
+	_, err = tx.CreateFormatWithFrameDuration(videoFormatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create video format: %v", err)
 	}
 
 	// Create main video asset-clip with scaling like Info.fcpxml
