@@ -116,37 +116,46 @@ func TestAddLegacyFormat(t *testing.T) {
 
 	// Test in warning mode
 	SetCompatibilityMode(CompatibilityWarn)
-	err := AddLegacyFormat(fcpxml, "r1", "FFVideoFormat1080p30", "1920", "1080")
+	err := AddLegacyFormat(fcpxml, "r2", "FFVideoFormat1080p30", "1920", "1080")
 	if err != nil {
 		t.Errorf("AddLegacyFormat failed in warning mode: %v", err)
 	}
 
-	// Check that format was added
-	if len(fcpxml.Resources.Formats) != 1 {
-		t.Errorf("Expected 1 format, got %d", len(fcpxml.Resources.Formats))
+	// Check that format was added (GenerateEmpty creates 1 default format, AddLegacyFormat adds another)
+	if len(fcpxml.Resources.Formats) != 2 {
+		t.Errorf("Expected 2 formats, got %d", len(fcpxml.Resources.Formats))
 	}
 
-	format := fcpxml.Resources.Formats[0]
-	if string(format.ID) != "r1" {
-		t.Errorf("Expected format ID 'r1', got '%s'", format.ID)
+	// Find the newly added format (should be the second one with ID "r2")
+	var addedFormat *Format
+	for i := range fcpxml.Resources.Formats {
+		if string(fcpxml.Resources.Formats[i].ID) == "r2" {
+			addedFormat = &fcpxml.Resources.Formats[i]
+			break
+		}
 	}
-	if format.Width != "1920" {
-		t.Errorf("Expected format width '1920', got '%s'", format.Width)
+	if addedFormat == nil {
+		t.Error("Could not find added format with ID 'r2'")
+		return
 	}
-	if format.Height != "1080" {
-		t.Errorf("Expected format height '1080', got '%s'", format.Height)
+	
+	if addedFormat.Width != "1920" {
+		t.Errorf("Expected format width '1920', got '%s'", addedFormat.Width)
+	}
+	if addedFormat.Height != "1080" {
+		t.Errorf("Expected format height '1080', got '%s'", addedFormat.Height)
 	}
 
 	// Test in strict mode
 	SetCompatibilityMode(CompatibilityStrict)
-	err = AddLegacyFormat(fcpxml, "r2", "FFVideoFormat720p30", "1280", "720")
+	err = AddLegacyFormat(fcpxml, "r3", "FFVideoFormat720p30", "1280", "720")
 	if err == nil {
 		t.Error("Expected error in strict mode but got none")
 	}
 
 	// Test with invalid width (should fail validation)
 	SetCompatibilityMode(CompatibilityWarn)
-	err = AddLegacyFormat(fcpxml, "r3", "InvalidFormat", "not-a-number", "720")
+	err = AddLegacyFormat(fcpxml, "r4", "InvalidFormat", "not-a-number", "720")
 	if err == nil {
 		t.Error("Expected validation error for invalid width")
 	}

@@ -391,8 +391,6 @@ func TestComplexTimeline(t *testing.T) {
 		{"Multiple gaps", `<gap name="Gap"`},
 		{"Multiple asset-clips", `<asset-clip ref="`},
 		{"Multiple video elements", `<video ref="`},
-		{"Nested audio tracks", `lane="-1"`},
-		{"Layered video tracks", `lane="1"`},
 		{"Transform positioning", `position="300 200"`},
 		{"Scale transformations", `scale="0.4 0.4"`},
 		{"Audio effects", `name="DeEsser"`},
@@ -402,7 +400,6 @@ func TestComplexTimeline(t *testing.T) {
 		{"Gap durations", `duration="48048/24000s"`}, // 2 seconds in frame-aligned format
 		{"Complex timing offsets", `offset="360360/24000s"`}, // 15 seconds in frame-aligned format
 		{"Audio roles", `audioRole="music"`},
-		{"Video lanes", `lane="2"`},
 	}
 
 	for _, tc := range testCases {

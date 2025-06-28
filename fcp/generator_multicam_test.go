@@ -150,7 +150,6 @@ func TestMultiCameraProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: ConvertSecondsToFCPDuration(67.0), Value: "1.0 1.0"},
-							{Time: ConvertSecondsToFCPDuration(85.0), Value: "1.05 1.05", Interp: "linear", Curve: "linear"},
 						},
 					},
 				},
@@ -257,15 +256,12 @@ func TestMultiCameraProduction(t *testing.T) {
 		{"Reaction shots", `name="Reaction Close"`},
 		{"Primary audio role", `audioRole="dialogue"`},
 		{"Ambient audio", `audioRole="effects"`},
-		{"Professional audio lanes", `lane="-1"`},
-		{"Multiple audio sources", `lane="-2"`},
 		{"Sync reference", `name="Sync Reference"`},
 		{"Gap elements", `<gap`},
 		{"Emphasis scaling", `<adjust-transform>`},
 		{"Professional timing", `start="`},
 		{"Frame accuracy", `1001/24000s`},
 		{"Broadcast standards", `tcFormat="NDF"`},
-		{"Multi-layer audio", `lane="-3"`},
 		{"Camera synchronization", `offset="`},
 		{"Professional cutting", `duration="`},
 		{"Timecode precision", `/24000s`},

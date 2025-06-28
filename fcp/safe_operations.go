@@ -760,7 +760,7 @@ func CreateTitleSequence(projectName string, titles []string, secondsPerTitle fl
 	
 	currentTime := 0.0
 	for i, title := range titles {
-		if err := ops.AddTitleCard(title, currentTime, secondsPerTitle, 1); err != nil {
+		if err := ops.AddTitleCard(title, currentTime, secondsPerTitle, 0); err != nil {
 			return nil, fmt.Errorf("failed to add title %d: %v", i, err)
 		}
 		currentTime += secondsPerTitle

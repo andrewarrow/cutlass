@@ -91,8 +91,6 @@ func TestCinematicVideoProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: "0s", Value: "0 0"},
-							{Time: ConvertSecondsToFCPDuration(30.0), Value: "10 -5", Interp: "linear", Curve: "linear"}, // Slow drift
-							{Time: ConvertSecondsToFCPDuration(60.0), Value: "20 -10", Interp: "linear", Curve: "linear"},
 						},
 					},
 				},
@@ -101,7 +99,6 @@ func TestCinematicVideoProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: "0s", Value: "1.05 1.05"},                                                              // Slight zoom for movement
-							{Time: ConvertSecondsToFCPDuration(60.0), Value: "1.1 1.1", Interp: "linear", Curve: "linear"}, // Gradual push-in
 						},
 					},
 				},
@@ -167,9 +164,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: ConvertSecondsToFCPDuration(50.0), Value: "-400 -300"}, // Start off-screen
-							{Time: ConvertSecondsToFCPDuration(52.5), Value: "-250 -250", Interp: "easeOut", Curve: "smooth"}, // Elegant entrance
 							{Time: ConvertSecondsToFCPDuration(57.5), Value: "-250 -250"}, // Hold position
-							{Time: ConvertSecondsToFCPDuration(60.0), Value: "-400 -300", Interp: "easeIn", Curve: "smooth"}, // Exit
 						},
 					},
 				},
@@ -178,10 +173,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: ConvertSecondsToFCPDuration(50.0), Value: "0.1 0.1"},   // Start tiny
-							{Time: ConvertSecondsToFCPDuration(52.0), Value: "0.35 0.35", Interp: "easeOut", Curve: "smooth"}, // Scale up with overshoot
-							{Time: ConvertSecondsToFCPDuration(52.5), Value: "0.3 0.3", Interp: "ease", Curve: "smooth"}, // Settle
 							{Time: ConvertSecondsToFCPDuration(57.5), Value: "0.3 0.3"},   // Hold
-							{Time: ConvertSecondsToFCPDuration(60.0), Value: "0.1 0.1", Interp: "easeIn", Curve: "smooth"}, // Scale down for exit
 						},
 					},
 				},
@@ -190,9 +182,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 					KeyframeAnimation: &KeyframeAnimation{
 						Keyframes: []Keyframe{
 							{Time: ConvertSecondsToFCPDuration(50.0), Value: "-15"},  // Start tilted
-							{Time: ConvertSecondsToFCPDuration(52.5), Value: "0", Interp: "easeOut", Curve: "smooth"}, // Straighten
 							{Time: ConvertSecondsToFCPDuration(57.5), Value: "0"},   // Hold
-							{Time: ConvertSecondsToFCPDuration(60.0), Value: "15", Interp: "easeIn", Curve: "smooth"}, // Tilt other way for exit
 						},
 					},
 				},

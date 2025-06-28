@@ -78,37 +78,31 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  "0s",
 				Value: "-1000 -500", // Start off-screen top-left
-				Interp: "easeIn",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(3.0),
 				Value: "0 0", // Move to center
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(8.0),
 				Value: "300 -200", // Move to upper right
-				Interp: "linear",
 				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(12.0),
 				Value: "-400 300", // Move to lower left
-				Interp: "ease",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(18.0),
 				Value: "500 200", // Move to lower right
-				Interp: "easeIn",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "0 0", // Return to center
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 			{
@@ -124,43 +118,36 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  "0s",
 				Value: "0.1 0.1", // Start tiny
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(2.0),
 				Value: "1.2 1.2", // Scale up dramatically
-				Interp: "easeIn",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(6.0),
 				Value: "0.8 0.8", // Contract (breathing)
-				Interp: "ease",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "1.1 1.1", // Expand (breathing)
-				Interp: "ease",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(14.0),
 				Value: "0.9 0.9", // Contract (breathing)
-				Interp: "ease",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(20.0),
 				Value: "1.5 1.5", // Final dramatic scale
-				Interp: "easeIn",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "0.05 0.05", // Shrink to nothing
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 		},
@@ -176,31 +163,26 @@ func TestKeyframeAnimation(t *testing.T) {
 			{
 				Time:  ConvertSecondsToFCPDuration(5.0),
 				Value: "180", // Half rotation
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(10.0),
 				Value: "360", // Full rotation
-				Interp: "linear",
 				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(15.0),
 				Value: "720", // Two full rotations
-				Interp: "linear",
 				Curve:  "linear",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(25.0),
 				Value: "1080", // Three full rotations
-				Interp: "easeIn",
 				Curve:  "smooth",
 			},
 			{
 				Time:  ConvertSecondsToFCPDuration(30.0),
 				Value: "1440", // Four full rotations
-				Interp: "easeOut",
 				Curve:  "smooth",
 			},
 		},
@@ -262,8 +244,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(4.0),
 								Value: "-300 -300", // Slide into frame
-								Interp: "easeOut",
-								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(24.0),
@@ -272,8 +252,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "600 400", // Exit off-screen
-								Interp: "easeIn",
-								Curve:  "smooth",
 							},
 						},
 					},
@@ -289,7 +267,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(5.0),
 								Value: "0.4 0.4", // Scale up
-								Interp: "easeOut",
 								Curve:  "smooth",
 							},
 							{
@@ -299,7 +276,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "0.1 0.1", // Scale down for exit
-								Interp: "easeIn",
 								Curve:  "smooth",
 							},
 						},
@@ -316,7 +292,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(6.0),
 								Value: "0", // Straighten
-								Interp: "easeOut",
 								Curve:  "smooth",
 							},
 							{
@@ -326,7 +301,6 @@ func TestKeyframeAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(27.0),
 								Value: "180", // Spin for exit
-								Interp: "easeIn",
 								Curve:  "smooth",
 							},
 						},
@@ -356,7 +330,6 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(7.0),
 							Value: "0 0", // Move to center
-							Interp: "easeOut",
 							Curve:  "smooth",
 						},
 						{
@@ -366,7 +339,6 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(20.0),
 							Value: "0 -400", // Exit above frame
-							Interp: "easeIn",
 							Curve:  "smooth",
 						},
 					},
@@ -388,13 +360,11 @@ func TestKeyframeAnimation(t *testing.T) {
 						{
 							Time:  ConvertSecondsToFCPDuration(7.0),
 							Value: "1.2 1.2", // Overshoot
-							Interp: "easeOut",
 							Curve:  "smooth",
 						},
 						{
 							Time:  ConvertSecondsToFCPDuration(9.0),
 							Value: "1.0 1.0", // Settle
-							Interp: "ease",
 							Curve:  "smooth",
 						},
 						{

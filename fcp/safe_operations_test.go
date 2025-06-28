@@ -164,7 +164,7 @@ func TestAddImageOverlay(t *testing.T) {
 			imagePath:       "/path/to/image.png",
 			startSeconds:    10.0,
 			durationSeconds: 5.0,
-			lane:            1,
+			lane:            0,
 			expectError:     false,
 		},
 		{
@@ -247,7 +247,7 @@ func TestAddTitleCard(t *testing.T) {
 			text:            "Hello World",
 			startSeconds:    5.0,
 			durationSeconds: 3.0,
-			lane:            2,
+			lane:            0,
 			expectError:     false,
 		},
 		{
@@ -462,7 +462,7 @@ func TestAddMultiLayerComposite(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name: "Valid composite",
+			name: "Overlapping elements on same lane",
 			mediaFiles: []MediaLayerSpec{
 				{
 					Path:            "/tmp/path/to/video.mp4",
@@ -476,10 +476,11 @@ func TestAddMultiLayerComposite(t *testing.T) {
 					Type:            "image",
 					StartSeconds:    2.0,
 					DurationSeconds: 5.0,
-					Lane:            1,
+					Lane:            0,
 				},
 			},
-			expectError: false,
+			expectError: true,
+			errorContains: "overlap",
 		},
 		{
 			name:        "Empty media files",
@@ -686,7 +687,7 @@ func TestGenerateAndValidate(t *testing.T) {
 		t.Fatalf("failed to add background video: %v", err)
 	}
 
-	if err := ops.AddTitleCard("Test Title", 5.0, 3.0, 1); err != nil {
+	if err := ops.AddTitleCard("Test Title", 35.0, 3.0, 0); err != nil {
 		t.Fatalf("failed to add title card: %v", err)
 	}
 
@@ -763,7 +764,7 @@ func TestTitleCardOptions(t *testing.T) {
 	}
 
 	// Test title card with options
-	err = ops.AddTitleCard("Custom Title", 10.0, 5.0, 1,
+	err = ops.AddTitleCard("Custom Title", 10.0, 5.0, 0,
 		WithTitleFont("Arial"),
 		WithTitleSize("72"),
 		WithTitleColor("1.0 0.0 0.0 1.0"), // Red

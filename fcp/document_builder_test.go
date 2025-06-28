@@ -87,7 +87,7 @@ func TestFCPXMLDocumentBuilder_BuildDocument(t *testing.T) {
 		t.Fatalf("Failed to add background video: %v", err)
 	}
 	
-	err = builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(0), WithFontSize("64"))
+	err = builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(1), WithFontSize("64"))
 	if err != nil {
 		t.Fatalf("Failed to add title: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestFCPXMLDocumentBuilder_EmptyProjectName(t *testing.T) {
 }
 
 func TestFCPXMLDocumentBuilder_SetConfiguration(t *testing.T) {
-	builder, err := NewFCPXMLDocumentBuilder("Test Project", Duration("240240/24000s"))
+	builder, err := NewFCPXMLDocumentBuilder("Test Project", Duration("480480/24000s"))
 	if err != nil {
 		t.Fatalf("Failed to create document builder: %v", err)
 	}
@@ -302,7 +302,7 @@ func TestFCPXMLDocumentBuilder_StatisticsAccuracy(t *testing.T) {
 	builder.AddMediaFile("/test/video1.mp4", "Video 1", Time("0s"), Duration("120120/24000s"), Lane(0))
 	builder.AddMediaFile("/test/image1.png", "Image 1", Time("120120/24000s"), Duration("120120/24000s"), Lane(0))
 	builder.AddMediaFile("/test/audio1.wav", "Audio 1", Time("240240/24000s"), Duration("120120/24000s"), Lane(0))
-	builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(0))
+	builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(1))
 	
 	stats := builder.GetStatistics()
 	
@@ -319,10 +319,10 @@ func TestFCPXMLDocumentBuilder_StatisticsAccuracy(t *testing.T) {
 		t.Errorf("Expected 4 spine elements, got %d", stats.SpineElementCount)
 	}
 	
-	// Verify used lanes - all spine elements should be on lane 0
-	expectedLanes := []int{0}
-	if len(stats.UsedLanes) != len(expectedLanes) {
-		t.Errorf("Expected %d used lanes, got %d", len(expectedLanes), len(stats.UsedLanes))
+	// Verify used lanes - spine elements should be on lanes 0 and 1
+	expectedLaneCount := 2
+	if len(stats.UsedLanes) != expectedLaneCount {
+		t.Errorf("Expected %d used lanes, got %d", expectedLaneCount, len(stats.UsedLanes))
 	}
 	
 	// Verify project info
