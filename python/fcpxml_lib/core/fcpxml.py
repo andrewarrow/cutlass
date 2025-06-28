@@ -24,10 +24,10 @@ from ..validation.xml_validator import run_xml_validation
 def create_empty_project(project_name: str = "New Project", event_name: str = "New Event", 
                         use_horizontal: bool = False) -> FCPXML:
     """
-    Create an empty FCPXML project following schema.yaml template.
+    Create an empty FCPXML project following crash prevention rules.
     
     This generates the minimal valid FCPXML structure that will import into Final Cut Pro
-    without errors. Based on the empty_project template in schema.yaml.
+    without errors. Uses established crash prevention patterns.
     
     Args:
         project_name: Name of the project
@@ -387,7 +387,7 @@ def save_fcpxml(fcpxml: FCPXML, output_path: str) -> bool:
     Save FCPXML document to file and validate it.
     
     Returns True if successful and well-formed, False otherwise.
-    🚨 CRITICAL: XML validation is mandatory (from schema.yaml)
+    🚨 CRITICAL: XML validation is mandatory for crash prevention
     """
     xml_content = serialize_to_xml(fcpxml)
     

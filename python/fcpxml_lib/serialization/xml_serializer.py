@@ -15,8 +15,7 @@ def serialize_to_xml(fcpxml) -> str:
     """
     Serialize FCPXML to XML string using structured approach.
     
-    🚨 CRITICAL: This implements the "STRUCT_BASED_GENERATION" principle
-    from schema.yaml - no string templates, only structured XML building.
+    🚨 CRITICAL: Uses structured XML building with no string templates.
     
     Returns only the XML content without declaration (added separately).
     """

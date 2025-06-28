@@ -9,7 +9,7 @@ def run_xml_validation(xml_file_path: str) -> tuple[bool, str]:
     """
     Run basic XML well-formedness validation using xmllint.
     
-    🚨 CRITICAL: XML must be well-formed for FCPXML (from schema.yaml)
+    🚨 CRITICAL: XML must be well-formed for FCPXML crash prevention
     Note: Full DTD validation requires Apple's DTD but basic validation catches most issues.
     """
     try:

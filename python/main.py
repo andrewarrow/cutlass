@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FCPXML Python Library - Demo Application
-Generates FCPXML documents following the comprehensive rules from schema.yaml
+Generates FCPXML documents following comprehensive crash prevention rules
 
 Based on the Go and Swift implementations, this library ensures:
 - Frame-aligned timing calculations  
@@ -9,7 +9,7 @@ Based on the Go and Swift implementations, this library ensures:
 - Validated resource ID management
 - Crash pattern prevention
 
-🚨 CRITICAL: This follows the "NO_XML_TEMPLATES" rule from schema.yaml
+🚨 CRITICAL: This follows the "NO_XML_TEMPLATES" rule
 All XML is generated from structured data objects, never string templates.
 """
 
@@ -42,7 +42,7 @@ def test_validation_failure():
 def create_empty_project_cmd(args):
     """Create an empty FCPXML project"""
     print("🎬 Creating empty FCPXML project...")
-    print("Following schema.yaml rules for safe FCPXML generation")
+    print("Following crash prevention rules for safe FCPXML generation")
     print()
     
     # Test validation system first

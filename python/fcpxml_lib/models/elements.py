@@ -184,7 +184,7 @@ class FCPXML:
     """
     Root FCPXML document.
     
-    🚨 CRITICAL: Follows schema.yaml principles:
+    🚨 CRITICAL: Follows crash prevention principles:
     - Uses structured data objects (NO_XML_TEMPLATES)
     - Validates frame alignment
     - Ensures proper resource management
