@@ -25,7 +25,7 @@ class TestMediaDetection:
         assert props["duration_seconds"] == 10.0
         assert props["width"] == 1920
         assert props["height"] == 1080
-        assert props["frame_rate"] == 23.976
+        assert abs(props["frame_rate"] - 23.976) < 0.001
         assert props["has_audio"] == False
 
     @patch('subprocess.run')

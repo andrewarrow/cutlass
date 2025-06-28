@@ -6,7 +6,13 @@ import sys
 from pathlib import Path
 
 from ..models.elements import Resources, Library, Format, Sequence, Project, Event, FCPXML, Asset, MediaRep, SmartCollection
-from ..utils.schema_loader import get_schema
+from ..constants import (
+    FCPXML_VERSION, DEFAULT_SEQUENCE_SETTINGS, STANDARD_FRAME_DURATION,
+    VIDEO_COLOR_SPACE, REQUIRED_SMART_COLLECTIONS, IMAGE_DURATION,
+    IMAGE_FORMAT_NAME, IMAGE_COLOR_SPACE, DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT,
+    DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT, DEFAULT_VIDEO_DURATION, IMAGE_START_TIME,
+    STANDARD_FRAME_RATE, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+)
 from ..utils.ids import generate_uid
 from ..utils.timing import convert_seconds_to_fcp_duration
 from ..serialization.xml_serializer import serialize_to_xml
@@ -21,28 +27,24 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
     without errors. Based on the empty_project template in schema.yaml.
     """
     
-    # Get template from schema
-    schema = get_schema()
-    template = schema['fcpxml_rules']['templates']['empty_project']
-    
     # Create format resource (HD 1080p 23.976 fps - FCP standard)
     format_def = Format(
         id="r1",
         name="FFVideoFormat1080p2398",
-        frame_duration="1001/24000s",
+        frame_duration=STANDARD_FRAME_DURATION,
         width="1920", 
         height="1080",
-        color_space="1-1-1 (Rec. 709)"
+        color_space=VIDEO_COLOR_SPACE
     )
     
     # Create sequence with the format
     sequence = Sequence(
         format="r1",
         duration="0s",
-        tc_start="0s",
-        tc_format="NDF",
-        audio_layout="stereo",
-        audio_rate="48k"
+        tc_start=DEFAULT_SEQUENCE_SETTINGS["tc_start"],
+        tc_format=DEFAULT_SEQUENCE_SETTINGS["tc_format"],
+        audio_layout=DEFAULT_SEQUENCE_SETTINGS["audio_layout"],
+        audio_rate=DEFAULT_SEQUENCE_SETTINGS["audio_rate"]
     )
     
     # Create project containing the sequence
@@ -59,34 +61,8 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
     
     # Create standard smart collections (required by FCP)
     smart_collections = [
-        SmartCollection(
-            name="Projects",
-            match="all",
-            rules=[{"rule": "is", "type": "project"}]
-        ),
-        SmartCollection(
-            name="All Video", 
-            match="any",
-            rules=[
-                {"rule": "is", "type": "videoOnly"},
-                {"rule": "is", "type": "videoWithAudio"}
-            ]
-        ),
-        SmartCollection(
-            name="Audio Only",
-            match="all", 
-            rules=[{"rule": "is", "type": "audioOnly"}]
-        ),
-        SmartCollection(
-            name="Stills",
-            match="all",
-            rules=[{"rule": "is", "type": "stills"}]
-        ),
-        SmartCollection(
-            name="Favorites",
-            match="all",
-            rules=[{"rule": "favorites", "value": "favorites"}]
-        )
+        SmartCollection(name=sc["name"], match=sc["match"], rules=sc["rules"])
+        for sc in REQUIRED_SMART_COLLECTIONS
     ]
     
     # Create library containing the event
@@ -103,7 +79,7 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
     
     # Create root FCPXML document
     fcpxml = FCPXML(
-        version=template['version'],
+        version=FCPXML_VERSION,
         resources=resources,
         library=library
     )
@@ -163,10 +139,10 @@ def detect_video_properties(file_path: str) -> dict:
     
     # Return safe defaults if detection fails
     return {
-        "duration_seconds": 10.0,
-        "width": 1920,
-        "height": 1080,
-        "frame_rate": 23.976,
+        "duration_seconds": DEFAULT_VIDEO_DURATION,
+        "width": DEFAULT_VIDEO_WIDTH,
+        "height": DEFAULT_VIDEO_HEIGHT,
+        "frame_rate": STANDARD_FRAME_RATE,
         "has_audio": False  # Safe default: no audio
     }
 
@@ -188,11 +164,8 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
     uid = generate_uid(f"MEDIA_{abs_path.name}")
     
     # Detect media type
-    image_extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif'}
-    video_extensions = {'.mov', '.mp4', '.avi', '.mkv', '.m4v'}
-    
-    is_image = abs_path.suffix.lower() in image_extensions
-    is_video = abs_path.suffix.lower() in video_extensions
+    is_image = abs_path.suffix.lower() in IMAGE_EXTENSIONS
+    is_video = abs_path.suffix.lower() in VIDEO_EXTENSIONS
     
     if not (is_image or is_video):
         raise ValueError(f"Unsupported media type: {abs_path.suffix}")
@@ -206,7 +179,7 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
             id=asset_id,
             name=abs_path.stem,
             uid=uid,
-            duration="0s",  # Timeless for images
+            duration=IMAGE_DURATION,  # Timeless for images
             has_video="1",
             format=format_id,
             video_sources="1",
@@ -216,10 +189,10 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
         # Format: NO frameDuration (timeless)
         format_obj = Format(
             id=format_id,
-            name="FFVideoFormatRateUndefined",
-            width="1280",  # Default image dimensions
-            height="720",
-            color_space="1-13-1"
+            name=IMAGE_FORMAT_NAME,
+            width=DEFAULT_IMAGE_WIDTH,
+            height=DEFAULT_IMAGE_HEIGHT,
+            color_space=IMAGE_COLOR_SPACE
         )
         
     else:  # is_video
@@ -243,15 +216,13 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
         
         # Format: Use ACTUAL properties but NO name attribute (per Go patterns)
         # 🚨 CRITICAL: Video formats in Go have NO name attribute
-        frame_duration = "1001/24000s"  # Standard FCP timebase (~23.98 fps)
-            
         format_obj = Format(
             id=format_id,
             # 🚨 REMOVED: NO name attribute for video formats (per Go patterns)
-            frame_duration=frame_duration,
+            frame_duration=STANDARD_FRAME_DURATION,
             width=str(props["width"]),
             height=str(props["height"]),
-            color_space="1-1-1 (Rec. 709)"
+            color_space=VIDEO_COLOR_SPACE
         )
     
     return asset, format_obj
@@ -310,7 +281,7 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                 clip_duration = convert_seconds_to_fcp_duration(clip_duration_seconds)
                 # 🚨 CRITICAL: Use frame boundary value from working samples
                 # All working samples use "3600s" for Video elements
-                start_time = "3600s"  # Standard frame boundary used by FCP
+                start_time = IMAGE_START_TIME  # Standard frame boundary used by FCP
                 
                 element = {
                     "type": "video",

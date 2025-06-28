@@ -108,10 +108,8 @@ class Sequence:
         if not validate_frame_alignment(self.tc_start):
             raise ValidationError(f"Sequence tc_start not frame-aligned: {self.tc_start}")
         if not validate_audio_rate(self.audio_rate):
-            from ..utils.schema_loader import get_schema
-            schema = get_schema()
-            valid_rates = schema['fcpxml_rules']['audio_rates']['valid_values']
-            raise ValidationError(f"Invalid audio rate: {self.audio_rate}. Must be one of {valid_rates}")
+            from ..constants import VALID_AUDIO_RATES
+            raise ValidationError(f"Invalid audio rate: {self.audio_rate}. Must be one of {VALID_AUDIO_RATES}")
 
 
 @dataclass
@@ -172,10 +170,8 @@ class FCPXML:
     library: Optional[Library] = None
     
     def __post_init__(self):
-        # Validate version follows schema pattern
-        from ..utils.schema_loader import get_schema
+        # Validate version follows FCP pattern (major.minor format)
         import re
-        schema = get_schema()
-        version_pattern = schema['fcpxml_rules']['elements']['fcpxml']['version_pattern']
+        version_pattern = r"^\d+\.\d+$"  # e.g., "1.13", "1.11", etc.
         if not re.match(version_pattern, self.version):
-            raise ValidationError(f"Invalid FCPXML version: {self.version}")
+            raise ValidationError(f"Invalid FCPXML version: {self.version}. Must be in format 'major.minor'")
