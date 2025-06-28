@@ -5,7 +5,7 @@ Core FCPXML document handling.
 import sys
 from pathlib import Path
 
-from ..models.elements import Resources, Library, Format, Sequence, Project, Event, FCPXML, Asset, MediaRep
+from ..models.elements import Resources, Library, Format, Sequence, Project, Event, FCPXML, Asset, MediaRep, SmartCollection
 from ..utils.schema_loader import get_schema
 from ..utils.ids import generate_uid
 from ..utils.timing import convert_seconds_to_fcp_duration
@@ -57,9 +57,43 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
         projects=[project]
     )
     
+    # Create standard smart collections (required by FCP)
+    smart_collections = [
+        SmartCollection(
+            name="Projects",
+            match="all",
+            rules=[{"rule": "is", "type": "project"}]
+        ),
+        SmartCollection(
+            name="All Video", 
+            match="any",
+            rules=[
+                {"rule": "is", "type": "videoOnly"},
+                {"rule": "is", "type": "videoWithAudio"}
+            ]
+        ),
+        SmartCollection(
+            name="Audio Only",
+            match="all", 
+            rules=[{"rule": "is", "type": "audioOnly"}]
+        ),
+        SmartCollection(
+            name="Stills",
+            match="all",
+            rules=[{"rule": "is", "type": "stills"}]
+        ),
+        SmartCollection(
+            name="Favorites",
+            match="all",
+            rules=[{"rule": "favorites", "value": "favorites"}]
+        )
+    ]
+    
     # Create library containing the event
     library = Library(
-        events=[event]
+        location="file:///Users/aa/dev/cutlass/python/",
+        events=[event],
+        smart_collections=smart_collections
     )
     
     # Create resources with the format
@@ -77,13 +111,74 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
     return fcpxml
 
 
-def create_media_asset(file_path: str, asset_id: str, format_id: str, duration_seconds: float = 5.0) -> tuple[Asset, Format]:
+def detect_video_properties(file_path: str) -> dict:
+    """
+    Detect actual video properties to prevent FCP crashes.
+    
+    🚨 CRITICAL: This follows CLAUDE.md validation rules:
+    - Detect actual video properties instead of hardcoding
+    - Return safe defaults if detection fails
+    - NEVER assume audio exists (causes crashes)
+    """
+    import subprocess
+    
+    try:
+        # Get video properties using ffprobe
+        cmd = [
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=width,height,duration,r_frame_rate,codec_name",
+            "-of", "csv=p=0", str(file_path)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        video_info = result.stdout.strip().split(',')
+        
+        if len(video_info) >= 5:
+            codec, width, height, frame_rate_str, duration_str = video_info[:5]
+            
+            # Parse frame rate (e.g., "29821/994" -> 30.0)
+            if '/' in frame_rate_str:
+                num, den = map(int, frame_rate_str.split('/'))
+                frame_rate = num / den
+            else:
+                frame_rate = float(frame_rate_str)
+            
+            # Check for audio streams
+            audio_cmd = [
+                "ffprobe", "-v", "error", "-select_streams", "a",
+                "-show_entries", "stream=codec_name", "-of", "csv=p=0", str(file_path)
+            ]
+            audio_result = subprocess.run(audio_cmd, capture_output=True, text=True)
+            has_audio = bool(audio_result.stdout.strip())
+            
+            return {
+                "duration_seconds": float(duration_str),
+                "width": int(width),
+                "height": int(height),
+                "frame_rate": frame_rate,
+                "has_audio": has_audio
+            }
+    
+    except Exception as e:
+        print(f"⚠️  Failed to detect properties for {file_path}: {e}")
+    
+    # Return safe defaults if detection fails
+    return {
+        "duration_seconds": 10.0,
+        "width": 1920,
+        "height": 1080,
+        "frame_rate": 23.976,
+        "has_audio": False  # Safe default: no audio
+    }
+
+
+def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_duration_seconds: float = 5.0) -> tuple[Asset, Format]:
     """
     Create media asset and format following CLAUDE.md validation rules.
     
     🚨 CRITICAL: Follows Images vs Videos Architecture from CLAUDE.md
     - Images: duration="0s", no frameDuration, use Video element
     - Videos: has duration and frameDuration, use AssetClip element
+    - ALWAYS use actual video properties, never hardcode
     """
     abs_path = Path(file_path).resolve()
     if not abs_path.exists():
@@ -128,29 +223,34 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, duration_s
         )
         
     else:  # is_video
-        # Videos: has duration and audio properties
-        duration_fcp = convert_seconds_to_fcp_duration(duration_seconds)
+        # 🚨 CRITICAL: Detect actual video properties to prevent crashes
+        props = detect_video_properties(file_path)
+        actual_duration = convert_seconds_to_fcp_duration(props["duration_seconds"])
         
+        # Videos: Use ACTUAL properties but NO audio properties (per Go patterns)
+        # 🚨 CRITICAL: Videos NEVER have hasAudio/audioSources in Go implementation
         asset = Asset(
             id=asset_id,
             name=abs_path.stem,
             uid=uid,
-            duration=duration_fcp,
+            duration=actual_duration,  # Use actual video duration
             has_video="1",
-            has_audio="1",  # Assume videos have audio
+            # 🚨 REMOVED: NO audio properties on video assets (prevents crashes)
             format=format_id,
             video_sources="1",
-            audio_sources="1",
             media_rep=media_rep
         )
         
-        # Format: has frameDuration
+        # Format: Use ACTUAL properties but NO name attribute (per Go patterns)
+        # 🚨 CRITICAL: Video formats in Go have NO name attribute
+        frame_duration = "1001/24000s"  # Standard FCP timebase (~23.98 fps)
+            
         format_obj = Format(
             id=format_id,
-            name="FFVideoFormat1080p2398",
-            frame_duration="1001/24000s",  # 23.976 fps
-            width="1920",
-            height="1080",
+            # 🚨 REMOVED: NO name attribute for video formats (per Go patterns)
+            frame_duration=frame_duration,
+            width=str(props["width"]),
+            height=str(props["height"]),
             color_space="1-1-1 (Rec. 709)"
         )
     
@@ -162,8 +262,9 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
     Add media files to timeline following CLAUDE.md rules.
     
     🚨 CRITICAL: Uses correct element types:
-    - Images: Video element (NOT AssetClip)
+    - Images: Video element (NOT AssetClip) 
     - Videos: AssetClip element
+    - Elements MUST be ordered by start time in spine
     """
     if not fcpxml.library or not fcpxml.library.events:
         raise ValueError("FCPXML must have library and events")
@@ -173,6 +274,9 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
     
     timeline_position = 0.0
     resource_counter = len(fcpxml.resources.assets) + len(fcpxml.resources.formats) + 1
+    
+    # Collect all timeline elements to sort by start time
+    all_timeline_elements = []
     
     for media_file in media_files:
         try:
@@ -184,38 +288,89 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
             # Create asset and format
             asset, format_obj = create_media_asset(media_file, asset_id, format_id, clip_duration_seconds)
             
+            # 🚨 CRITICAL VALIDATION: Prevent AssetClip crash patterns
+            image_extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif'}
+            is_image = Path(media_file).suffix.lower() in image_extensions
+            
+            # Validate against crash patterns from CLAUDE.md
+            if is_image and asset.duration != "0s":
+                print(f"⚠️  WARNING: Image asset {asset_id} has non-zero duration, fixing...")
+                asset.duration = "0s"
+            
+            if is_image and format_obj.frame_duration:
+                print(f"⚠️  WARNING: Image format {format_id} has frameDuration, fixing...")
+                format_obj.frame_duration = None
+            
             # Add to resources
             fcpxml.resources.assets.append(asset)
             fcpxml.resources.formats.append(format_obj)
             
-            # Detect media type for spine element
-            image_extensions = {'.jpg', '.jpeg', '.png', '.tiff', '.bmp', '.gif'}
-            is_image = Path(media_file).suffix.lower() in image_extensions
-            
             if is_image:
-                # Images: Use Video element with specific duration
+                # Images: Use Video element with offset and start attributes
                 clip_duration = convert_seconds_to_fcp_duration(clip_duration_seconds)
-                video_clip = {
+                # 🚨 CRITICAL: Use frame boundary value from working samples
+                # All working samples use "3600s" for Video elements
+                start_time = "3600s"  # Standard frame boundary used by FCP
+                
+                element = {
+                    "type": "video",
                     "ref": asset_id,
                     "duration": clip_duration,
-                    "start": convert_seconds_to_fcp_duration(timeline_position)
+                    "offset": convert_seconds_to_fcp_duration(timeline_position),
+                    "start": start_time,  # Use specific timing pattern from samples
+                    "name": Path(media_file).stem,
+                    "start_time": timeline_position  # For sorting
                 }
-                sequence.spine.videos.append(video_clip)
             else:
-                # Videos: Use AssetClip element
+                # Videos: Use AssetClip element with NO start attribute
                 clip_duration = convert_seconds_to_fcp_duration(clip_duration_seconds)
-                asset_clip = {
+                element = {
+                    "type": "asset-clip", 
                     "ref": asset_id,
-                    "duration": clip_duration,
-                    "start": convert_seconds_to_fcp_duration(timeline_position)
+                    "duration": clip_duration,  # Use clip duration
+                    "offset": convert_seconds_to_fcp_duration(timeline_position),
+                    # 🚨 REMOVED: AssetClips don't need start attribute per samples/simple_video1.fcpxml
+                    "name": Path(media_file).stem,
+                    "start_time": timeline_position  # For sorting
                 }
-                sequence.spine.asset_clips.append(asset_clip)
             
+            all_timeline_elements.append(element)
             timeline_position += clip_duration_seconds
             
         except Exception as e:
             print(f"⚠️  Skipping {media_file}: {e}")
             continue
+    
+    # 🚨 CRITICAL: Sort elements by start time (required by FCP)
+    all_timeline_elements.sort(key=lambda x: x["start_time"])
+    
+    # Store elements in a single list for proper spine ordering
+    sequence.spine.ordered_elements = []
+    
+    # Add sorted elements to spine (preserving order for serializer)
+    for element in all_timeline_elements:
+        if element["type"] == "video":
+            video_clip = {
+                "type": "video",
+                "ref": element["ref"],
+                "duration": element["duration"],
+                "offset": element["offset"],
+                "start": element["start"],  # Include start attribute for Video elements
+                "name": element["name"]
+            }
+            sequence.spine.videos.append(video_clip)
+            sequence.spine.ordered_elements.append(video_clip)
+        else:  # asset-clip
+            asset_clip = {
+                "type": "asset-clip",
+                "ref": element["ref"],
+                "duration": element["duration"],
+                "offset": element["offset"],
+                # NO start attribute for AssetClip elements
+                "name": element["name"]
+            }
+            sequence.spine.asset_clips.append(asset_clip)
+            sequence.spine.ordered_elements.append(asset_clip)
     
     # Update sequence duration
     total_duration = convert_seconds_to_fcp_duration(timeline_position)

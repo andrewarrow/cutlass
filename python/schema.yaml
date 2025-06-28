@@ -324,7 +324,7 @@ fcpxml_rules:
   # Template structure for empty FCPXML
   templates:
     empty_project:
-      version: "1.11"
+      version: "1.13"
       resources:
         formats:
           - id: "r1"

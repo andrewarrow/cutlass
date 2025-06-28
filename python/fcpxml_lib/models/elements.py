@@ -88,6 +88,7 @@ class Spine:
     videos: List[Dict] = field(default_factory=list) 
     titles: List[Dict] = field(default_factory=list)
     gaps: List[Dict] = field(default_factory=list)
+    ordered_elements: List[Dict] = field(default_factory=list)
 
 
 @dataclass
@@ -141,10 +142,19 @@ class Event:
 
 
 @dataclass
+class SmartCollection:
+    """FCPXML Smart Collection definition"""
+    name: str
+    match: str
+    rules: List[dict] = field(default_factory=list)
+
+
+@dataclass
 class Library:
     """FCPXML Library definition"""
     location: str = ""
     events: List[Event] = field(default_factory=list)
+    smart_collections: List[SmartCollection] = field(default_factory=list)
 
 
 @dataclass
@@ -157,7 +167,7 @@ class FCPXML:
     - Validates frame alignment
     - Ensures proper resource management
     """
-    version: str = "1.11"
+    version: str = "1.13"
     resources: Resources = field(default_factory=Resources)
     library: Optional[Library] = None
     

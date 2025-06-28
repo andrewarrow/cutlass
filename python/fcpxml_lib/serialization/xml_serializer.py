@@ -110,23 +110,57 @@ def serialize_to_xml(fcpxml) -> str:
                     # Add spine with media content
                     spine_elem = SubElement(seq_elem, "spine")
                     
-                    # Add asset-clips (for videos)
-                    for asset_clip in sequence.spine.asset_clips:
-                        clip_elem = SubElement(spine_elem, "asset-clip")
-                        clip_elem.set("ref", asset_clip["ref"])
-                        if "duration" in asset_clip:
-                            clip_elem.set("duration", asset_clip["duration"])
-                        if "start" in asset_clip:
-                            clip_elem.set("start", asset_clip["start"])
-                    
-                    # Add videos (for images)
-                    for video in sequence.spine.videos:
-                        video_elem = SubElement(spine_elem, "video")
-                        video_elem.set("ref", video["ref"])
-                        if "duration" in video:
-                            video_elem.set("duration", video["duration"])
-                        if "start" in video:
-                            video_elem.set("start", video["start"])
+                    # 🚨 CRITICAL: Use ordered_elements if available for proper FCP timeline order
+                    if hasattr(sequence.spine, 'ordered_elements') and sequence.spine.ordered_elements:
+                        # Use pre-sorted elements to maintain timeline order
+                        for element in sequence.spine.ordered_elements:
+                            if element["type"] == "asset-clip":
+                                clip_elem = SubElement(spine_elem, "asset-clip")
+                                clip_elem.set("ref", element["ref"])
+                                if "duration" in element:
+                                    clip_elem.set("duration", element["duration"])
+                                if "offset" in element:
+                                    clip_elem.set("offset", element["offset"])
+                                # NO start attribute for asset-clip elements per samples/simple_video1.fcpxml
+                                if "name" in element:
+                                    clip_elem.set("name", element["name"])
+                            elif element["type"] == "video":
+                                video_elem = SubElement(spine_elem, "video")
+                                video_elem.set("ref", element["ref"])
+                                if "duration" in element:
+                                    video_elem.set("duration", element["duration"])
+                                if "offset" in element:
+                                    video_elem.set("offset", element["offset"])
+                                if "start" in element:
+                                    video_elem.set("start", element["start"])  # Video elements need start attribute
+                                if "name" in element:
+                                    video_elem.set("name", element["name"])
+                    else:
+                        # Fallback to old method if ordered_elements not available
+                        # Add asset-clips (for videos)
+                        for asset_clip in sequence.spine.asset_clips:
+                            clip_elem = SubElement(spine_elem, "asset-clip")
+                            clip_elem.set("ref", asset_clip["ref"])
+                            if "duration" in asset_clip:
+                                clip_elem.set("duration", asset_clip["duration"])
+                            if "offset" in asset_clip:
+                                clip_elem.set("offset", asset_clip["offset"])
+                            # NO start attribute for asset-clip elements per samples/simple_video1.fcpxml
+                            if "name" in asset_clip:
+                                clip_elem.set("name", asset_clip["name"])
+                        
+                        # Add videos (for images)
+                        for video in sequence.spine.videos:
+                            video_elem = SubElement(spine_elem, "video")
+                            video_elem.set("ref", video["ref"])
+                            if "duration" in video:
+                                video_elem.set("duration", video["duration"])
+                            if "offset" in video:
+                                video_elem.set("offset", video["offset"])
+                            if "start" in video:
+                                video_elem.set("start", video["start"])  # Video elements need start attribute
+                            if "name" in video:
+                                video_elem.set("name", video["name"])
                     
                     # Add gaps (if any)
                     for gap in sequence.spine.gaps:
@@ -145,6 +179,21 @@ def serialize_to_xml(fcpxml) -> str:
                             title_elem.set("duration", title["duration"])
                         if "start" in title:
                             title_elem.set("start", title["start"])
+        
+        # Add smart collections (required by FCP)
+        for smart_collection in fcpxml.library.smart_collections:
+            collection_elem = SubElement(library_elem, "smart-collection")
+            collection_elem.set("name", smart_collection.name)
+            collection_elem.set("match", smart_collection.match)
+            
+            for rule in smart_collection.rules:
+                if "rule" in rule and "type" in rule:
+                    match_elem = SubElement(collection_elem, "match-clip" if rule.get("type") == "project" else "match-media")
+                    match_elem.set("rule", rule["rule"])
+                    match_elem.set("type", rule["type"])
+                elif "rule" in rule and "value" in rule:
+                    match_elem = SubElement(collection_elem, "match-ratings")
+                    match_elem.set("value", rule["value"])
 
     # Convert to string without XML declaration
     rough_string = tostring(root, encoding='unicode')
