@@ -1,4 +1,7 @@
 cutlass
+pile_assets
+test_pile_assets
+png_pile_assets
 venv
 go.sum
 .DS_Store
