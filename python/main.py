@@ -347,9 +347,9 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             )
             fcpxml.resources.assets.append(asset)
             
-            # Generate random position within screen bounds
-            x_pos = random.uniform(SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT)
-            y_pos = random.uniform(SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM)
+            # Generate random position within visible screen area (much tighter bounds)
+            x_pos = random.uniform(-30.0, 30.0)  # Narrower X range for better visibility
+            y_pos = random.uniform(-50.0, 50.0)  # Narrower Y range for better visibility
             
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
@@ -357,14 +357,9 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             # Create PNG tile element as nested lane element (like safe.fcpxml)
             tile_duration = convert_seconds_to_fcp_duration(duration)
             
-            # Use timing values that match Info.fcpxml pattern
-            # Some elements use simple "3600s", others use frame-aligned versions
-            if tile_index < 2:  # First two elements use simple timing like Info.fcpxml
-                tile_offset = "0s"
-                tile_start = "3600s" if tile_index == 0 else "86399313/24000s"
-            else:  # Remaining elements use frame-aligned timing
-                tile_offset = "86400314/24000s"  # Frame-aligned version of ~3600s
-                tile_start = "86486400/24000s"   # Frame-aligned start
+            # Use consistent frame-aligned timing for all elements
+            tile_offset = "86400314/24000s"  # Frame-aligned version of ~3600s
+            tile_start = "86486400/24000s"   # Frame-aligned start
             
             tile_element = {
                 "type": "video",
@@ -419,9 +414,9 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             )
             fcpxml.resources.assets.append(asset)
             
-            # Generate random position within screen bounds
-            x_pos = random.uniform(SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT)
-            y_pos = random.uniform(SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM)
+            # Generate random position within visible screen area (much tighter bounds)
+            x_pos = random.uniform(-30.0, 30.0)  # Narrower X range for better visibility
+            y_pos = random.uniform(-50.0, 50.0)  # Narrower Y range for better visibility
             
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
