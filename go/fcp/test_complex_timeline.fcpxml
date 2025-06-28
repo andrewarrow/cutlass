@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="MainVideo" uid="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" start="0s" hasVideo="1" format="r9" videoSources="1" duration="288288/24000s">
+            <media-rep kind="original-media" sig="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" src="file:///Users/aa/cs/cutlass/assets/long.mov">
+                <bookmark>Ym9va1ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAgAAAABAQAAbG9uZy5tb3YYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAOxyMAAAAAABgAAAABBgAAiAAAAJgAAACoAAAAuAAAAMgAAADYAAAACAAAAAAEAABBxwfF25ExuBgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABtb3Y/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAaAAAAAAAAAAFEAAA6AAAAAAAAAAQEAAAGAEAAAAAAABAEAAACAEAAAAAAAACIAAA5AEAAAAAAAAFIAAAVAEAAAAAAAAQIAAAZAEAAAAAAAARIAAAmAEAAAAAAAASIAAAeAEAAAAAAAATIAAAiAEAAAAAAAAgIAAAxAEAAAAAAAAwIAAA8AEAAAAAAAABwAAAOAEAAAAAAAARwAAAIAAAAAAAAAASwAAASAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAA+AEAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r3" name="CutawayVideo" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r10" videoSources="1" duration="192192/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r4" name="BRollVideo" uid="45EA1ADB-0203-0FCA-9673-CF32933B731C" start="0s" hasVideo="1" format="r11" videoSources="1" duration="360360/24000s">
+            <media-rep kind="original-media" sig="45EA1ADB-0203-0FCA-9673-CF32933B731C" src="file:///Users/aa/cs/cutlass/assets/speech2.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMi5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAEMcjAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccHxdwMTOsYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r5" name="Music" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="480480/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r6" name="SoundFX" uid="78B91D1C-9E56-5F07-7702-2A383A9F198F" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="240240/24000s">
+            <media-rep kind="original-media" sig="78B91D1C-9E56-5F07-7702-2A383A9F198F" src="file:///Users/aa/cs/cutlass/assets/Synth Zap Accent 06.caf">
+                <bookmark>Ym9va2ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABcAAAABAQAAU3ludGggWmFwIEFjY2VudCAwNi5jYWYAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAGccjAAAAAAAYAAAAAQYAAJgAAACoAAAAuAAAAMgAAADYAAAA6AAAAAgAAAAABAAAQccHxeLaQXoYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAY2FmPz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAHgAAAAAAAAABRAAAPgAAAAAAAAAEBAAACgBAAAAAAAAQBAAABgBAAAAAAAAAiAAAPQBAAAAAAAABSAAAGQBAAAAAAAAECAAAHQBAAAAAAAAESAAAKgBAAAAAAAAEiAAAIgBAAAAAAAAEyAAAJgBAAAAAAAAICAAANQBAAAAAAAAMCAAAAACAAAAAAAAAcAAAEgBAAAAAAAAEcAAACAAAAAAAAAAEsAAAFgBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAAgCAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r7" name="Logo" uid="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" start="0s" hasVideo="1" format="r13" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" src="file:///Users/aa/cs/cutlass/assets/cutlass_logo_t.png">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABIAAAABAQAAY3V0bGFzc19sb2dvX3QucG5nAAAYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAjxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF6V39RxgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABwbmc/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"></md>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"></md>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"></md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-25 11:46:22 -0700"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"></md>
+            </metadata>
+        </asset>
+        <asset id="r8" name="Overlay" uid="9FA787AE-0C69-5A27-978A-DAAA6F937F11" start="0s" hasVideo="1" format="r13" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="9FA787AE-0C69-5A27-978A-DAAA6F937F11" src="file:///Users/aa/cs/cutlass/assets/waymo.png">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAkAAAABAQAAd2F5bW8ucG5nAAAAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAJccjAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccHxen0YtoYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAcG5nPz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"></md>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"></md>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"></md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-25 11:46:22 -0700"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"></md>
+            </metadata>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r9" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r10" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r11" frameDuration="1001/24000s" width="3840" height="2160" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r12" name="FFAudioFormat48k"></format>
+        <format id="r13" name="FFVideoFormatRateUndefined" width="1920" height="1080" colorSpace="1-13-1"></format>
+        <effect id="r14" name="Cross Dissolve" uid="FFCrossDissolve"></effect>
+        <effect id="r15" name="Title" uid=".../Titles.localized/Basic Text.localized/Title.localized/Title.moti"></effect>
+        <effect id="r16" name="DeEsser" uid="FFDeEsser"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="840840/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <gap name="Gap" offset="0s" duration="48048/24000s"></gap>
+                        <asset-clip ref="r2" offset="48048/24000s" name="MainVideo" duration="288288/24000s" format="r9" tcFormat="NDF" audioRole="dialogue">
+                            <conform-rate scaleEnabled="0"></conform-rate>
+                            <asset-clip ref="r5" offset="0s" name="Music" duration="480480/24000s" audioRole="music">
+                                <filter-video ref="r16" name="DeEsser">
+                                    <param name="Threshold" key="1" value="-20"></param>
+                                    <param name="Frequency" key="2" value="6000"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r6" offset="120120/24000s" name="SoundFX" duration="240240/24000s" audioRole="effects"></asset-clip>
+                            <title ref="r15" offset="96096/24000s" name="Main Title" duration="72072/24000s" start="86486400/24000s">
+                                <param name="Text" key="9999/10003/13260/3296672360/2/354" value="Professional Timeline Test"></param>
+                                <param name="Font Size" key="9999/10003/13260/3296672360/2/354/3296667315/402" value="72"></param>
+                                <text>
+                                    <text-style ref="ts2C72575C">Professional Timeline Test</text-style>
+                                </text>
+                                <text-style-def id="ts2C72575C">
+                                    <text-style font="Helvetica Neue" fontSize="72" fontColor="1 1 1 1" bold="1" alignment="center"></text-style>
+                                </text-style-def>
+                            </title>
+                        </asset-clip>
+                        <video ref="r7" offset="72072/24000s" name="Logo" duration="96096/24000s" start="86399313/24000s">
+                            <adjust-transform position="-600 -400" scale="0.2 0.2"></adjust-transform>
+                        </video>
+                        <gap name="Transition Gap" offset="336336/24000s" duration="24024/24000s"></gap>
+                        <asset-clip ref="r3" offset="360360/24000s" name="CutawayVideo" duration="192192/24000s" format="r10" tcFormat="NDF">
+                            <conform-rate scaleEnabled="0"></conform-rate>
+                            <adjust-transform position="300 200" scale="0.4 0.4"></adjust-transform>
+                        </asset-clip>
+                        <video ref="r8" offset="432432/24000s" name="Overlay" duration="144144/24000s" start="86399313/24000s">
+                            <adjust-transform position="500 350" scale="0.15 0.15"></adjust-transform>
+                        </video>
+                        <asset-clip ref="r4" offset="480480/24000s" name="BRollVideo" duration="360360/24000s" format="r11" tcFormat="NDF">
+                            <conform-rate scaleEnabled="0"></conform-rate>
+                            <adjust-transform position="-400 -300" scale="0.3 0.3"></adjust-transform>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

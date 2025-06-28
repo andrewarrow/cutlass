@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="MainFootage" uid="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" start="0s" hasVideo="1" format="r6" videoSources="1" duration="1440439/24000s">
+            <media-rep kind="original-media" sig="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" src="file:///Users/aa/cs/cutlass/assets/long.mov">
+                <bookmark>Ym9va1ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAgAAAABAQAAbG9uZy5tb3YYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAOxyMAAAAAABgAAAABBgAAiAAAAJgAAACoAAAAuAAAAMgAAADYAAAACAAAAAAEAABBxwfF25ExuBgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABtb3Y/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAaAAAAAAAAAAFEAAA6AAAAAAAAAAQEAAAGAEAAAAAAABAEAAACAEAAAAAAAACIAAA5AEAAAAAAAAFIAAAVAEAAAAAAAAQIAAAZAEAAAAAAAARIAAAmAEAAAAAAAASIAAAeAEAAAAAAAATIAAAiAEAAAAAAAAgIAAAxAEAAAAAAAAwIAAA8AEAAAAAAAABwAAAOAEAAAAAAAARwAAAIAAAAAAAAAASwAAASAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAA+AEAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r3" name="BrollFootage" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r6" videoSources="1" duration="1080079/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r4" name="Soundtrack" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="1559558/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r5" name="ProductionLogo" uid="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" start="0s" hasVideo="1" format="r7" videoSources="1" duration="0s">
+            <media-rep kind="original-media" sig="3089EE16-61BD-C2D6-5F56-DDFBAC6DB0B1" src="file:///Users/aa/cs/cutlass/assets/cutlass_logo_t.png">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABIAAAABAQAAY3V0bGFzc19sb2dvX3QucG5nAAAYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAjxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF6V39RxgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABwbmc/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+            <metadata>
+                <md key="com.apple.proapps.studio.rawToLogConversion" value="0"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemProfileName" value="sRGB IEC61966-2.1"></md>
+                <md key="com.apple.proapps.studio.cameraISO" value="0"></md>
+                <md key="com.apple.proapps.studio.cameraColorTemperature" value="0"></md>
+                <md key="com.apple.proapps.mio.ingestDate" value="2025-06-25 11:46:22 -0700"></md>
+                <md key="com.apple.proapps.spotlight.kMDItemOrientation" value="0"></md>
+            </metadata>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r6" frameDuration="1001/24000s" width="3840" height="2160" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r7" name="FFVideoFormatRateUndefined" width="1920" height="1080" colorSpace="1-13-1"></format>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="1559558/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="Main Scene" duration="1440439/24000s" format="r6" tcFormat="NDF">
+                            <adjust-transform>
+                                <param name="position">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0 0"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="scale">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="1.05 1.05"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                        </asset-clip>
+                        <asset-clip ref="r4" offset="0s" name="Background Music" duration="1559558/24000s" tcFormat="NDF" audioRole="music"></asset-clip>
+                        <asset-clip ref="r3" offset="360360/24000s" name="B-Roll Insert" start="120120/24000s" duration="192192/24000s" format="r6" tcFormat="NDF">
+                            <adjust-crop mode="trim"></adjust-crop>
+                            <adjust-transform>
+                                <param name="position" value="320 180"></param>
+                                <param name="scale" value="0.3 0.3"></param>
+                            </adjust-transform>
+                        </asset-clip>
+                        <gap name="Timing Gap" offset="551551/24000s" duration="48048/24000s"></gap>
+                        <video ref="r5" offset="1200199/24000s" name="Production Logo" duration="240240/24000s" start="86399313/24000s">
+                            <adjust-transform>
+                                <param name="position">
+                                    <keyframeAnimation>
+                                        <keyframe time="1200199/24000s" value="-400 -300"></keyframe>
+                                        <keyframe time="1380379/24000s" value="-250 -250"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="scale">
+                                    <keyframeAnimation>
+                                        <keyframe time="1200199/24000s" value="0.1 0.1"></keyframe>
+                                        <keyframe time="1380379/24000s" value="0.3 0.3"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="rotation">
+                                    <keyframeAnimation>
+                                        <keyframe time="1200199/24000s" value="-15"></keyframe>
+                                        <keyframe time="1380379/24000s" value="0"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                            </adjust-transform>
+                        </video>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

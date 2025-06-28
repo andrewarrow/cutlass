@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="MainVideo" uid="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" start="0s" hasVideo="1" format="r8" videoSources="1" duration="1440439/24000s">
+            <media-rep kind="original-media" sig="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" src="file:///Users/aa/cs/cutlass/assets/long.mov">
+                <bookmark>Ym9va1ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAgAAAABAQAAbG9uZy5tb3YYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAOxyMAAAAAABgAAAABBgAAiAAAAJgAAACoAAAAuAAAAMgAAADYAAAACAAAAAAEAABBxwfF25ExuBgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABtb3Y/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAaAAAAAAAAAAFEAAA6AAAAAAAAAAQEAAAGAEAAAAAAABAEAAACAEAAAAAAAACIAAA5AEAAAAAAAAFIAAAVAEAAAAAAAAQIAAAZAEAAAAAAAARIAAAmAEAAAAAAAASIAAAeAEAAAAAAAATIAAAiAEAAAAAAAAgIAAAxAEAAAAAAAAwIAAA8AEAAAAAAAABwAAAOAEAAAAAAAARwAAAIAAAAAAAAAASwAAASAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAA+AEAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r3" name="Dialogue" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r9" videoSources="1" duration="1080079/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r4" name="BackgroundMusic" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="1440439/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r5" name="SoundEffects" uid="78B91D1C-9E56-5F07-7702-2A383A9F198F" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="78B91D1C-9E56-5F07-7702-2A383A9F198F" src="file:///Users/aa/cs/cutlass/assets/Synth Zap Accent 06.caf">
+                <bookmark>Ym9va2ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABcAAAABAQAAU3ludGggWmFwIEFjY2VudCAwNi5jYWYAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAGccjAAAAAAAYAAAAAQYAAJgAAACoAAAAuAAAAMgAAADYAAAA6AAAAAgAAAAABAAAQccHxeLaQXoYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAY2FmPz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAHgAAAAAAAAABRAAAPgAAAAAAAAAEBAAACgBAAAAAAAAQBAAABgBAAAAAAAAAiAAAPQBAAAAAAAABSAAAGQBAAAAAAAAECAAAHQBAAAAAAAAESAAAKgBAAAAAAAAEiAAAIgBAAAAAAAAEyAAAJgBAAAAAAAAICAAANQBAAAAAAAAMCAAAAACAAAAAAAAAcAAAEgBAAAAAAAAEcAAACAAAAAAAAAAEsAAAFgBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAAgCAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r6" name="Ambience" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="1440439/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r7" name="Voiceover" uid="45EA1ADB-0203-0FCA-9673-CF32933B731C" start="0s" hasVideo="1" format="r9" videoSources="1" duration="480480/24000s">
+            <media-rep kind="original-media" sig="45EA1ADB-0203-0FCA-9673-CF32933B731C" src="file:///Users/aa/cs/cutlass/assets/speech2.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMi5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAEMcjAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccHxdwMTOsYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r8" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r9" name="FFAudioFormat48k"></format>
+        <effect id="r10" name="Channel EQ" uid="FFChannelEQ"></effect>
+        <effect id="r11" name="Compressor" uid="FFCompressor"></effect>
+        <effect id="r12" name="DeEsser" uid="FFDeEsser"></effect>
+        <effect id="r13" name="Noise Gate" uid="FFNoiseGate"></effect>
+        <effect id="r14" name="ChromaVerb" uid="FFChromaVerb"></effect>
+        <effect id="r15" name="Echo" uid="FFEcho"></effect>
+        <effect id="r16" name="Adaptive Limiter" uid="FFAdaptiveLimiter"></effect>
+        <effect id="r17" name="Chorus" uid="FFChorus"></effect>
+        <effect id="r18" name="Pitch" uid="FFPitch"></effect>
+        <effect id="r19" name="AutoPan" uid="FFAutoPan"></effect>
+        <effect id="r20" name="AutoDucker" uid="FFAutoDucker"></effect>
+        <effect id="r21" name="Match EQ" uid="FFMatchEQ"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="1440439/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="MainVideo" duration="1440439/24000s" format="r8" tcFormat="NDF" audioRole="dialogue">
+                            <asset-clip ref="r3" lane="-1" offset="0s" name="Dialogue" duration="1080079/24000s" format="r9" audioRole="dialogue">
+                                <filter-video ref="r10" name="Channel EQ">
+                                    <param name="High Pass" key="9999/999166631/999166650/1" value="80"></param>
+                                    <param name="Mid Frequency" key="9999/999166631/999166650/2">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="2000"></keyframe>
+                                            <keyframe time="480480/24000s" value="3000"></keyframe>
+                                            <keyframe time="1080079/24000s" value="1500"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="Mid Gain" key="9999/999166631/999166650/3" value="3"></param>
+                                    <param name="Mid Q" key="9999/999166631/999166650/4" value="2.5"></param>
+                                    <param name="High Shelf" key="9999/999166631/999166650/5" value="8000"></param>
+                                    <param name="High Gain" key="9999/999166631/999166650/6" value="2"></param>
+                                </filter-video>
+                                <filter-video ref="r12" name="DeEsser">
+                                    <param name="Threshold" key="9999/999166631/999166651/1" value="-15"></param>
+                                    <param name="Frequency" key="9999/999166631/999166651/2" value="7000"></param>
+                                    <param name="Ratio" key="9999/999166631/999166651/3" value="4:1"></param>
+                                </filter-video>
+                                <filter-video ref="r11" name="Compressor">
+                                    <param name="Threshold" key="9999/999166631/999166652/1" value="-12"></param>
+                                    <param name="Ratio" key="9999/999166631/999166652/2" value="3:1"></param>
+                                    <param name="Attack" key="9999/999166631/999166652/3" value="5"></param>
+                                    <param name="Release" key="9999/999166631/999166652/4" value="100"></param>
+                                    <param name="Knee" key="9999/999166631/999166652/5" value="2"></param>
+                                    <param name="Makeup Gain" key="9999/999166631/999166652/6">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="-12"></keyframe>
+                                            <keyframe time="120120/24000s" value="-6"></keyframe>
+                                            <keyframe time="959959/24000s" value="-6"></keyframe>
+                                            <keyframe time="1080079/24000s" value="-20"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                </filter-video>
+                                <filter-video ref="r13" name="Noise Gate">
+                                    <param name="Threshold" key="9999/999166631/999166653/1" value="-45"></param>
+                                    <param name="Attack" key="9999/999166631/999166653/2" value="2"></param>
+                                    <param name="Hold" key="9999/999166631/999166653/3" value="50"></param>
+                                    <param name="Release" key="9999/999166631/999166653/4" value="200"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r4" lane="-2" offset="0s" name="BackgroundMusic" duration="1440439/24000s" audioRole="music">
+                                <filter-video ref="r10" name="Channel EQ">
+                                    <param name="Low Shelf" key="9999/999166631/999166654/1" value="100"></param>
+                                    <param name="Low Gain" key="9999/999166631/999166654/2" value="-2"></param>
+                                    <param name="High Pass" key="9999/999166631/999166654/3" value="40"></param>
+                                    <param name="Presence Cut" key="9999/999166631/999166654/4" value="2500"></param>
+                                    <param name="Presence Gain" key="9999/999166631/999166654/5" value="-3"></param>
+                                </filter-video>
+                                <filter-video ref="r20" name="AutoDucker">
+                                    <param name="Source" key="9999/999166631/999166655/1" value="dialogue"></param>
+                                    <param name="Threshold" key="9999/999166631/999166655/2" value="-25"></param>
+                                    <param name="Ratio" key="9999/999166631/999166655/3" value="6:1"></param>
+                                    <param name="Attack" key="9999/999166631/999166655/4" value="10"></param>
+                                    <param name="Release" key="9999/999166631/999166655/5" value="500"></param>
+                                </filter-video>
+                                <filter-video ref="r17" name="Chorus">
+                                    <param name="Rate" key="9999/999166631/999166656/1" value="0.5"></param>
+                                    <param name="Depth" key="9999/999166631/999166656/2" value="15"></param>
+                                    <param name="Mix" key="9999/999166631/999166656/3" value="25"></param>
+                                </filter-video>
+                                <filter-video ref="r11" name="Compressor">
+                                    <param name="Threshold" key="9999/999166631/999166657/1" value="-8"></param>
+                                    <param name="Ratio" key="9999/999166631/999166657/2" value="2.5:1"></param>
+                                    <param name="Attack" key="9999/999166631/999166657/3" value="20"></param>
+                                    <param name="Release" key="9999/999166631/999166657/4" value="300"></param>
+                                    <param name="Output Level" key="9999/999166631/999166657/5">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="-18"></keyframe>
+                                            <keyframe time="240240/24000s" value="-12"></keyframe>
+                                            <keyframe time="360360/24000s" value="-18"></keyframe>
+                                            <keyframe time="1200199/24000s" value="-18"></keyframe>
+                                            <keyframe time="1440439/24000s" value="-6"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r5" lane="-3" offset="240240/24000s" name="SoundEffects" duration="719719/24000s" audioRole="effects">
+                                <filter-video ref="r18" name="Pitch">
+                                    <param name="Pitch Shift" key="9999/999166631/999166658/1">
+                                        <keyframeAnimation>
+                                            <keyframe time="240240/24000s" value="0"></keyframe>
+                                            <keyframe time="599599/24000s" value="500"></keyframe>
+                                            <keyframe time="959959/24000s" value="-300"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="Formant Correction" key="9999/999166631/999166658/2" value="1"></param>
+                                </filter-video>
+                                <filter-video ref="r19" name="AutoPan">
+                                    <param name="Rate" key="9999/999166631/999166659/1" value="0.2"></param>
+                                    <param name="Depth" key="9999/999166631/999166659/2" value="50"></param>
+                                    <param name="Waveform" key="9999/999166631/999166659/3" value="sine"></param>
+                                </filter-video>
+                                <filter-video ref="r15" name="Echo">
+                                    <param name="Delay Time" key="9999/999166631/999166660/1" value="250"></param>
+                                    <param name="Feedback" key="9999/999166631/999166660/2" value="35"></param>
+                                    <param name="Mix" key="9999/999166631/999166660/3" value="20"></param>
+                                    <param name="High Cut" key="9999/999166631/999166660/4" value="8000"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r6" lane="-4" offset="0s" name="Ambience" duration="1440439/24000s" audioRole="effects.ambience">
+                                <filter-video ref="r14" name="ChromaVerb">
+                                    <param name="Room Type" key="9999/999166631/999166661/1" value="Hall"></param>
+                                    <param name="Size" key="9999/999166631/999166661/2" value="85"></param>
+                                    <param name="Decay" key="9999/999166631/999166661/3" value="3.5"></param>
+                                    <param name="Pre-delay" key="9999/999166631/999166661/4" value="50"></param>
+                                    <param name="Mix" key="9999/999166631/999166661/5" value="40"></param>
+                                    <param name="High Cut" key="9999/999166631/999166661/6" value="6000"></param>
+                                </filter-video>
+                                <filter-video ref="r10" name="Channel EQ">
+                                    <param name="High Pass" key="9999/999166631/999166662/1" value="60"></param>
+                                    <param name="Low Mid Cut" key="9999/999166631/999166662/2" value="200"></param>
+                                    <param name="Low Mid Gain" key="9999/999166631/999166662/3" value="-4"></param>
+                                    <param name="High Shelf" key="9999/999166631/999166662/4" value="10000"></param>
+                                    <param name="High Gain" key="9999/999166631/999166662/5" value="-6"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r7" lane="-5" offset="719719/24000s" name="Voiceover" duration="480480/24000s" format="r9" audioRole="dialogue.voiceover">
+                                <filter-video ref="r21" name="Match EQ">
+                                    <param name="Reference Track" key="9999/999166631/999166663/1" value="dialogue"></param>
+                                    <param name="Learn Mode" key="9999/999166631/999166663/2" value="1"></param>
+                                    <param name="Match Amount" key="9999/999166631/999166663/3" value="75"></param>
+                                    <param name="Frequency Range" key="9999/999166631/999166663/4" value="200-8000"></param>
+                                </filter-video>
+                                <filter-video ref="r16" name="Adaptive Limiter">
+                                    <param name="Gain" key="9999/999166631/999166664/1" value="6"></param>
+                                    <param name="Output Ceiling" key="9999/999166631/999166664/2" value="-1"></param>
+                                    <param name="Release" key="9999/999166631/999166664/3" value="50"></param>
+                                    <param name="Lookahead" key="9999/999166631/999166664/4" value="5"></param>
+                                </filter-video>
+                            </asset-clip>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

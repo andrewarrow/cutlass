@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="Center_Channel" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r8" videoSources="1" duration="719719/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r3" name="Left_Channel" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r4" name="Right_Channel" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r5" name="Left_Surround" uid="78B91D1C-9E56-5F07-7702-2A383A9F198F" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="78B91D1C-9E56-5F07-7702-2A383A9F198F" src="file:///Users/aa/cs/cutlass/assets/Synth Zap Accent 06.caf">
+                <bookmark>Ym9va2ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABcAAAABAQAAU3ludGggWmFwIEFjY2VudCAwNi5jYWYAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAGccjAAAAAAAYAAAAAQYAAJgAAACoAAAAuAAAAMgAAADYAAAA6AAAAAgAAAAABAAAQccHxeLaQXoYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAY2FmPz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAHgAAAAAAAAABRAAAPgAAAAAAAAAEBAAACgBAAAAAAAAQBAAABgBAAAAAAAAAiAAAPQBAAAAAAAABSAAAGQBAAAAAAAAECAAAHQBAAAAAAAAESAAAKgBAAAAAAAAEiAAAIgBAAAAAAAAEyAAAJgBAAAAAAAAICAAANQBAAAAAAAAMCAAAAACAAAAAAAAAcAAAEgBAAAAAAAAEcAAACAAAAAAAAAAEsAAAFgBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAAgCAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r6" name="Right_Surround" uid="78B91D1C-9E56-5F07-7702-2A383A9F198F" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="78B91D1C-9E56-5F07-7702-2A383A9F198F" src="file:///Users/aa/cs/cutlass/assets/Synth Zap Accent 06.caf">
+                <bookmark>Ym9va2ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABcAAAABAQAAU3ludGggWmFwIEFjY2VudCAwNi5jYWYAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAGccjAAAAAAAYAAAAAQYAAJgAAACoAAAAuAAAAMgAAADYAAAA6AAAAAgAAAAABAAAQccHxeLaQXoYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAY2FmPz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAHgAAAAAAAAABRAAAPgAAAAAAAAAEBAAACgBAAAAAAAAQBAAABgBAAAAAAAAAiAAAPQBAAAAAAAABSAAAGQBAAAAAAAAECAAAHQBAAAAAAAAESAAAKgBAAAAAAAAEiAAAIgBAAAAAAAAEyAAAJgBAAAAAAAAICAAANQBAAAAAAAAMCAAAAACAAAAAAAAAcAAAEgBAAAAAAAAEcAAACAAAAAAAAAAEsAAAFgBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAAgCAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r7" name="LFE_Channel" uid="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" start="0s" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000" duration="719719/24000s">
+            <media-rep kind="original-media" sig="217FBCA8-27F9-D528-2EA9-A0DAF7267CE9" src="file:///Users/aa/cs/cutlass/assets/Ethereal Accents.caf">
+                <bookmark>Ym9va1wDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAABQAAAABAQAARXRoZXJlYWwgQWNjZW50cy5jYWYYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAXxyMAAAAAABgAAAABBgAAlAAAAKQAAAC0AAAAxAAAANQAAADkAAAACAAAAAAEAABBxwfF4j7S2xgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABjYWY/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAdAAAAAAAAAAFEAAA9AAAAAAAAAAQEAAAJAEAAAAAAABAEAAAFAEAAAAAAAACIAAA8AEAAAAAAAAFIAAAYAEAAAAAAAAQIAAAcAEAAAAAAAARIAAApAEAAAAAAAASIAAAhAEAAAAAAAATIAAAlAEAAAAAAAAgIAAA0AEAAAAAAAAwIAAA/AEAAAAAAAABwAAARAEAAAAAAAARwAAAIAAAAAAAAAASwAAAVAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAABAIAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r8" name="FFAudioFormat48k"></format>
+        <effect id="r9" name="Surround Spatializer" uid="FFSpatializer"></effect>
+        <effect id="r10" name="Surround Compressor" uid="FFSurroundCompressor"></effect>
+        <effect id="r11" name="Surround Reverb" uid="FFSurroundReverb"></effect>
+        <effect id="r12" name="Bass Management" uid="FFBassManagement"></effect>
+        <effect id="r13" name="Surround EQ" uid="FFSurroundEQ"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="719719/24000s" tcStart="0s" tcFormat="NDF" audioLayout="5.1 Surround" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="5.1 Surround Mix" duration="719719/24000s" format="r8" audioRole="dialogue">
+                            <asset-clip ref="r3" lane="-1" offset="0s" name="Left_Channel" duration="719719/24000s" audioRole="music.left">
+                                <filter-video ref="r9" name="Surround Spatializer">
+                                    <param name="Channel Assignment" key="1" value="Left"></param>
+                                    <param name="Azimuth" key="2" value="-30"></param>
+                                    <param name="Distance" key="3" value="1.0"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r4" lane="-2" offset="0s" name="Right_Channel" duration="719719/24000s" audioRole="music.right">
+                                <filter-video ref="r9" name="Surround Spatializer">
+                                    <param name="Channel Assignment" key="1" value="Right"></param>
+                                    <param name="Azimuth" key="2" value="30"></param>
+                                    <param name="Distance" key="3" value="1.0"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r5" lane="-3" offset="0s" name="Left_Surround" duration="719719/24000s" audioRole="effects.surround.left">
+                                <filter-video ref="r9" name="Surround Spatializer">
+                                    <param name="Channel Assignment" key="1" value="Left Surround"></param>
+                                    <param name="Azimuth" key="2" value="-110"></param>
+                                    <param name="Distance" key="3" value="1.2"></param>
+                                </filter-video>
+                                <filter-video ref="r11" name="Surround Reverb">
+                                    <param name="Room Size" key="1" value="large"></param>
+                                    <param name="Rear Mix" key="2" value="60"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r6" lane="-4" offset="0s" name="Right_Surround" duration="719719/24000s" audioRole="effects.surround.right">
+                                <filter-video ref="r9" name="Surround Spatializer">
+                                    <param name="Channel Assignment" key="1" value="Right Surround"></param>
+                                    <param name="Azimuth" key="2" value="110"></param>
+                                    <param name="Distance" key="3" value="1.2"></param>
+                                </filter-video>
+                                <filter-video ref="r11" name="Surround Reverb">
+                                    <param name="Room Size" key="1" value="large"></param>
+                                    <param name="Rear Mix" key="2" value="60"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <asset-clip ref="r7" lane="-5" offset="0s" name="LFE_Channel" duration="719719/24000s" audioRole="effects.lfe">
+                                <filter-video ref="r12" name="Bass Management">
+                                    <param name="Crossover Frequency" key="1" value="80"></param>
+                                    <param name="LFE Level" key="2" value="+10"></param>
+                                    <param name="Phase" key="3" value="0"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <filter-video ref="r13" name="Surround EQ">
+                                <param name="Center EQ" key="1" value="flat"></param>
+                                <param name="LR EQ" key="2" value="slight_boost"></param>
+                                <param name="Surround EQ" key="3" value="warm"></param>
+                                <param name="LFE EQ" key="4" value="sub_optimized"></param>
+                            </filter-video>
+                            <filter-video ref="r10" name="Surround Compressor">
+                                <param name="Link Channels" key="1" value="1"></param>
+                                <param name="Threshold" key="2" value="-6"></param>
+                                <param name="Ratio" key="3" value="2:1"></param>
+                            </filter-video>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

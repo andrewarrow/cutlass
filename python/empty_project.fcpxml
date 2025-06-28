@@ -4,8 +4,8 @@
     <format id="r1" name="FFVideoFormat1080p2398" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
   </resources>
   <library>
-    <event name="My First Event" uid="752DC24D4F5E00206043757592FECDA4">
-      <project name="My First Project" uid="EA02825B151DB1D8DB29667C6CCF5CF5" modDate="2025-06-28 06:26:47 -0700">
+    <event name="My First Event" uid="C1C0F8C9551026070A35CB893262B413">
+      <project name="My First Project" uid="04628EFF487D556884B5274B0C2F1829" modDate="2025-06-28 06:27:33 -0700">
         <sequence format="r1" duration="0s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
           <spine/>
         </sequence>

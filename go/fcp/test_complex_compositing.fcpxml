@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="Background" uid="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" start="0s" hasVideo="1" format="r4" videoSources="1" duration="599599/24000s">
+            <media-rep kind="original-media" sig="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" src="file:///Users/aa/cs/cutlass/assets/long.mov">
+                <bookmark>Ym9va1ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAgAAAABAQAAbG9uZy5tb3YYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAOxyMAAAAAABgAAAABBgAAiAAAAJgAAACoAAAAuAAAAMgAAADYAAAACAAAAAAEAABBxwfF25ExuBgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABtb3Y/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAaAAAAAAAAAAFEAAA6AAAAAAAAAAQEAAAGAEAAAAAAABAEAAACAEAAAAAAAACIAAA5AEAAAAAAAAFIAAAVAEAAAAAAAAQIAAAZAEAAAAAAAARIAAAmAEAAAAAAAASIAAAeAEAAAAAAAATIAAAiAEAAAAAAAAgIAAAxAEAAAAAAAAwIAAA8AEAAAAAAAABwAAAOAEAAAAAAAARwAAAIAAAAAAAAAASwAAASAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAA+AEAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <asset id="r3" name="Foreground" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r5" videoSources="1" duration="360360/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r4" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r5" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <effect id="r6" name="Blend" uid="FFMultiplyBlend"></effect>
+        <effect id="r7" name="Color Board" uid="FFColorBoard"></effect>
+        <effect id="r8" name="Shape Mask" uid="FFSuperEllipseMask"></effect>
+        <effect id="r9" name="Vignette" uid="FFVignette"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="599599/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="Background" duration="599599/24000s" format="r4" tcFormat="NDF" audioRole="dialogue">
+                            <asset-clip ref="r3" lane="1" offset="48048/24000s" name="Foreground" duration="360360/24000s" format="r5" tcFormat="NDF">
+                                <conform-rate scaleEnabled="0"></conform-rate>
+                                <adjust-transform>
+                                    <param name="position">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="-500 0"></keyframe>
+                                            <keyframe time="120120/24000s" value="0 0"></keyframe>
+                                            <keyframe time="240240/24000s" value="500 -200"></keyframe>
+                                            <keyframe time="360360/24000s" value="0 400"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="scale">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="0.1 0.1"></keyframe>
+                                            <keyframe time="72072/24000s" value="1.2 1.2"></keyframe>
+                                            <keyframe time="288288/24000s" value="0.8 0.8"></keyframe>
+                                            <keyframe time="360360/24000s" value="1.5 1.5"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="rotation">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="0"></keyframe>
+                                            <keyframe time="360360/24000s" value="360"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                </adjust-transform>
+                                <filter-video ref="r6" name="Blend">
+                                    <param name="Blend Mode" key="1" value="17 (Multiply)"></param>
+                                    <param name="Opacity" key="2">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="0"></keyframe>
+                                            <keyframe time="48048/24000s" value="100"></keyframe>
+                                            <keyframe time="312312/24000s" value="100"></keyframe>
+                                            <keyframe time="360360/24000s" value="0"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                </filter-video>
+                                <filter-video ref="r8" name="Shape Mask">
+                                    <param name="Radius" key="160">
+                                        <keyframeAnimation>
+                                            <keyframe time="0s" value="50 50"></keyframe>
+                                            <keyframe time="192192/24000s" value="300 200"></keyframe>
+                                            <keyframe time="360360/24000s" value="100 100"></keyframe>
+                                        </keyframeAnimation>
+                                    </param>
+                                    <param name="Curvature" key="159" value="0.5"></param>
+                                </filter-video>
+                            </asset-clip>
+                            <filter-video ref="r7" name="Color Board">
+                                <param name="Color" key="1" value="1 0.8 0.6 1"></param>
+                                <param name="Saturation" key="2" value="1.2"></param>
+                                <param name="Exposure" key="3" value="-0.2"></param>
+                            </filter-video>
+                            <filter-video ref="r9" name="Vignette">
+                                <param name="Amount" key="1" value="0.3"></param>
+                                <param name="Radius" key="2" value="0.8"></param>
+                            </filter-video>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

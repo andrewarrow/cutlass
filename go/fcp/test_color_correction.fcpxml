@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="ColorGradingTest" uid="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" start="0s" hasVideo="1" format="r3" videoSources="1" duration="480480/24000s">
+            <media-rep kind="original-media" sig="3D34D74B-ED87-0D36-BEAE-A3C3C69F78B4" src="file:///Users/aa/cs/cutlass/assets/long.mov">
+                <bookmark>Ym9va1ADAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAgAAAABAQAAbG9uZy5tb3YYAAAAAQYAABAAAAAgAAAALAAAADgAAABIAAAAWAAAAAgAAAAEAwAAz1AAAAAAAAAIAAAABAMAAF6EAAAAAAAACAAAAAQDAAA/dQoAAAAAAAgAAAAEAwAA3GsMAAAAAAAIAAAABAMAALq6GwAAAAAACAAAAAQDAAAOxyMAAAAAABgAAAABBgAAiAAAAJgAAACoAAAAuAAAAMgAAADYAAAACAAAAAAEAABBxwfF25ExuBgAAAABAgAAAQAAAAAAAAAfAgAAAAAAAB8CAAAAAAAACAAAAAQDAAAEAAAAAAAAAAQAAAADAwAA9QEAAAgAAAABCQAAZmlsZTovLy8MAAAAAQEAAE1hY2ludG9zaCBIRAgAAAAEAwAAAJCClucAAAAIAAAAAAQAAEHG45qFAAAAJAAAAAEBAAA5OEE4NkNDRi1GQTBFLTRBQTAtOENDRi1ERUYxNzc1QzcxODgYAAAAAQIAAIEAAAABAAAA7xMAAAEAAADvEwAAAQAAAAEAAAABAQAALwAAAAAAAAABBQAAMwAAAAECAABkbmliAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAABtb3Y/Pz8/AAAAAAAAAAAA5AAAAP7///8BAAAAAAAAABIAAAAEEAAAaAAAAAAAAAAFEAAA6AAAAAAAAAAQEAAAGAEAAAAAAABAEAAACAEAAAAAAAACIAAA5AEAAAAAAAAFIAAAVAEAAAAAAAAQIAAAZAEAAAAAAAARIAAAmAEAAAAAAAASIAAAeAEAAAAAAAATIAAAiAEAAAAAAAAgIAAAxAEAAAAAAAAwIAAA8AEAAAAAAAABwAAAOAEAAAAAAAARwAAAIAAAAAAAAAASwAAASAEAAAAAAAAQ0AAABAAAAAAAAAAX8AAAWAAAAAAAAAAi8AAA+AEAAAAAAAA=</bookmark>
+            </media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r3" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <effect id="r4" name="Color Board" uid="FFColorBoard"></effect>
+        <effect id="r5" name="Color Wheels" uid="FFColorWheels"></effect>
+        <effect id="r6" name="Color Curves" uid="FFColorCurves"></effect>
+        <effect id="r7" name="Exposure" uid="FFExposure"></effect>
+        <effect id="r8" name="Channel EQ" uid="FFChannelEQ"></effect>
+        <effect id="r9" name="Color Mask" uid="FFColorMask"></effect>
+        <effect id="r10" name="Custom LUT" uid="FFCustomLUT"></effect>
+        <effect id="r11" name="Noise Reduction" uid="FFNoiseReduction"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="480480/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="ColorGradingTest" duration="480480/24000s" format="r3" tcFormat="NDF" audioRole="dialogue">
+                            <filter-video ref="r4" name="Color Board">
+                                <param name="Color" key="9999/999166631/999166633/1/100/101" value="0.02 -0.05 0.1 1"></param>
+                                <param name="Color" key="9999/999166631/999166633/2/100/101" value="0.0 0.0 0.0 1"></param>
+                                <param name="Color" key="9999/999166631/999166633/3/100/101" value="-0.03 0.02 -0.08 1"></param>
+                                <param name="Saturation" key="9999/999166631/999166633/1/100/103" value="1.2"></param>
+                                <param name="Saturation" key="9999/999166631/999166633/2/100/103" value="1.1"></param>
+                                <param name="Saturation" key="9999/999166631/999166633/3/100/103" value="0.9"></param>
+                                <param name="Exposure" key="9999/999166631/999166633/1/100/102" value="0.3"></param>
+                                <param name="Exposure" key="9999/999166631/999166633/2/100/102" value="0.1"></param>
+                                <param name="Exposure" key="9999/999166631/999166633/3/100/102" value="-0.2"></param>
+                            </filter-video>
+                            <filter-video ref="r5" name="Color Wheels">
+                                <param name="Shadows" key="9999/999166631/999166634/1/200/201" value="0.52 0.48 0.6 1"></param>
+                                <param name="Midtones" key="9999/999166631/999166634/2/200/201" value="0.5 0.5 0.5 1"></param>
+                                <param name="Highlights" key="9999/999166631/999166634/3/200/201" value="0.48 0.52 0.45 1"></param>
+                                <param name="Master Saturation" key="9999/999166631/999166634/4/200/203" value="1.15"></param>
+                                <param name="Master Luminance" key="9999/999166631/999166634/4/200/202" value="1.05"></param>
+                            </filter-video>
+                            <filter-video ref="r6" name="Color Curves">
+                                <param name="Luma Curve" key="9999/999166631/999166635/1/300/301" value="0.0,0.0 0.25,0.3 0.75,0.8 1.0,1.0"></param>
+                                <param name="Red Curve" key="9999/999166631/999166635/2/300/301" value="0.0,0.0 0.5,0.45 1.0,1.0"></param>
+                                <param name="Green Curve" key="9999/999166631/999166635/3/300/301" value="0.0,0.0 0.5,0.5 1.0,1.0"></param>
+                                <param name="Blue Curve" key="9999/999166631/999166635/4/300/301" value="0.0,0.0 0.5,0.55 1.0,1.0"></param>
+                            </filter-video>
+                            <filter-video ref="r7" name="Exposure">
+                                <param name="Exposure" key="9999/999166631/999166636/1" value="0.2"></param>
+                                <param name="Black Point" key="9999/999166631/999166636/2" value="0.05"></param>
+                                <param name="White Point" key="9999/999166631/999166636/3" value="0.95"></param>
+                            </filter-video>
+                            <filter-video ref="r8" name="Channel EQ">
+                                <param name="Red Saturation" key="9999/999166631/999166637/1" value="0.9"></param>
+                                <param name="Green Saturation" key="9999/999166631/999166637/2" value="1.1"></param>
+                                <param name="Blue Saturation" key="9999/999166631/999166637/3" value="1.2"></param>
+                                <param name="Cyan Saturation" key="9999/999166631/999166637/4" value="1.15"></param>
+                                <param name="Magenta Saturation" key="9999/999166631/999166637/5" value="0.85"></param>
+                                <param name="Yellow Saturation" key="9999/999166631/999166637/6" value="0.95"></param>
+                            </filter-video>
+                            <filter-video ref="r9" name="Color Mask">
+                                <param name="Sample Color" key="9999/999166631/999166638/1" value="0.2 0.6 0.9 1"></param>
+                                <param name="Color Range" key="9999/999166631/999166638/2" value="0.15"></param>
+                                <param name="Softness" key="9999/999166631/999166638/3" value="0.3"></param>
+                                <param name="Color Correction" key="9999/999166631/999166638/4" value="0.8 0.9 1.1 1"></param>
+                                <param name="Saturation Adjustment" key="9999/999166631/999166638/5" value="1.3"></param>
+                            </filter-video>
+                            <filter-video ref="r10" name="Custom LUT">
+                                <param name="LUT File" key="9999/999166631/999166639/1" value="Cinematic_Look_01.cube"></param>
+                                <param name="Mix" key="9999/999166631/999166639/2" value="0.7"></param>
+                                <param name="Preserve Luminance" key="9999/999166631/999166639/3" value="1"></param>
+                            </filter-video>
+                            <filter-video ref="r11" name="Noise Reduction">
+                                <param name="Amount" key="9999/999166631/999166640/1" value="25"></param>
+                                <param name="Chroma" key="9999/999166631/999166640/2" value="15"></param>
+                                <param name="Luma" key="9999/999166631/999166640/3" value="10"></param>
+                                <param name="Preserve Details" key="9999/999166631/999166640/4" value="1"></param>
+                            </filter-video>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>

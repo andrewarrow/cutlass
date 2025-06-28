@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE fcpxml>
+
+<fcpxml version="1.13">
+    <resources>
+        <asset id="r2" name="HSLGradingTest" uid="F1F62D61-3D52-64A3-B062-831C8243964A" start="0s" hasVideo="1" format="r3" videoSources="1" duration="360360/24000s">
+            <media-rep kind="original-media" sig="F1F62D61-3D52-64A3-B062-831C8243964A" src="file:///Users/aa/cs/cutlass/assets/speech1.mov">
+                <bookmark>Ym9va1QDAAAAAAQQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOAIAAAQAAAADAwAAAAQAAAUAAAABAQAAVXNlcnMAAAACAAAAAQEAAGFhAAADAAAAAQEAAGRldgAHAAAAAQEAAGN1dGxhc3MABgAAAAEBAABhc3NldHMAAAsAAAABAQAAc3BlZWNoMS5tb3YAGAAAAAEGAAAQAAAAIAAAACwAAAA4AAAASAAAAFgAAAAIAAAABAMAAM9QAAAAAAAACAAAAAQDAABehAAAAAAAAAgAAAAEAwAAP3UKAAAAAAAIAAAABAMAANxrDAAAAAAACAAAAAQDAAC6uhsAAAAAAAgAAAAEAwAAewkcAAAAAAAYAAAAAQYAAIwAAACcAAAArAAAALwAAADMAAAA3AAAAAgAAAAABAAAQccGREtcc7sYAAAAAQIAAAEAAAAAAAAAHwIAAAAAAAAfAgAAAAAAAAgAAAAEAwAABAAAAAAAAAAEAAAAAwMAAPUBAAAIAAAAAQkAAGZpbGU6Ly8vDAAAAAEBAABNYWNpbnRvc2ggSEQIAAAABAMAAACQgpbnAAAACAAAAAAEAABBxuOahQAAACQAAAABAQAAOThBODZDQ0YtRkEwRS00QUEwLThDQ0YtREVGMTc3NUM3MTg4GAAAAAECAACBAAAAAQAAAO8TAAABAAAA7xMAAAEAAAABAAAAAQEAAC8AAAAAAAAAAQUAADMAAAABAgAAZG5pYgAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAbW92Pz8/PwAAAAAAAAAAAOQAAAD+////AQAAAAAAAAASAAAABBAAAGwAAAAAAAAABRAAAOwAAAAAAAAAEBAAABwBAAAAAAAAQBAAAAwBAAAAAAAAAiAAAOgBAAAAAAAABSAAAFgBAAAAAAAAECAAAGgBAAAAAAAAESAAAJwBAAAAAAAAEiAAAHwBAAAAAAAAEyAAAIwBAAAAAAAAICAAAMgBAAAAAAAAMCAAAPQBAAAAAAAAAcAAADwBAAAAAAAAEcAAACAAAAAAAAAAEsAAAEwBAAAAAAAAENAAAAQAAAAAAAAAF/AAAFgAAAAAAAAAIvAAAPwBAAAAAAAA</bookmark>
+            </media-rep>
+        </asset>
+        <format id="r1" name="FFVideoFormat720p2398" frameDuration="1001/24000s" width="1280" height="720" colorSpace="1-1-1 (Rec. 709)"></format>
+        <format id="r3" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"></format>
+        <effect id="r4" name="Hue/Saturation Curves" uid="FFHueSatCurves"></effect>
+        <effect id="r5" name="Color Balance" uid="FFColorBalance"></effect>
+        <effect id="r6" name="Brightness &amp; Contrast" uid="FFBrightnessContrast"></effect>
+        <effect id="r7" name="Vibrance" uid="FFVibrance"></effect>
+        <effect id="r8" name="Shadow/Highlight" uid="FFShadowHighlight"></effect>
+        <effect id="r9" name="Keyer" uid="FFKeyer"></effect>
+    </resources>
+    <library location="file:///Users/aa/Movies/Untitled.fcpbundle/">
+        <event name="6-13-25" uid="78463397-97FD-443D-B4E2-07C581674AFC">
+            <project name="wiki" uid="DEA19981-DED5-4851-8435-14515931C68A" modDate="2025-06-13 11:46:22 -0700">
+                <sequence format="r1" duration="360360/24000s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
+                    <spine>
+                        <asset-clip ref="r2" offset="0s" name="HSLGradingTest" duration="360360/24000s" format="r3" tcFormat="NDF" audioRole="dialogue">
+                            <filter-video ref="r4" name="Hue/Saturation Curves">
+                                <param name="Red Hue" key="9999/999166631/999166641/1">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="0"></keyframe>
+                                        <keyframe time="120120/24000s" value="15"></keyframe>
+                                        <keyframe time="240240/24000s" value="-10"></keyframe>
+                                        <keyframe time="360360/24000s" value="0"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Red Saturation" key="9999/999166631/999166641/2">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="100"></keyframe>
+                                        <keyframe time="180180/24000s" value="150"></keyframe>
+                                        <keyframe time="360360/24000s" value="80"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Orange Hue" key="9999/999166631/999166641/3" value="5"></param>
+                                <param name="Orange Saturation" key="9999/999166631/999166641/4" value="120"></param>
+                                <param name="Yellow Hue" key="9999/999166631/999166641/5" value="-8"></param>
+                                <param name="Yellow Saturation" key="9999/999166631/999166641/6" value="90"></param>
+                                <param name="Green Hue" key="9999/999166631/999166641/7" value="0"></param>
+                                <param name="Green Saturation" key="9999/999166631/999166641/8" value="110"></param>
+                                <param name="Cyan Hue" key="9999/999166631/999166641/9" value="10"></param>
+                                <param name="Cyan Saturation" key="9999/999166631/999166641/10" value="130"></param>
+                                <param name="Blue Hue" key="9999/999166631/999166641/11" value="-5"></param>
+                                <param name="Blue Saturation" key="9999/999166631/999166641/12" value="125"></param>
+                                <param name="Magenta Hue" key="9999/999166631/999166641/13" value="0"></param>
+                                <param name="Magenta Saturation" key="9999/999166631/999166641/14" value="85"></param>
+                            </filter-video>
+                            <filter-video ref="r5" name="Color Balance">
+                                <param name="Temperature" key="9999/999166631/999166642/1" value="200"></param>
+                                <param name="Tint" key="9999/999166631/999166642/2" value="-0.05"></param>
+                                <param name="Shadow Temperature" key="9999/999166631/999166642/3">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="100"></keyframe>
+                                        <keyframe time="360360/24000s" value="300"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                                <param name="Highlight Temperature" key="9999/999166631/999166642/4" value="-100"></param>
+                            </filter-video>
+                            <filter-video ref="r6" name="Brightness &amp; Contrast">
+                                <param name="Brightness" key="9999/999166631/999166643/1" value="10"></param>
+                                <param name="Contrast" key="9999/999166631/999166643/2">
+                                    <keyframeAnimation>
+                                        <keyframe time="0s" value="100"></keyframe>
+                                        <keyframe time="180180/24000s" value="130"></keyframe>
+                                        <keyframe time="360360/24000s" value="90"></keyframe>
+                                    </keyframeAnimation>
+                                </param>
+                            </filter-video>
+                            <filter-video ref="r7" name="Vibrance">
+                                <param name="Vibrance" key="9999/999166631/999166644/1" value="25"></param>
+                                <param name="Saturation" key="9999/999166631/999166644/2" value="15"></param>
+                                <param name="Skin Tone Protection" key="9999/999166631/999166644/3" value="1"></param>
+                            </filter-video>
+                            <filter-video ref="r8" name="Shadow/Highlight">
+                                <param name="Shadow Amount" key="9999/999166631/999166645/1" value="30"></param>
+                                <param name="Highlight Amount" key="9999/999166631/999166645/2" value="20"></param>
+                                <param name="Shadow Radius" key="9999/999166631/999166645/3" value="50"></param>
+                                <param name="Highlight Radius" key="9999/999166631/999166645/4" value="30"></param>
+                                <param name="Color Correction" key="9999/999166631/999166645/5" value="20"></param>
+                            </filter-video>
+                            <filter-video ref="r9" name="Keyer">
+                                <param name="Key Method" key="9999/999166631/999166646/1" value="0"></param>
+                                <param name="Key Color" key="9999/999166631/999166646/2" value="0.1 0.4 0.8 1"></param>
+                                <param name="Tolerance" key="9999/999166631/999166646/3" value="0.2"></param>
+                                <param name="Softness" key="9999/999166631/999166646/4" value="0.1"></param>
+                                <param name="Fill Color" key="9999/999166631/999166646/5" value="0.9 0.7 0.4 1"></param>
+                            </filter-video>
+                        </asset-clip>
+                    </spine>
+                </sequence>
+            </project>
+        </event>
+        <smart-collection name="Projects" match="all">
+            <match-clip rule="is" type="project"></match-clip>
+        </smart-collection>
+        <smart-collection name="All Video" match="any">
+            <match-media rule="is" type="videoOnly"></match-media>
+            <match-media rule="is" type="videoWithAudio"></match-media>
+        </smart-collection>
+        <smart-collection name="Audio Only" match="all">
+            <match-media rule="is" type="audioOnly"></match-media>
+        </smart-collection>
+        <smart-collection name="Stills" match="all">
+            <match-media rule="is" type="stills"></match-media>
+        </smart-collection>
+        <smart-collection name="Favorites" match="all">
+            <match-ratings value="favorites"></match-ratings>
+        </smart-collection>
+    </library>
+</fcpxml>
