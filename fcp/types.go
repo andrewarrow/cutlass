@@ -375,6 +375,7 @@ type FilterVideo struct {
 type AdjustTransform struct {
 	Position string  `xml:"position,attr,omitempty"`
 	Scale    string  `xml:"scale,attr,omitempty"`
+	Rotation string  `xml:"rotation,attr,omitempty"`
 	Params   []Param `xml:"param,omitempty"`
 }
 

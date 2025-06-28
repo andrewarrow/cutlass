@@ -497,21 +497,15 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 	// Calculate timing progression (starts slow, speeds up)
 	imageTimings := calculateProgessiveTiming(len(pngFiles), config.Duration)
 
-	// Get spine reference before adding elements
-	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
-	
-	// Add the base video clip to spine first
-	spine.AssetClips = append(spine.AssetClips, baseClip)
-
-	// Add PNG images with increasing pace and varied directions
+	// Add PNG images as nested Video elements within the main AssetClip (like Info.fcpxml)
 	for i, pngFile := range pngFiles {
 		timing := imageTimings[i]
 		
 		if verbose && (i < 5 || i%10 == 0) {
-			fmt.Printf("Adding PNG %d/%d: %s at %.2fs\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime)
+			fmt.Printf("Adding PNG %d/%d: %s at %.2fs, lane %d\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime, i+1)
 		}
 
-		err = addSlidingPngImage(spine, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
+		err = addSlidingPngImageToAssetClip(&baseClip, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
 		if err != nil {
 			if verbose {
 				fmt.Printf("Warning: Failed to add PNG %s: %v\n", pngFile, err)
@@ -519,6 +513,10 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 			continue
 		}
 	}
+
+	// Get spine reference and add the complete baseClip with all nested videos
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.AssetClips = append(spine.AssetClips, baseClip)
 
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
@@ -582,7 +580,68 @@ func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTimi
 	return timings
 }
 
-// addSlidingPngImage adds a PNG with sliding animation and black border
+// addSlidingPngImageToAssetClip adds a PNG as nested Video within AssetClip with lane assignment (like Info.fcpxml)
+func addSlidingPngImageToAssetClip(baseClip *AssetClip, tx *ResourceTransaction, pngPath string, timing ImageTiming, index int, borderEffectID string, verbose bool, createdAssets, createdFormats map[string]string) error {
+	// Create image asset if not exists
+	var assetID, formatID string
+	var err error
+
+	if existingAssetID, exists := createdAssets[pngPath]; exists {
+		assetID = existingAssetID
+		formatID = createdFormats[pngPath]
+	} else {
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+
+		_, err = tx.CreateAsset(assetID, pngPath, filepath.Base(pngPath), "0s", formatID)
+		if err != nil {
+			return fmt.Errorf("failed to create PNG asset: %v", err)
+		}
+
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
+		if err != nil {
+			return fmt.Errorf("failed to create PNG format: %v", err)
+		}
+
+		createdAssets[pngPath] = assetID
+		createdFormats[pngPath] = formatID
+	}
+
+	// Create sliding animation from random direction with rotation like Info.fcpxml
+	slideAnimation := createSlidingAnimationWithRotation(timing.startTime, timing.duration, index)
+	
+	// Create video element for PNG nested within AssetClip (like Info.fcpxml pattern)
+	video := Video{
+		Ref:      assetID,
+		Lane:     fmt.Sprintf("%d", index+1), // Lane assignment like Info.fcpxml: lane="1", lane="2", etc.
+		Offset:   ConvertSecondsToFCPDuration(timing.startTime), // Offset relative to AssetClip start
+		Duration: ConvertSecondsToFCPDuration(timing.duration),
+		Name:     fmt.Sprintf("PNG_%d_%s", index+1, strings.TrimSuffix(filepath.Base(pngPath), filepath.Ext(pngPath))),
+		Start:    "3600s", // Match Info.fcpxml start time
+		AdjustTransform: slideAnimation,
+		FilterVideos: []FilterVideo{
+			{
+				Ref:  borderEffectID,
+				Name: "Simple Border",
+				Params: []Param{
+					{
+						Name:  "Color",
+						Key:   "9999/987171795/987171799/3/987171806/2",
+						Value: "0 0 0 1", // Black border like Info.fcpxml
+					},
+				},
+			},
+		},
+	}
+
+	// Add PNG Video as nested element within the main AssetClip (like Info.fcpxml)
+	baseClip.Videos = append(baseClip.Videos, video)
+
+	return nil
+}
+
+// addSlidingPngImage adds a PNG with sliding animation and black border (legacy function, keeping for compatibility)
 func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, timing ImageTiming, index int, borderEffectID string, verbose bool, createdAssets, createdFormats map[string]string) error {
 	// Create image asset if not exists
 	var assetID, formatID string
@@ -642,7 +701,69 @@ func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, t
 	return nil
 }
 
-// createSlidingAnimation creates position animation from various directions
+// createSlidingAnimationWithRotation creates position animation with rotation from various directions (like Info.fcpxml)
+func createSlidingAnimationWithRotation(startTime, duration float64, index int) *AdjustTransform {
+	// Determine slide direction and rotation based on index
+	directions := []struct{ startX, endX, startY, endY, rotation string }{
+		{"62.5", "0", "0", "0", "16.02"},     // Right to center with rotation (like Info.fcpxml)
+		{"-62.5", "0", "0", "0", "-26.6193"}, // Left to center with counter-rotation (like Info.fcpxml) 
+		{"0", "0", "45", "0", "12.5"},        // Top to center
+		{"0", "0", "-45", "0", "-15.3"},      // Bottom to center
+		{"44.2", "0", "31.2", "0", "22.8"},   // Top-right diagonal
+		{"-44.2", "0", "31.2", "0", "-18.4"}, // Top-left diagonal
+		{"44.2", "0", "-31.2", "0", "14.7"},  // Bottom-right diagonal
+		{"-44.2", "0", "-31.2", "0", "-21.1"}, // Bottom-left diagonal
+	}
+	
+	direction := directions[index%len(directions)]
+	
+	return &AdjustTransform{
+		Rotation: direction.rotation, // Add rotation like Info.fcpxml
+		Params: []Param{
+			{
+				Name: "position",
+				NestedParams: []Param{
+					{
+						Name: "X",
+						Key:  "1",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime),
+									Value: direction.startX,
+								},
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime + 1.0), // 1 second slide
+									Value: direction.endX,
+								},
+							},
+						},
+					},
+					{
+						Name: "Y",
+						Key:  "2",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime),
+									Value: direction.startY,
+									Curve: "linear",
+								},
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime + 1.0),
+									Value: direction.endY,
+									Curve: "linear",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// createSlidingAnimation creates position animation from various directions (legacy function)
 func createSlidingAnimation(startTime, duration float64, index int) *AdjustTransform {
 	// Determine slide direction based on index
 	directions := []struct{ startX, endX, startY, endY string }{
