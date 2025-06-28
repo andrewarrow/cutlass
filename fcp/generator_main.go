@@ -402,8 +402,8 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 		fmt.Printf("Generating PNG pile with %.1fs duration, %d images\n", config.Duration, config.TotalImages)
 	}
 
-	// Create base FCPXML structure
-	fcpxml, err := GenerateEmpty("")
+	// Create base FCPXML structure with vertical format like Info.fcpxml
+	fcpxml, err := GenerateEmptyWithFormat("", "vertical")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
@@ -753,16 +753,17 @@ func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, t
 
 // createSlidingAnimationWithRotation creates position animation with rotation from various directions (like Info.fcpxml)
 func createSlidingAnimationWithRotation(startTime, duration float64, index int) *AdjustTransform {
-	// Determine slide direction and rotation based on index
+	// 🚨 FIXED: Use vertical-screen-appropriate offscreen positions for 1080x1920 format
+	// Images start way offscreen and slide into view (preventing "pop" effect)
 	directions := []struct{ startX, endX, startY, endY, rotation string }{
-		{"62.5", "0", "0", "0", "16.02"},     // Right to center with rotation (like Info.fcpxml)
-		{"-62.5", "0", "0", "0", "-26.6193"}, // Left to center with counter-rotation (like Info.fcpxml) 
-		{"0", "0", "45", "0", "12.5"},        // Top to center
-		{"0", "0", "-45", "0", "-15.3"},      // Bottom to center
-		{"44.2", "0", "31.2", "0", "22.8"},   // Top-right diagonal
-		{"-44.2", "0", "31.2", "0", "-18.4"}, // Top-left diagonal
-		{"44.2", "0", "-31.2", "0", "14.7"},  // Bottom-right diagonal
-		{"-44.2", "0", "-31.2", "0", "-21.1"}, // Bottom-left diagonal
+		{"150", "0", "0", "0", "16.02"},      // Far right to center with rotation
+		{"-150", "0", "0", "0", "-26.6193"},  // Far left to center with counter-rotation
+		{"0", "0", "200", "0", "12.5"},       // Far top to center (vertical screen needs more Y range)
+		{"0", "0", "-200", "0", "-15.3"},     // Far bottom to center
+		{"106", "0", "141", "0", "22.8"},     // Top-right diagonal (further out)
+		{"-106", "0", "141", "0", "-18.4"},   // Top-left diagonal
+		{"106", "0", "-141", "0", "14.7"},    // Bottom-right diagonal
+		{"-106", "0", "-141", "0", "-21.1"},  // Bottom-left diagonal
 	}
 	
 	direction := directions[index%len(directions)]
@@ -770,7 +771,7 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 	// Use start="3600s" relative timing like Info.fcpxml and size.fcpxml
 	// The animation starts immediately when the video element begins (at its start time)
 	animationStartTime := "3600s" // Relative to video element's start time
-	animationEndTime := "3624000/1000s" // 1 second later (3600 + 24 = 3624 seconds)
+	animationEndTime := "2594882880/720000s" // Match Info.fcpxml end time (~4.84 seconds slide duration)
 	
 	return &AdjustTransform{
 		Params: []Param{
