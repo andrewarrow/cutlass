@@ -427,31 +427,70 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 	videoAssetID := ids[0]
 	videoFormatID := ids[1]
 
-	// Use CreateAsset with consistent UID instead of CreateVideoAssetWithDetection with random UID
-	// This prevents FCP cache conflicts when importing the same video multiple times
-	_, err = tx.CreateAsset(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(config.Duration), videoFormatID)
+	// 🚨 CRITICAL FIX: 164240-830460859.mp4 is only 6 seconds, need multiple clips for full duration
+	const videoClipDuration = 5.87 // Actual video duration in seconds (3523/600s from Info.fcpxml)
+	
+	// Use actual asset duration from Info.fcpxml (3523/600s ≈ 5.87 seconds)
+	_, err = tx.CreateAsset(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(videoClipDuration), videoFormatID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base video asset: %v", err)
 	}
 	
-	// Create video format manually since CreateAsset doesn't handle video formats
+	// Create video format with 24000 timebase to match project format (avoid validation error)
 	_, err = tx.CreateFormatWithFrameDuration(videoFormatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create video format: %v", err)
 	}
+	
+	// Set format name to match Info.fcpxml
+	if len(fcpxml.Resources.Formats) > 0 {
+		for i := range fcpxml.Resources.Formats {
+			if fcpxml.Resources.Formats[i].ID == videoFormatID {
+				fcpxml.Resources.Formats[i].Name = "FFVideoFormat1080p2997"
+				break
+			}
+		}
+	}
 
-	// Create main video asset-clip with scaling like Info.fcpxml
-	baseClip := AssetClip{
-		Ref:       videoAssetID,
-		Offset:    "0s",
-		Name:      "164240-830460859",
-		Duration:  ConvertSecondsToFCPDuration(config.Duration),
-		Format:    videoFormatID,
-		TCFormat:  "NDF", // Non-Drop Frame timecode format
-		AudioRole: "dialogue", // Standard audio role for main video
-		AdjustTransform: &AdjustTransform{
-			Scale: "3.27127 3.27127", // Match Info.fcpxml scaling
-		},
+	// Calculate how many video clips needed to cover full duration
+	numClips := int(math.Ceil(config.Duration / videoClipDuration))
+	if verbose {
+		fmt.Printf("Creating %d video clips of %.2fs each to cover %.1fs total\n", numClips, videoClipDuration, config.Duration)
+	}
+	
+	// Create multiple AssetClips back-to-back to repeat the 6-second video
+	var videoClips []AssetClip
+	currentOffset := 0.0
+	
+	for i := 0; i < numClips; i++ {
+		// Calculate duration for this clip (last clip might be shorter)
+		clipDuration := videoClipDuration
+		if currentOffset + clipDuration > config.Duration {
+			clipDuration = config.Duration - currentOffset
+		}
+		
+		clip := AssetClip{
+			Ref:       videoAssetID,
+			Offset:    ConvertSecondsToFCPDuration(currentOffset),
+			Name:      "164240-830460859",
+			Duration:  ConvertSecondsToFCPDuration(clipDuration),
+			Format:    videoFormatID,
+			TCFormat:  "NDF",
+			ConformRate: &ConformRate{
+				ScaleEnabled: "0",
+				SrcFrameRate: "29.97",
+			},
+			AdjustTransform: &AdjustTransform{
+				Scale: "3.27127 3.27127", // Match Info.fcpxml scaling
+			},
+		}
+		
+		videoClips = append(videoClips, clip)
+		currentOffset += clipDuration
+		
+		if verbose {
+			fmt.Printf("  Clip %d: offset=%.2fs, duration=%.2fs\n", i+1, currentOffset-clipDuration, clipDuration)
+		}
 	}
 
 	// Get or download PNG files
@@ -497,26 +536,35 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 	// Calculate timing progression (starts slow, speeds up)
 	imageTimings := calculateProgessiveTiming(len(pngFiles), config.Duration)
 
-	// Add PNG images as nested Video elements within the main AssetClip (like Info.fcpxml)
-	for i, pngFile := range pngFiles {
-		timing := imageTimings[i]
+	// Add PNG images to the FIRST video clip only (like Info.fcpxml - only first clip has images)
+	if len(videoClips) > 0 {
+		firstClip := &videoClips[0] // Get reference to first clip
 		
-		if verbose && (i < 5 || i%10 == 0) {
-			fmt.Printf("Adding PNG %d/%d: %s at %.2fs, lane %d\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime, i+1)
-		}
-
-		err = addSlidingPngImageToAssetClip(&baseClip, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
-		if err != nil {
-			if verbose {
-				fmt.Printf("Warning: Failed to add PNG %s: %v\n", pngFile, err)
+		for i, pngFile := range pngFiles {
+			timing := imageTimings[i]
+			
+			if verbose && (i < 5 || i%10 == 0) {
+				fmt.Printf("Adding PNG %d/%d: %s at %.2fs, lane %d\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime, i+1)
 			}
-			continue
+
+			err = addSlidingPngImageToAssetClip(firstClip, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
+			if err != nil {
+				if verbose {
+					fmt.Printf("Warning: Failed to add PNG %s: %v\n", pngFile, err)
+				}
+				continue
+			}
 		}
 	}
 
-	// Get spine reference and add the complete baseClip with all nested videos
+	// Get spine reference and add ALL video clips back-to-back (repeat 6s video for full duration)
 	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
-	spine.AssetClips = append(spine.AssetClips, baseClip)
+	for i, clip := range videoClips {
+		spine.AssetClips = append(spine.AssetClips, clip)
+		if verbose {
+			fmt.Printf("Added video clip %d to spine\n", i+1)
+		}
+	}
 
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
@@ -729,11 +777,11 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 						KeyframeAnimation: &KeyframeAnimation{
 							Keyframes: []Keyframe{
 								{
-									Time:  ConvertSecondsToFCPDuration(startTime),
+									Time:  "3600s", // Match Info.fcpxml start time exactly
 									Value: direction.startX,
 								},
 								{
-									Time:  ConvertSecondsToFCPDuration(startTime + 1.0), // 1 second slide
+									Time:  "2594882880/720000s", // Match Info.fcpxml end time exactly
 									Value: direction.endX,
 								},
 							},
@@ -745,13 +793,8 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 						KeyframeAnimation: &KeyframeAnimation{
 							Keyframes: []Keyframe{
 								{
-									Time:  ConvertSecondsToFCPDuration(startTime),
+									Time:  "3600s", // Match Info.fcpxml exactly - only one Y keyframe
 									Value: direction.startY,
-									Curve: "linear",
-								},
-								{
-									Time:  ConvertSecondsToFCPDuration(startTime + 1.0),
-									Value: direction.endY,
 									Curve: "linear",
 								},
 							},

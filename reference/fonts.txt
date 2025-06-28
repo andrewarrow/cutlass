@@ -190,3 +190,73 @@ Old English Text
 Operina Pro
 Optima
 Oriya MN
+Oriya Sangam MN
+Palatino
+Paleographic
+Papyrus
+Party LET
+PF Videotext Pro
+PHOSPHATE
+PingFang HK
+PingFang MO
+PingFang SC
+PingFang TC
+Plantagenet Cherokee
+Posterboard
+Produkt
+Proxima Nova
+PT Mono
+PT Sans
+PT Sans Caption
+PT Sans Narrow
+PT Serif
+PT Serif Caption
+Raanana
+Remix ⏵X ⅃lyphs
+Rockwell
+Sabon Pro
+Sana
+Sathu
+Sauber Script
+Savoye LET
+Scheme
+Shababa
+Shabash Pro
+Shree Devanagari 714
+SignPainter
+Silom
+Sinhala MN
+Sinhala Sangam MN
+Sinzano
+Sketch Block
+Skia
+Snell Roundhand
+Soap
+Songti SC
+Songti TC
+STIX Two Math
+STIX Two Text
+Strenuous
+STSong
+Sukhumvit Set
+Superclarendon
+Symbol
+SYNCHRO LET
+Tahoma
+Tamil MN
+Tamil Sangam MN
+Telugu MN
+Telugu Sangam MN
+THE HAND SERIF
+Thonburi
+Times New Roman
+Trattatello
+Trebuchet MS
+Verdana
+Vaz
+Virtus
+Wanted LET
+Waseem
+Zapf Dingbats
+Zapfino
+Zingende
