@@ -1,0 +1,124 @@
+"""
+XML serialization for FCPXML documents.
+"""
+
+from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.dom.minidom import parseString
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..models.elements import FCPXML
+
+
+def serialize_to_xml(fcpxml) -> str:
+    """
+    Serialize FCPXML to XML string using structured approach.
+    
+    🚨 CRITICAL: This implements the "STRUCT_BASED_GENERATION" principle
+    from schema.yaml - no string templates, only structured XML building.
+    
+    Returns only the XML content without declaration (added separately).
+    """
+    
+    # Create root element
+    root = Element("fcpxml")
+    root.set("version", fcpxml.version)
+    
+    # Add resources
+    if fcpxml.resources:
+        resources_elem = SubElement(root, "resources")
+        
+        # Add formats
+        for fmt in fcpxml.resources.formats:
+            format_elem = SubElement(resources_elem, "format")
+            format_elem.set("id", fmt.id)
+            if fmt.name:
+                format_elem.set("name", fmt.name)
+            if fmt.frame_duration:
+                format_elem.set("frameDuration", fmt.frame_duration)
+            if fmt.width:
+                format_elem.set("width", fmt.width)
+            if fmt.height:
+                format_elem.set("height", fmt.height)
+            if fmt.color_space:
+                format_elem.set("colorSpace", fmt.color_space)
+        
+        # Add assets (if any)
+        for asset in fcpxml.resources.assets:
+            asset_elem = SubElement(resources_elem, "asset")
+            asset_elem.set("id", asset.id)
+            asset_elem.set("name", asset.name)
+            asset_elem.set("uid", asset.uid)
+            asset_elem.set("start", asset.start)
+            asset_elem.set("duration", asset.duration)
+            
+            if asset.has_video:
+                asset_elem.set("hasVideo", asset.has_video)
+            if asset.format:
+                asset_elem.set("format", asset.format)
+            if asset.video_sources:
+                asset_elem.set("videoSources", asset.video_sources)
+            if asset.has_audio:
+                asset_elem.set("hasAudio", asset.has_audio)
+            if asset.audio_sources:
+                asset_elem.set("audioSources", asset.audio_sources)
+            if asset.audio_channels:
+                asset_elem.set("audioChannels", asset.audio_channels)
+            if asset.audio_rate:
+                asset_elem.set("audioRate", asset.audio_rate)
+                
+            if asset.media_rep:
+                media_rep_elem = SubElement(asset_elem, "media-rep")
+                media_rep_elem.set("kind", asset.media_rep.kind)
+                if asset.media_rep.sig:
+                    media_rep_elem.set("sig", asset.media_rep.sig)
+                media_rep_elem.set("src", asset.media_rep.src)
+
+    # Add library
+    if fcpxml.library:
+        library_elem = SubElement(root, "library")
+        if fcpxml.library.location:
+            library_elem.set("location", fcpxml.library.location)
+            
+        # Add events
+        for event in fcpxml.library.events:
+            event_elem = SubElement(library_elem, "event")
+            event_elem.set("name", event.name)
+            if event.uid:
+                event_elem.set("uid", event.uid)
+                
+            # Add projects
+            for project in event.projects:
+                project_elem = SubElement(event_elem, "project")
+                project_elem.set("name", project.name)
+                if project.uid:
+                    project_elem.set("uid", project.uid)
+                if project.mod_date:
+                    project_elem.set("modDate", project.mod_date)
+                    
+                # Add sequences
+                for sequence in project.sequences:
+                    seq_elem = SubElement(project_elem, "sequence")
+                    seq_elem.set("format", sequence.format)
+                    seq_elem.set("duration", sequence.duration)
+                    seq_elem.set("tcStart", sequence.tc_start)
+                    seq_elem.set("tcFormat", sequence.tc_format)
+                    seq_elem.set("audioLayout", sequence.audio_layout)
+                    seq_elem.set("audioRate", sequence.audio_rate)
+                    
+                    # Add spine (empty for now)
+                    spine_elem = SubElement(seq_elem, "spine")
+                    # TODO: Add spine content when implementing media elements
+
+    # Convert to string without XML declaration
+    rough_string = tostring(root, encoding='unicode')
+    reparsed = parseString(rough_string)
+    pretty_xml = reparsed.toprettyxml(indent="  ", encoding=None)
+    
+    # Remove the first XML declaration line that parseString adds
+    lines = pretty_xml.split('\n')
+    if lines[0].startswith('<?xml'):
+        lines = lines[1:]
+    
+    return '\n'.join(lines).strip()
