@@ -44,6 +44,15 @@ End-to-end tests for complete FCPXML generation:
 - **Validation**: XML well-formedness and FCP compatibility
 - **Edge Cases**: Empty media lists and error handling
 
+### 📱 Vertical Scaling Tests (`test_vertical_scaling.py`)
+Tests for vertical/horizontal format scaling functionality:
+- **Vertical Format**: Default 1080x1920 format with 3.27x scaling
+- **Horizontal Format**: Optional 1280x720 format without scaling
+- **Image Scaling**: Tests scaling transforms applied to image elements
+- **Video Scaling**: Tests scaling transforms applied to video elements
+- **XML Serialization**: Verifies adjust-transform elements in output
+- **End-to-End**: Complete file generation with scaling
+
 ## Running Tests
 
 ### Quick Test Run
@@ -66,6 +75,9 @@ python -m pytest tests/test_integration.py -v
 
 # Only timeline element tests
 python -m pytest tests/test_timeline_elements.py -v
+
+# Only vertical scaling tests
+python -m pytest tests/test_vertical_scaling.py -v
 ```
 
 ## Test Coverage
