@@ -160,24 +160,25 @@ def create_random_video_cmd(args):
 
 
 def video_at_edge_cmd(args):
-    """Create video with random PNGs tiled across visible area on multiple lanes"""
+    """Create video with random images (PNG/JPG) tiled across visible area on multiple lanes"""
     input_dir = Path(args.input_dir)
     if not input_dir.exists() or not input_dir.is_dir():
         print(f"❌ Directory not found: {input_dir}")
         sys.exit(1)
     
-    # Find all PNG files
-    png_files = []
-    for pattern in ['*.png', '*.PNG']:
-        png_files.extend(input_dir.glob(pattern))
+    # Find all image files (PNG and JPG)
+    image_files = []
+    for pattern in ['*.png', '*.PNG', '*.jpg', '*.JPG', '*.jpeg', '*.JPEG']:
+        image_files.extend(input_dir.glob(pattern))
     
-    if not png_files:
-        print(f"❌ No PNG files found in {input_dir}")
+    if not image_files:
+        print(f"❌ No image files found in {input_dir}")
+        print(f"   Supported formats: PNG, JPG, JPEG")
         sys.exit(1)
     
-    print(f"🎨 Creating video with edge-tiled PNGs...")
+    print(f"🎨 Creating video with edge-tiled images...")
     print(f"   Input directory: {input_dir}")
-    print(f"   PNG files found: {len(png_files)}")
+    print(f"   Image files found: {len(image_files)}")
     print(f"   Duration: {args.duration}s")
     print(f"   Lanes: {args.num_lanes}")
     print(f"   Tiles per lane: {args.tiles_per_lane}")
@@ -193,7 +194,7 @@ def video_at_edge_cmd(args):
     try:
         create_edge_tiled_timeline(
             fcpxml, 
-            png_files, 
+            image_files, 
             args.background_video, 
             args.duration,
             args.num_lanes,
@@ -201,7 +202,7 @@ def video_at_edge_cmd(args):
         )
         
         total_tiles = args.num_lanes * args.tiles_per_lane
-        print(f"✅ Timeline created with {total_tiles} PNG tiles across {args.num_lanes} lanes")
+        print(f"✅ Timeline created with {total_tiles} image tiles across {args.num_lanes} lanes")
         
     except Exception as e:
         print(f"❌ Error creating edge-tiled timeline: {e}")
@@ -218,14 +219,15 @@ def video_at_edge_cmd(args):
         sys.exit(1)
 
 
-def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, num_lanes, tiles_per_lane):
+def create_edge_tiled_timeline(fcpxml, image_files, background_video, duration, num_lanes, tiles_per_lane):
     """
-    Create timeline with PNGs tiled across the visible screen area using proper lane structure.
+    Create timeline with images (PNG/JPG) tiled across the visible screen area using proper lane structure.
     
-    🚨 CRITICAL: Uses separate lane elements instead of nested structure to prevent FCP crashes.
+    🚨 CRITICAL: Uses Pattern A (nested elements) for multi-lane visibility with background video.
+    Uses Pattern B (separate elements) as fallback when no background video is provided.
     
-    According to BAFFLE_TWO.md, deeply nested video elements cause "Invalid edit with no respective media" errors.
-    This implementation uses the proper lane system where each element is on its own lane.
+    Pattern A creates multiple visible lanes in Final Cut Pro by nesting image Video elements
+    inside a background AssetClip, following the Go implementation approach.
     """
     project = fcpxml.library.events[0].projects[0]
     sequence = project.sequences[0]
@@ -305,9 +307,9 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             else:
                 sequence.spine.videos.append(bg_element)
     
-    # Generate PNG tiles as nested elements inside background video (Pattern A - like Go implementation)
+    # Generate image tiles as nested elements inside background video (Pattern A - like Go implementation)
     if background_video:
-        # Find the background element to add nested PNGs inside it
+        # Find the background element to add nested images inside it
         bg_element = sequence.spine.ordered_elements[-1]  # Last added element (background)
         
         # Add nested_elements list if not exists  
@@ -318,8 +320,8 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
         total_tiles = num_lanes * tiles_per_lane
         
         for tile_index in range(total_tiles):
-            # Select random PNG
-            png_file = random.choice(png_files)
+            # Select random image file
+            image_file = random.choice(image_files)
             
             # Create asset using shared image format
             asset_id = f"r{resource_counter}"
@@ -330,7 +332,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             from fcpxml_lib.utils.ids import generate_uid
             from fcpxml_lib.constants import IMAGE_DURATION
             
-            abs_path = Path(png_file).resolve()
+            abs_path = Path(image_file).resolve()
             uid = generate_uid(f"MEDIA_{abs_path.name}")
             media_rep = MediaRep(src=str(abs_path))
             
@@ -367,7 +369,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 "duration": tile_duration,
                 "offset": tile_offset,
                 "start": tile_start,  # Match Info.fcpxml timing
-                "name": f"{png_file.stem}_lane_{current_lane}",
+                "name": f"{image_file.stem}_lane_{current_lane}",
                 "adjust_transform": {
                     "position": f"{x_pos:.3f} {y_pos:.3f}",
                     "scale": f"{scale:.3f} {scale:.3f}"
@@ -385,8 +387,8 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
         total_tiles = num_lanes * tiles_per_lane
         
         for tile_index in range(total_tiles):
-            # Select random PNG
-            png_file = random.choice(png_files)
+            # Select random image file
+            image_file = random.choice(image_files)
             
             # Create asset using shared image format
             asset_id = f"r{resource_counter}"
@@ -397,7 +399,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             from fcpxml_lib.utils.ids import generate_uid
             from fcpxml_lib.constants import IMAGE_DURATION
             
-            abs_path = Path(png_file).resolve()
+            abs_path = Path(image_file).resolve()
             uid = generate_uid(f"MEDIA_{abs_path.name}")
             media_rep = MediaRep(src=str(abs_path))
             
@@ -430,7 +432,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 "duration": tile_duration,
                 "offset": "0s",
                 "start": "0s",  # Required for image video elements
-                "name": f"{png_file.stem}_lane_{current_lane}",
+                "name": f"{image_file.stem}_lane_{current_lane}",
                 "adjust_transform": {
                     "position": f"{x_pos:.3f} {y_pos:.3f}",
                     "scale": f"{scale:.3f} {scale:.3f}"
@@ -448,14 +450,14 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
     sequence.duration = convert_seconds_to_fcp_duration(duration)
     
     total_tiles = num_lanes * tiles_per_lane
-    print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
+    print(f"   Generated {total_tiles} random image tiles, each on its own lane (lanes 1-{total_tiles})")
     if background_video:
-        print(f"   Structure: Background AssetClip + {total_tiles} nested PNG Video elements (Pattern A - like Go/Info.fcpxml)")
-        print(f"   Timing: Background at offset=0s, PNGs at start=3600s (like Info.fcpxml)")
+        print(f"   Structure: Background AssetClip + {total_tiles} nested Image Video elements (Pattern A - like Go/Info.fcpxml)")
+        print(f"   Timing: Background at offset=0s, Images at start=3600s (like Info.fcpxml)")
     else:
-        print(f"   Structure: {total_tiles} separate PNG spine elements (Pattern B)")
+        print(f"   Structure: {total_tiles} separate Image spine elements (Pattern B)")
     print(f"   Screen bounds: X(-30.0 to 30.0), Y(-50.0 to 50.0)")
-    print(f"   Original request: {num_lanes} lanes × {tiles_per_lane} tiles = {total_tiles} total PNG lanes")
+    print(f"   Original request: {num_lanes} lanes × {tiles_per_lane} tiles = {total_tiles} total image lanes")
 
 
 def main():
@@ -467,7 +469,7 @@ def main():
 Examples:
   %(prog)s create-empty-project --output my_project.fcpxml
   %(prog)s create-random-video /path/to/media/folder --output random.fcpxml
-  %(prog)s video-at-edge /path/to/png/folder --output edge_video.fcpxml --background-video bg.mp4
+  %(prog)s video-at-edge /path/to/image/folder --output edge_video.fcpxml --background-video bg.mp4
         """
     )
     
@@ -498,14 +500,14 @@ Examples:
     # Video at edge command
     edge_parser = subparsers.add_parser(
         'video-at-edge',
-        help='Create video with random PNGs tiled across visible area on multiple lanes'
+        help='Create video with random images (PNG/JPG) tiled across visible area on multiple lanes'
     )
-    edge_parser.add_argument('input_dir', help='Directory containing PNG files')
+    edge_parser.add_argument('input_dir', help='Directory containing image files (PNG, JPG, JPEG)')
     edge_parser.add_argument('--output', help='Output FCPXML file path')
     edge_parser.add_argument('--background-video', help='Background video file (optional)')
     edge_parser.add_argument('--duration', type=float, default=10.0, help='Duration in seconds (default: 10.0)')
-    edge_parser.add_argument('--tiles-per-lane', type=int, default=8, help='Number of PNG tiles per lane (default: 8)')
-    edge_parser.add_argument('--num-lanes', type=int, default=10, help='Number of lanes with PNG tiles (default: 10)')
+    edge_parser.add_argument('--tiles-per-lane', type=int, default=8, help='Number of image tiles per lane (default: 8)')
+    edge_parser.add_argument('--num-lanes', type=int, default=10, help='Number of lanes with image tiles (default: 10)')
     
     args = parser.parse_args()
     

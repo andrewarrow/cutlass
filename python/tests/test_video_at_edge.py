@@ -333,6 +333,58 @@ class TestVideoAtEdge:
                     assert scale_x == scale_y  # Uniform scaling
 
 
+    def test_jpg_file_support(self, base_fcpxml, temp_video_file):
+        """Test that JPG files are supported in addition to PNG files."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            
+            # Create mock JPG files
+            jpg_files = []
+            for i in range(3):
+                jpg_file = temp_path / f"test_{i}.jpg"
+                jpg_file.write_bytes(b"fake_jpg_data")
+                jpg_files.append(jpg_file)
+            
+            with patch('fcpxml_lib.core.fcpxml.create_media_asset') as mock_create_asset, \
+                 patch('fcpxml_lib.core.fcpxml.detect_video_properties') as mock_detect:
+                
+                mock_asset = MagicMock()
+                mock_asset.id = "r5"
+                mock_format = MagicMock()
+                mock_format.id = "r6"
+                mock_create_asset.return_value = (mock_asset, mock_format)
+                
+                mock_detect.return_value = {
+                    'width': 1920, 'height': 1080, 'duration_seconds': 8.0,
+                    'has_audio': True, 'frame_rate': '29.97'
+                }
+                
+                with patch('fcpxml_lib.core.fcpxml.needs_vertical_scaling', return_value=False):
+                    # Test with JPG files
+                    create_edge_tiled_timeline(
+                        base_fcpxml, 
+                        jpg_files, 
+                        str(temp_video_file), 
+                        duration=6.0,
+                        num_lanes=3,
+                        tiles_per_lane=1
+                    )
+                    
+                    sequence = base_fcpxml.library.events[0].projects[0].sequences[0]
+                    bg_element = sequence.spine.ordered_elements[0]
+                    
+                    # Verify JPG files created nested structure
+                    assert "nested_elements" in bg_element
+                    nested_images = bg_element["nested_elements"]
+                    assert len(nested_images) == 3
+                    
+                    # Verify each image has correct properties
+                    for i, image in enumerate(nested_images):
+                        assert image["type"] == "video"
+                        assert image["lane"] == i + 1
+                        assert "test_" in image["name"]  # Should contain the JPG filename
+
+
 class TestPatternComparison:
     """Tests comparing Pattern A vs Pattern B approaches."""
     
