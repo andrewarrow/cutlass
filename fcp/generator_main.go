@@ -487,6 +487,12 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 	// Calculate timing progression (starts slow, speeds up)
 	imageTimings := calculateProgessiveTiming(len(pngFiles), config.Duration)
 
+	// Get spine reference before adding elements
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	
+	// Add the base video clip to spine first
+	spine.AssetClips = append(spine.AssetClips, baseClip)
+
 	// Add PNG images with increasing pace and varied directions
 	for i, pngFile := range pngFiles {
 		timing := imageTimings[i]
@@ -495,7 +501,7 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 			fmt.Printf("Adding PNG %d/%d: %s at %.2fs\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime)
 		}
 
-		err = addSlidingPngImage(&baseClip, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
+		err = addSlidingPngImage(spine, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
 		if err != nil {
 			if verbose {
 				fmt.Printf("Warning: Failed to add PNG %s: %v\n", pngFile, err)
@@ -503,10 +509,6 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 			continue
 		}
 	}
-
-	// Add the base clip to spine
-	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
-	spine.AssetClips = append(spine.AssetClips, baseClip)
 
 	// Commit transaction
 	if err := tx.Commit(); err != nil {
@@ -568,7 +570,7 @@ func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTimi
 }
 
 // addSlidingPngImage adds a PNG with sliding animation and black border
-func addSlidingPngImage(baseClip *AssetClip, tx *ResourceTransaction, pngPath string, timing ImageTiming, index int, borderEffectID string, verbose bool, createdAssets, createdFormats map[string]string) error {
+func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, timing ImageTiming, index int, borderEffectID string, verbose bool, createdAssets, createdFormats map[string]string) error {
 	// Create image asset if not exists
 	var assetID, formatID string
 	var err error
@@ -604,7 +606,7 @@ func addSlidingPngImage(baseClip *AssetClip, tx *ResourceTransaction, pngPath st
 		Offset:   ConvertSecondsToFCPDuration(timing.startTime),
 		Duration: ConvertSecondsToFCPDuration(timing.duration),
 		Name:     fmt.Sprintf("PNG_%d_%s", index+1, strings.TrimSuffix(filepath.Base(pngPath), filepath.Ext(pngPath))),
-		Lane:     fmt.Sprintf("%d", index+1), // Each PNG gets its own lane
+		// No Lane for spine elements - only connected clips can have lanes
 		AdjustTransform: slideAnimation,
 		FilterVideos: []FilterVideo{
 			{
@@ -621,8 +623,8 @@ func addSlidingPngImage(baseClip *AssetClip, tx *ResourceTransaction, pngPath st
 		},
 	}
 
-	// Add to base clip's nested videos
-	baseClip.Videos = append(baseClip.Videos, video)
+	// Add PNG Video directly to spine (images must be at spine level, not nested in AssetClips)
+	spine.Videos = append(spine.Videos, video)
 
 	return nil
 }
@@ -688,7 +690,7 @@ func createSlidingAnimation(startTime, duration float64, index int) *AdjustTrans
 	}
 }
 
-// getPngFiles finds all PNG files in the given directory
+// getPngFiles finds all PNG and JPG image files in the given directory
 func getPngFiles(dir string) ([]string, error) {
 	var pngFiles []string
 	
@@ -697,7 +699,8 @@ func getPngFiles(dir string) ([]string, error) {
 			return err
 		}
 		
-		if !d.IsDir() && strings.ToLower(filepath.Ext(path)) == ".png" {
+		ext := strings.ToLower(filepath.Ext(path))
+		if !d.IsDir() && (ext == ".png" || ext == ".jpg" || ext == ".jpeg") {
 			pngFiles = append(pngFiles, path)
 		}
 		
