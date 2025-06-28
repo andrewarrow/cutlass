@@ -132,6 +132,8 @@ def serialize_to_xml(fcpxml) -> str:
                             elif element["type"] == "video":
                                 video_elem = SubElement(spine_elem, "video")
                                 video_elem.set("ref", element["ref"])
+                                if "lane" in element:
+                                    video_elem.set("lane", str(element["lane"]))
                                 if "duration" in element:
                                     video_elem.set("duration", element["duration"])
                                 if "offset" in element:
@@ -146,6 +148,8 @@ def serialize_to_xml(fcpxml) -> str:
                                     transform_elem = SubElement(video_elem, "adjust-transform")
                                     if "scale" in element["adjust_transform"]:
                                         transform_elem.set("scale", element["adjust_transform"]["scale"])
+                                    if "position" in element["adjust_transform"]:
+                                        transform_elem.set("position", element["adjust_transform"]["position"])
                     else:
                         # Fallback to old method if ordered_elements not available
                         # Add asset-clips (for videos)
@@ -170,6 +174,8 @@ def serialize_to_xml(fcpxml) -> str:
                         for video in sequence.spine.videos:
                             video_elem = SubElement(spine_elem, "video")
                             video_elem.set("ref", video["ref"])
+                            if "lane" in video:
+                                video_elem.set("lane", str(video["lane"]))
                             if "duration" in video:
                                 video_elem.set("duration", video["duration"])
                             if "offset" in video:
@@ -184,6 +190,8 @@ def serialize_to_xml(fcpxml) -> str:
                                 transform_elem = SubElement(video_elem, "adjust-transform")
                                 if "scale" in video["adjust_transform"]:
                                     transform_elem.set("scale", video["adjust_transform"]["scale"])
+                                if "position" in video["adjust_transform"]:
+                                    transform_elem.set("position", video["adjust_transform"]["position"])
                     
                     # Add gaps (if any)
                     for gap in sequence.spine.gaps:

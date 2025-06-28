@@ -52,6 +52,14 @@ ASPECT_RATIO_9_16 = 9 / 16  # ≈ 0.5625 (portrait)
 ASPECT_RATIO_SQUARE = 1.0  # Square (1:1)
 ASPECT_RATIO_PORTRAIT_THRESHOLD = 0.75  # Below this is considered portrait (taller than wide)
 
+# Screen edge positions for 1080x1920 vertical format (based on safe.fcpxml analysis)
+SCREEN_EDGE_LEFT = -46.875
+SCREEN_EDGE_RIGHT = 46.875
+SCREEN_EDGE_TOP = -93.75
+SCREEN_EDGE_BOTTOM = 93.75
+SCREEN_WIDTH = 93.75  # Total visible width (46.875 × 2)
+SCREEN_HEIGHT = 187.5  # Total visible height (93.75 × 2)
+
 # Default video properties (fallback when detection fails)
 DEFAULT_VIDEO_WIDTH = 1920
 DEFAULT_VIDEO_HEIGHT = 1080

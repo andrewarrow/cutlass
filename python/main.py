@@ -22,6 +22,12 @@ from fcpxml_lib import (
     create_empty_project, save_fcpxml, add_media_to_timeline, ValidationError,
     Sequence
 )
+from fcpxml_lib.core.fcpxml import create_media_asset
+from fcpxml_lib.constants import (
+    SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT, SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM,
+    SCREEN_WIDTH, SCREEN_HEIGHT
+)
+from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
 
 
 def test_validation_failure():
@@ -153,6 +159,153 @@ def create_random_video_cmd(args):
         sys.exit(1)
 
 
+def video_at_edge_cmd(args):
+    """Create video with random PNGs tiled across visible area on multiple lanes"""
+    input_dir = Path(args.input_dir)
+    if not input_dir.exists() or not input_dir.is_dir():
+        print(f"❌ Directory not found: {input_dir}")
+        sys.exit(1)
+    
+    # Find all PNG files
+    png_files = []
+    for pattern in ['*.png', '*.PNG']:
+        png_files.extend(input_dir.glob(pattern))
+    
+    if not png_files:
+        print(f"❌ No PNG files found in {input_dir}")
+        sys.exit(1)
+    
+    print(f"🎨 Creating video with edge-tiled PNGs...")
+    print(f"   Input directory: {input_dir}")
+    print(f"   PNG files found: {len(png_files)}")
+    print(f"   Duration: {args.duration}s")
+    print(f"   Lanes: {args.num_lanes}")
+    print(f"   Tiles per lane: {args.tiles_per_lane}")
+    
+    # Create empty project (always vertical for edge detection)
+    fcpxml = create_empty_project(
+        project_name="Video at Edge",
+        event_name="Edge Tiled Videos",
+        use_horizontal=False  # Always use vertical format
+    )
+    
+    # Generate the edge-tiled timeline
+    try:
+        create_edge_tiled_timeline(
+            fcpxml, 
+            png_files, 
+            args.background_video, 
+            args.duration,
+            args.num_lanes,
+            args.tiles_per_lane
+        )
+        
+        total_tiles = args.num_lanes * args.tiles_per_lane
+        print(f"✅ Timeline created with {total_tiles} PNG tiles across {args.num_lanes} lanes")
+        
+    except Exception as e:
+        print(f"❌ Error creating edge-tiled timeline: {e}")
+        print("   Creating empty project instead")
+    
+    # Save to file with validation
+    output_path = Path(args.output) if args.output else Path(__file__).parent / "video_at_edge.fcpxml"
+    validation_passed = save_fcpxml(fcpxml, str(output_path))
+    
+    if validation_passed:
+        print(f"✅ Saved to: {output_path}")
+    else:
+        print("❌ Cannot proceed - fix validation errors first")
+        sys.exit(1)
+
+
+def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, num_lanes, tiles_per_lane):
+    """Create timeline with PNGs tiled across the visible screen area"""
+    project = fcpxml.library.events[0].projects[0]
+    sequence = project.sequences[0]
+    
+    resource_counter = len(fcpxml.resources.assets) + len(fcpxml.resources.formats) + 1
+    
+    # Add background video if provided
+    if background_video:
+        bg_path = Path(background_video)
+        if bg_path.exists():
+            print(f"   Adding background video: {bg_path.name}")
+            
+            # Create background asset
+            asset_id = f"r{resource_counter}"
+            format_id = f"r{resource_counter + 1}"
+            resource_counter += 2
+            
+            asset, format_obj = create_media_asset(str(bg_path), asset_id, format_id, duration)
+            fcpxml.resources.assets.append(asset)
+            fcpxml.resources.formats.append(format_obj)
+            
+            # Add to spine as background
+            bg_duration = convert_seconds_to_fcp_duration(duration)
+            bg_element = {
+                "type": "asset-clip",
+                "ref": asset_id,
+                "duration": bg_duration,
+                "offset": "0s",
+                "name": bg_path.stem
+            }
+            sequence.spine.asset_clips.append(bg_element)
+            sequence.spine.ordered_elements.append(bg_element)
+    
+    # Generate random PNG tiles across multiple lanes
+    all_png_tiles = []
+    
+    for lane_num in range(1, num_lanes + 1):
+        for tile_num in range(tiles_per_lane):
+            # Select random PNG
+            png_file = random.choice(png_files)
+            
+            # Create asset
+            asset_id = f"r{resource_counter}"
+            format_id = f"r{resource_counter + 1}"
+            resource_counter += 2
+            
+            asset, format_obj = create_media_asset(str(png_file), asset_id, format_id, duration)
+            fcpxml.resources.assets.append(asset)
+            fcpxml.resources.formats.append(format_obj)
+            
+            # Generate random position within screen bounds
+            x_pos = random.uniform(SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT)
+            y_pos = random.uniform(SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM)
+            
+            # Generate random scale (smaller tiles)
+            scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
+            
+            # Create PNG tile element
+            tile_duration = convert_seconds_to_fcp_duration(duration)
+            tile_element = {
+                "type": "video",
+                "ref": asset_id,
+                "lane": lane_num,
+                "duration": tile_duration,
+                "offset": "0s",
+                "start": "3600s",  # Required for image elements
+                "name": f"{png_file.stem}_tile_{lane_num}_{tile_num}",
+                "adjust_transform": {
+                    "position": f"{x_pos:.3f} {y_pos:.3f}",
+                    "scale": f"{scale:.3f} {scale:.3f}"
+                }
+            }
+            
+            all_png_tiles.append(tile_element)
+    
+    # Add all PNG tiles to the spine
+    for tile in all_png_tiles:
+        sequence.spine.videos.append(tile)
+        sequence.spine.ordered_elements.append(tile)
+    
+    # Update sequence duration
+    sequence.duration = convert_seconds_to_fcp_duration(duration)
+    
+    print(f"   Generated {len(all_png_tiles)} random PNG tiles")
+    print(f"   Screen bounds: X({SCREEN_EDGE_LEFT:.1f} to {SCREEN_EDGE_RIGHT:.1f}), Y({SCREEN_EDGE_TOP:.1f} to {SCREEN_EDGE_BOTTOM:.1f})")
+
+
 def main():
     """CLI entry point with command options"""
     parser = argparse.ArgumentParser(
@@ -162,6 +315,7 @@ def main():
 Examples:
   %(prog)s create-empty-project --output my_project.fcpxml
   %(prog)s create-random-video /path/to/media/folder --output random.fcpxml
+  %(prog)s video-at-edge /path/to/png/folder --output edge_video.fcpxml --background-video bg.mp4
         """
     )
     
@@ -189,6 +343,18 @@ Examples:
     random_parser.add_argument('--clip-duration', type=float, default=5.0, help='Duration in seconds for each clip (default: 5.0)')
     random_parser.add_argument('--horizontal', action='store_true', help='Use 1280x720 horizontal format instead of default 1080x1920 vertical')
     
+    # Video at edge command
+    edge_parser = subparsers.add_parser(
+        'video-at-edge',
+        help='Create video with random PNGs tiled across visible area on multiple lanes'
+    )
+    edge_parser.add_argument('input_dir', help='Directory containing PNG files')
+    edge_parser.add_argument('--output', help='Output FCPXML file path')
+    edge_parser.add_argument('--background-video', help='Background video file (optional)')
+    edge_parser.add_argument('--duration', type=float, default=10.0, help='Duration in seconds (default: 10.0)')
+    edge_parser.add_argument('--tiles-per-lane', type=int, default=8, help='Number of PNG tiles per lane (default: 8)')
+    edge_parser.add_argument('--num-lanes', type=int, default=10, help='Number of lanes with PNG tiles (default: 10)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -199,6 +365,8 @@ Examples:
         create_empty_project_cmd(args)
     elif args.command == 'create-random-video':
         create_random_video_cmd(args)
+    elif args.command == 'video-at-edge':
+        video_at_edge_cmd(args)
 
 
 if __name__ == "__main__":
