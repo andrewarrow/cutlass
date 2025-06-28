@@ -649,7 +649,7 @@ func addSlidingPngImageToAssetClip(baseClip *AssetClip, tx *ResourceTransaction,
 			return fmt.Errorf("failed to create PNG asset: %v", err)
 		}
 
-		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "400", "300", "1-13-1")
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
 		if err != nil {
 			return fmt.Errorf("failed to create PNG format: %v", err)
 		}
@@ -710,7 +710,7 @@ func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, t
 			return fmt.Errorf("failed to create PNG asset: %v", err)
 		}
 
-		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "400", "300", "1-13-1")
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
 		if err != nil {
 			return fmt.Errorf("failed to create PNG format: %v", err)
 		}
@@ -768,8 +768,19 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 	direction := directions[index%len(directions)]
 	
 	return &AdjustTransform{
-		Rotation: direction.rotation, // Add rotation like Info.fcpxml
 		Params: []Param{
+			{
+				Name: "anchor",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  "3600s",
+							Value: "0 0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
 			{
 				Name: "position",
 				NestedParams: []Param{
@@ -800,6 +811,30 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 									Curve: "linear",
 								},
 							},
+						},
+					},
+				},
+			},
+			{
+				Name: "rotation",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  "3600s",
+							Value: direction.rotation,
+							Curve: "linear",
+						},
+					},
+				},
+			},
+			{
+				Name: "scale",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  "3600s",
+							Value: "0.675003 0.675003", // Match size.fcpxml scale for smaller postcard effect
+							Curve: "linear",
 						},
 					},
 				},
