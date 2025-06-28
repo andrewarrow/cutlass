@@ -48,10 +48,14 @@ def create_empty_project_cmd(args):
     # Test validation system first
     test_validation_failure()
     
-    # Create empty project
+    # Create empty project with format choice
+    format_desc = "1280x720 horizontal" if args.horizontal else "1080x1920 vertical"
+    print(f"   Format: {format_desc}")
+    
     fcpxml = create_empty_project(
         project_name=args.project_name or "My First Project",
-        event_name=args.event_name or "My First Event"
+        event_name=args.event_name or "My First Event",
+        use_horizontal=args.horizontal
     )
     
     # Validate the project
@@ -104,14 +108,17 @@ def create_random_video_cmd(args):
     # Randomly shuffle the files
     random.shuffle(media_files)
     
+    format_desc = "1280x720 horizontal" if args.horizontal else "1080x1920 vertical"
     print(f"🎬 Creating random video from {len(media_files)} media files...")
     print(f"   Input directory: {input_dir}")
+    print(f"   Format: {format_desc}")
     print(f"   Files found: {[f.name for f in media_files[:5]]}{'...' if len(media_files) > 5 else ''}")
     
-    # Create empty project
+    # Create empty project with format choice
     fcpxml = create_empty_project(
         project_name=args.project_name or f"Random Video - {input_dir.name}",
-        event_name=args.event_name or "Random Videos"
+        event_name=args.event_name or "Random Videos",
+        use_horizontal=args.horizontal
     )
     
     # Add media files to timeline
@@ -168,6 +175,7 @@ Examples:
     empty_parser.add_argument('--project-name', help='Name of the project')
     empty_parser.add_argument('--event-name', help='Name of the event')
     empty_parser.add_argument('--output', help='Output FCPXML file path')
+    empty_parser.add_argument('--horizontal', action='store_true', help='Use 1280x720 horizontal format instead of default 1080x1920 vertical')
     
     # Create random video command
     random_parser = subparsers.add_parser(
@@ -179,6 +187,7 @@ Examples:
     random_parser.add_argument('--event-name', help='Name of the event')
     random_parser.add_argument('--output', help='Output FCPXML file path')
     random_parser.add_argument('--clip-duration', type=float, default=5.0, help='Duration in seconds for each clip (default: 5.0)')
+    random_parser.add_argument('--horizontal', action='store_true', help='Use 1280x720 horizontal format instead of default 1080x1920 vertical')
     
     args = parser.parse_args()
     

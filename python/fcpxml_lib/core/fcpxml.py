@@ -11,7 +11,8 @@ from ..constants import (
     VIDEO_COLOR_SPACE, REQUIRED_SMART_COLLECTIONS, IMAGE_DURATION,
     IMAGE_FORMAT_NAME, IMAGE_COLOR_SPACE, DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT,
     DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT, DEFAULT_VIDEO_DURATION, IMAGE_START_TIME,
-    STANDARD_FRAME_RATE, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+    STANDARD_FRAME_RATE, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS,
+    VERTICAL_FORMAT_WIDTH, VERTICAL_FORMAT_HEIGHT, HORIZONTAL_FORMAT_WIDTH, HORIZONTAL_FORMAT_HEIGHT
 )
 from ..utils.ids import generate_uid
 from ..utils.timing import convert_seconds_to_fcp_duration
@@ -19,21 +20,37 @@ from ..serialization.xml_serializer import serialize_to_xml
 from ..validation.xml_validator import run_xml_validation
 
 
-def create_empty_project(project_name: str = "New Project", event_name: str = "New Event") -> FCPXML:
+def create_empty_project(project_name: str = "New Project", event_name: str = "New Event", 
+                        use_horizontal: bool = False) -> FCPXML:
     """
     Create an empty FCPXML project following schema.yaml template.
     
     This generates the minimal valid FCPXML structure that will import into Final Cut Pro
     without errors. Based on the empty_project template in schema.yaml.
+    
+    Args:
+        project_name: Name of the project
+        event_name: Name of the event
+        use_horizontal: If True, use 1280x720 horizontal format. If False, use 1080x1920 vertical (default)
     """
     
-    # Create format resource (HD 1080p 23.976 fps - FCP standard)
+    # Choose dimensions based on format preference
+    if use_horizontal:
+        width = HORIZONTAL_FORMAT_WIDTH
+        height = HORIZONTAL_FORMAT_HEIGHT
+        format_name = "FFVideoFormat720p2398"
+    else:
+        width = VERTICAL_FORMAT_WIDTH
+        height = VERTICAL_FORMAT_HEIGHT
+        format_name = "FFVideoFormat1080p2398Vertical"
+    
+    # Create format resource with chosen dimensions
     format_def = Format(
         id="r1",
-        name="FFVideoFormat1080p2398",
+        name=format_name,
         frame_duration=STANDARD_FRAME_DURATION,
-        width="1920", 
-        height="1080",
+        width=width, 
+        height=height,
         color_space=VIDEO_COLOR_SPACE
     )
     
