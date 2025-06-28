@@ -606,12 +606,14 @@ func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTimi
 	}
 	
 	currentTime := 0.0
-	baseDuration := 4.0 // Each image shows for 4 seconds
+	// Each image persists from its start time until the end of the video (pile up effect)
 	
 	for i := 0; i < numImages; i++ {
+		// Each image lasts from its start time until the end of the video (pile up effect)
+		remainingDuration := totalDuration - currentTime
 		timings[i] = ImageTiming{
 			startTime: currentTime,
-			duration:  baseDuration,
+			duration:  remainingDuration,
 		}
 		
 		// Calculate time until next image (gets shorter over time)
@@ -620,8 +622,8 @@ func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTimi
 		currentTime += timeStep
 		
 		// Don't go past the end
-		if currentTime > totalDuration-baseDuration {
-			currentTime = totalDuration - baseDuration
+		if currentTime > totalDuration-1.0 { // Leave at least 1 second for the last image
+			currentTime = totalDuration - 1.0
 		}
 	}
 	
@@ -647,7 +649,7 @@ func addSlidingPngImageToAssetClip(baseClip *AssetClip, tx *ResourceTransaction,
 			return fmt.Errorf("failed to create PNG asset: %v", err)
 		}
 
-		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "400", "300", "1-13-1")
 		if err != nil {
 			return fmt.Errorf("failed to create PNG format: %v", err)
 		}
@@ -708,7 +710,7 @@ func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, t
 			return fmt.Errorf("failed to create PNG asset: %v", err)
 		}
 
-		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "400", "300", "1-13-1")
 		if err != nil {
 			return fmt.Errorf("failed to create PNG format: %v", err)
 		}
