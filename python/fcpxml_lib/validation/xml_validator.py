@@ -54,6 +54,7 @@ def validate_fcpxml_semantics(xml_file_path: str) -> tuple[bool, str]:
     - All ref attributes have corresponding asset/format/effect IDs
     - Required smart collections are present
     - No duplicate IDs
+    - Nested video element structure (causes FCP crashes)
     """
     try:
         tree = ET.parse(xml_file_path)
@@ -117,9 +118,67 @@ def validate_fcpxml_semantics(xml_file_path: str) -> tuple[bool, str]:
             missing_list = ', '.join(sorted(missing_collections))
             return False, f"Missing required smart collections: {missing_list}"
         
+        # Check for problematic nested video structures
+        video_nesting_error = validate_video_nesting(root)
+        if video_nesting_error:
+            return False, video_nesting_error
+        
         return True, ""
         
     except ET.ParseError as e:
         return False, f"XML parsing error: {e}"
     except Exception as e:
         return False, f"Semantic validation error: {e}"
+
+
+def validate_video_nesting(root_element) -> str:
+    """
+    Validate video element nesting to prevent FCP crashes.
+    
+    🚨 CRITICAL: Deeply nested video elements cause "Invalid edit with no respective media" errors
+    
+    According to BAFFLE_TWO.md, nested video structures can cause crashes.
+    This function detects problematic patterns.
+    
+    Returns:
+        str: Error message if problem found, empty string if valid
+    """
+    def count_video_nesting(element, depth=0):
+        max_depth = depth
+        
+        for child in element:
+            if child.tag == 'video':
+                child_depth = count_video_nesting(child, depth + 1)
+                max_depth = max(max_depth, child_depth)
+            else:
+                child_depth = count_video_nesting(child, depth)
+                max_depth = max(max_depth, child_depth)
+        
+        return max_depth
+    
+    def find_problematic_nesting(element, path=""):
+        problems = []
+        
+        # Check if this video element has many nested videos
+        if element.tag == 'video':
+            nested_videos = element.findall('.//video')  # Find all nested video elements
+            if len(nested_videos) > 10:  # More than 10 nested videos is problematic
+                problems.append(f"Video element at {path} has {len(nested_videos)} nested video elements (limit: 10)")
+            
+            # Check if nested videos have deeply nested structure
+            depth = count_video_nesting(element)
+            if depth > 2:  # More than 2 levels of nesting is problematic
+                problems.append(f"Video element at {path} has nesting depth {depth} (limit: 2)")
+        
+        # Recursively check children
+        for i, child in enumerate(element):
+            child_path = f"{path}/{child.tag}[{i}]" if path else f"{child.tag}[{i}]"
+            problems.extend(find_problematic_nesting(child, child_path))
+        
+        return problems
+    
+    problems = find_problematic_nesting(root_element)
+    if problems:
+        return "Problematic video nesting detected: " + "; ".join(problems)
+    
+    return ""
