@@ -216,6 +216,109 @@ elif file_path.lower().endswith(('.mp4', '.mov')):
     )
 ```
 
+## 🚨 CRITICAL: Multi-Lane Structure Patterns 🚨
+
+**There are two distinct FCPXML patterns for creating multiple lanes, each serving different purposes:**
+
+### ✅ Pattern A: Nested Elements (Recommended for Multi-Lane Visibility)
+**Use for creating multiple visible lanes in Final Cut Pro timeline:**
+
+```xml
+<!-- Background AssetClip with nested elements -->
+<asset-clip ref="r2" duration="240240/24000s" offset="0s">
+    <adjust-transform scale="3.27127 3.27127"/>
+    <!-- PNGs nested INSIDE the background AssetClip -->
+    <video ref="r4" lane="1" offset="0s" start="3600s" duration="96096/24000s">
+        <adjust-transform position="62.5 0"/>
+    </video>
+    <video ref="r7" lane="2" offset="0s" start="3600s" duration="96096/24000s">
+        <adjust-transform position="-62.5 0"/>
+    </video>
+</asset-clip>
+```
+
+**Pattern A Implementation:**
+```python
+# Create background AssetClip
+bg_element = {
+    "type": "asset-clip",
+    "ref": asset_id,
+    "duration": duration,
+    "nested_elements": []  # Key: nested_elements array
+}
+
+# Add PNGs as nested elements INSIDE background
+for i, png_file in enumerate(png_files):
+    png_element = {
+        "type": "video",
+        "ref": png_asset_id,
+        "lane": i + 1,  # Sequential lanes: 1, 2, 3...
+        "start": "3600s",  # Timing like Info.fcpxml
+        "duration": duration
+    }
+    bg_element["nested_elements"].append(png_element)
+
+# Add background to spine (single element)
+sequence.spine.ordered_elements.append(bg_element)
+```
+
+### ✅ Pattern B: Separate Spine Elements (Fallback Pattern)
+**Use when no background video or for separate timeline elements:**
+
+```xml
+<spine>
+    <!-- Each element is separate on the spine -->
+    <video ref="r4" lane="1" offset="0s" start="0s" duration="240240/24000s">
+        <adjust-transform position="30 20"/>
+    </video>
+    <video ref="r7" lane="2" offset="240240/24000s" start="0s" duration="240240/24000s">
+        <adjust-transform position="-30 -20"/>
+    </video>
+</spine>
+```
+
+**Pattern B Implementation:**
+```python
+# Add each PNG as separate spine element
+for i, png_file in enumerate(png_files):
+    png_element = {
+        "type": "video", 
+        "ref": png_asset_id,
+        "lane": i + 1,
+        "start": "0s",  # Different timing
+        "duration": duration
+    }
+    # Each element added separately to spine
+    sequence.spine.videos.append(png_element)
+    sequence.spine.ordered_elements.append(png_element)
+```
+
+### 🎯 When to Use Each Pattern:
+
+**Use Pattern A (Nested) when:**
+- Creating multi-lane content with background video
+- Want multiple elements visible simultaneously in FCP
+- Following Go implementation patterns (like `png-pile` command)
+- Need elements to move together as a group
+
+**Use Pattern B (Separate) when:**
+- No background video available
+- Creating sequential timeline elements
+- Each element should be independently positioned in timeline
+- Fallback when Pattern A isn't applicable
+
+### 🚨 Key Differences:
+
+| Aspect | Pattern A (Nested) | Pattern B (Separate) |
+|--------|-------------------|---------------------|
+| **FCP Appearance** | Multiple visible lanes | Separate timeline elements |
+| **Structure** | Nested inside AssetClip | Independent spine elements |
+| **Timing** | `start="3600s"` (Info.fcpxml style) | `start="0s"` |
+| **Use Case** | Multi-lane with background | Sequential or no background |
+| **Go Equivalent** | `png-pile` command | Basic timeline |
+
+**Critical Discovery:** The regression was caused by using Pattern B when Pattern A was needed for multi-lane visibility.
+
 ## Validation Integration
 
 **All dataclasses have built-in validation (see `fcpxml_lib/validation/`):**
@@ -253,6 +356,7 @@ xml_content = xml_content.replace("<video", "<asset-clip")  # Wrong!
 python -m pytest tests/test_crash_prevention.py -v
 python -m pytest tests/test_timeline_elements.py -v  
 python -m pytest tests/test_xml_structure.py -v
+python -m pytest tests/test_video_at_edge.py -v  # Pattern A vs B validation
 
 # XML validation:
 xmllint output.fcpxml --noout
@@ -299,4 +403,6 @@ transform = AdjustTransform(
 - **Data Models**: `fcpxml_lib/models/elements.py` 
 - **Validation**: `fcpxml_lib/validation/validators.py`
 - **Testing Patterns**: `tests/test_crash_prevention.py`
+- **Multi-Lane Testing**: `tests/test_video_at_edge.py`
+- **Pattern Implementation**: `main.py:create_edge_tiled_timeline()`
 - **Utilities**: `fcpxml_lib/utils/timing.py`, `fcpxml_lib/utils/ids.py`
