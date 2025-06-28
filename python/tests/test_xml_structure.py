@@ -9,7 +9,7 @@ import pytest
 from xml.etree.ElementTree import fromstring
 import xml.etree.ElementTree as ET
 
-from fcpxml_lib.core.fcpxml import create_empty_fcpxml
+from fcpxml_lib.core.fcpxml import create_empty_project
 from fcpxml_lib.serialization.xml_serializer import serialize_to_xml
 from fcpxml_lib.models.elements import SmartCollection
 
@@ -19,7 +19,7 @@ class TestXMLStructure:
 
     def test_fcpxml_root_element(self):
         """Test that root element has correct attributes."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -29,7 +29,7 @@ class TestXMLStructure:
 
     def test_resources_section(self):
         """Test that resources section is properly structured."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -43,7 +43,7 @@ class TestXMLStructure:
 
     def test_library_structure(self):
         """Test that library has required structure."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -67,7 +67,7 @@ class TestXMLStructure:
 
     def test_smart_collections_xml(self):
         """Test smart collections XML structure."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -94,7 +94,7 @@ class TestXMLStructure:
 
     def test_all_video_collection(self):
         """Test All Video smart collection structure."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -121,7 +121,7 @@ class TestXMLStructure:
 
     def test_favorites_collection(self):
         """Test Favorites smart collection uses match-ratings."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -144,7 +144,7 @@ class TestXMLStructure:
 
     def test_sequence_structure(self):
         """Test sequence has proper attributes."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -166,7 +166,7 @@ class TestXMLStructure:
 
     def test_xml_wellformed(self):
         """Test that generated XML is well-formed."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         # This should not raise an exception if XML is well-formed
@@ -178,7 +178,7 @@ class TestXMLStructure:
 
     def test_no_empty_elements(self):
         """Test that there are no unexpected empty elements."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -194,7 +194,7 @@ class TestXMLStructure:
 
     def test_uid_uniqueness(self):
         """Test that all UIDs in the document are unique."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')
@@ -211,7 +211,7 @@ class TestXMLStructure:
 
     def test_resource_id_format(self):
         """Test that resource IDs follow the r1, r2, r3... pattern."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         root = fromstring(f'<?xml version="1.0"?>{xml_content}')

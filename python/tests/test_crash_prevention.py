@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from xml.etree.ElementTree import fromstring
 
-from fcpxml_lib.core.fcpxml import create_empty_fcpxml, add_media_to_timeline, create_media_asset
+from fcpxml_lib.core.fcpxml import create_empty_project, add_media_to_timeline, create_media_asset
 from fcpxml_lib.serialization.xml_serializer import serialize_to_xml
 from fcpxml_lib.models.elements import FCPXML, SmartCollection
 
@@ -21,7 +21,7 @@ class TestCrashPrevention:
 
     def test_smart_collections_required(self):
         """Test that smart collections are always included to prevent FCP crashes."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         
         # Verify smart collections exist
         assert fcpxml.library is not None
@@ -36,7 +36,7 @@ class TestCrashPrevention:
 
     def test_smart_collections_xml_structure(self):
         """Test that smart collections serialize to correct XML structure."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         xml_content = serialize_to_xml(fcpxml)
         
         # Parse XML to verify structure
@@ -126,7 +126,7 @@ class TestCrashPrevention:
             asset, format_obj = create_media_asset(tmp_video_path, "r2", "r3")
             
             # Verify video format has NO name attribute
-            assert format_obj.name is None, "Video formats should not have name attribute"
+            assert format_obj.name == "", "Video formats should have empty name attribute"
             assert format_obj.frame_duration == "1001/24000s"
             assert format_obj.color_space == "1-1-1 (Rec. 709)"
             
@@ -135,7 +135,7 @@ class TestCrashPrevention:
 
     def test_library_location_required(self):
         """Test that library location is always set to prevent crashes."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         
         assert fcpxml.library is not None
         assert fcpxml.library.location != ""
@@ -143,7 +143,7 @@ class TestCrashPrevention:
 
     def test_fcpxml_version_113(self):
         """Test that FCPXML version is 1.13 (matching Go implementation)."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         
         assert fcpxml.version == "1.13"
 

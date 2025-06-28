@@ -10,7 +10,7 @@ import tempfile
 import os
 from xml.etree.ElementTree import fromstring
 
-from fcpxml_lib.core.fcpxml import create_empty_fcpxml, add_media_to_timeline
+from fcpxml_lib.core.fcpxml import create_empty_project, add_media_to_timeline
 from fcpxml_lib.serialization.xml_serializer import serialize_to_xml
 
 
@@ -41,7 +41,7 @@ class TestTimelineElements:
 
     def test_images_create_video_elements(self, sample_media_files):
         """Test that image files create <video> elements in the timeline."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, [sample_media_files['image']], clip_duration_seconds=5.0)
         
         xml_content = serialize_to_xml(fcpxml)
@@ -59,7 +59,7 @@ class TestTimelineElements:
 
     def test_videos_create_asset_clip_elements(self, sample_media_files):
         """Test that video files create <asset-clip> elements in the timeline."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, [sample_media_files['video']], clip_duration_seconds=5.0)
         
         xml_content = serialize_to_xml(fcpxml)
@@ -77,7 +77,7 @@ class TestTimelineElements:
 
     def test_mixed_media_timeline(self, sample_media_files):
         """Test timeline with both images and videos."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         media_files = [sample_media_files['image'], sample_media_files['video']]
         add_media_to_timeline(fcpxml, media_files, clip_duration_seconds=3.0)
         
@@ -99,7 +99,7 @@ class TestTimelineElements:
 
     def test_timeline_ordering(self, sample_media_files):
         """Test that timeline elements are properly ordered by offset."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         media_files = [sample_media_files['image'], sample_media_files['video']]
         add_media_to_timeline(fcpxml, media_files, clip_duration_seconds=2.0)
         
@@ -131,7 +131,7 @@ class TestTimelineElements:
 
     def test_image_start_attribute(self, sample_media_files):
         """Test that image video elements have the required start attribute."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, [sample_media_files['image']], clip_duration_seconds=5.0)
         
         xml_content = serialize_to_xml(fcpxml)
@@ -146,7 +146,7 @@ class TestTimelineElements:
 
     def test_video_no_start_attribute(self, sample_media_files):
         """Test that video asset-clip elements do NOT have start attribute."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, [sample_media_files['video']], clip_duration_seconds=5.0)
         
         xml_content = serialize_to_xml(fcpxml)
@@ -160,7 +160,7 @@ class TestTimelineElements:
 
     def test_duration_calculation(self, sample_media_files):
         """Test that timeline durations are correctly calculated."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         clip_duration = 4.0
         media_files = [sample_media_files['image'], sample_media_files['video']]
         

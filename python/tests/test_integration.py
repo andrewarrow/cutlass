@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from xml.etree.ElementTree import fromstring
 
-from fcpxml_lib.core.fcpxml import create_empty_fcpxml, add_media_to_timeline, write_fcpxml_to_file
+from fcpxml_lib.core.fcpxml import create_empty_project, add_media_to_timeline, save_fcpxml
 from fcpxml_lib.validation.xml_validator import run_xml_validation
 
 
@@ -45,7 +45,7 @@ class TestIntegration:
     def test_end_to_end_fcpxml_generation(self, mixed_media_files):
         """Test complete FCPXML generation from media files."""
         # Create FCPXML with mixed media
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, mixed_media_files, clip_duration_seconds=3.0)
         
         # Write to temporary file
@@ -53,7 +53,7 @@ class TestIntegration:
             output_path = tmp.name
         
         try:
-            success = write_fcpxml_to_file(fcpxml, output_path)
+            success = save_fcpxml(fcpxml, output_path)
             assert success, "FCPXML generation should succeed"
             
             # Verify file was created
@@ -70,7 +70,7 @@ class TestIntegration:
 
     def test_fcpxml_contains_all_required_elements(self, mixed_media_files):
         """Test that generated FCPXML contains all elements needed to prevent crashes."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, mixed_media_files, clip_duration_seconds=2.0)
         
         # Write and read back the FCPXML
@@ -78,7 +78,7 @@ class TestIntegration:
             output_path = tmp.name
         
         try:
-            write_fcpxml_to_file(fcpxml, output_path)
+            save_fcpxml(fcpxml, output_path)
             
             # Parse the generated XML
             with open(output_path, 'r') as f:
@@ -130,14 +130,14 @@ class TestIntegration:
 
     def test_proper_element_separation(self, mixed_media_files):
         """Test that images and videos create correct timeline elements."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, mixed_media_files, clip_duration_seconds=2.0)
         
         with tempfile.NamedTemporaryFile(suffix='.fcpxml', delete=False) as tmp:
             output_path = tmp.name
         
         try:
-            write_fcpxml_to_file(fcpxml, output_path)
+            save_fcpxml(fcpxml, output_path)
             
             with open(output_path, 'r') as f:
                 xml_content = f.read()
@@ -177,14 +177,14 @@ class TestIntegration:
                     media_files.append(tmp.name)
             
             # Generate FCPXML
-            fcpxml = create_empty_fcpxml()
+            fcpxml = create_empty_project()
             add_media_to_timeline(fcpxml, media_files, clip_duration_seconds=1.0)
             
             with tempfile.NamedTemporaryFile(suffix='.fcpxml', delete=False) as tmp:
                 output_path = tmp.name
             
             try:
-                success = write_fcpxml_to_file(fcpxml, output_path)
+                success = save_fcpxml(fcpxml, output_path)
                 assert success
                 
                 # Verify the file is reasonable size (not empty, not too large)
@@ -208,14 +208,14 @@ class TestIntegration:
 
     def test_empty_media_list(self):
         """Test handling of empty media list."""
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, [], clip_duration_seconds=5.0)
         
         with tempfile.NamedTemporaryFile(suffix='.fcpxml', delete=False) as tmp:
             output_path = tmp.name
         
         try:
-            success = write_fcpxml_to_file(fcpxml, output_path)
+            success = save_fcpxml(fcpxml, output_path)
             assert success
             
             # Should still be valid XML with basic structure
@@ -244,14 +244,14 @@ class TestIntegration:
     def test_timeline_duration_calculation(self, mixed_media_files):
         """Test that timeline duration is correctly calculated."""
         clip_duration = 2.5
-        fcpxml = create_empty_fcpxml()
+        fcpxml = create_empty_project()
         add_media_to_timeline(fcpxml, mixed_media_files, clip_duration_seconds=clip_duration)
         
         with tempfile.NamedTemporaryFile(suffix='.fcpxml', delete=False) as tmp:
             output_path = tmp.name
         
         try:
-            write_fcpxml_to_file(fcpxml, output_path)
+            save_fcpxml(fcpxml, output_path)
             
             with open(output_path, 'r') as f:
                 xml_content = f.read()
