@@ -131,7 +131,7 @@ def create_random_video_cmd(args):
     print(f"   Found {len([f for f in media_files if f.suffix.lower() in image_extensions])} images")
     
     try:
-        add_media_to_timeline(fcpxml, media_file_paths, clip_duration)
+        add_media_to_timeline(fcpxml, media_file_paths, clip_duration, args.horizontal)
         print(f"✅ Timeline created with {len(media_files)} clips")
         
         # Calculate total duration

@@ -43,6 +43,9 @@ VERTICAL_FORMAT_HEIGHT = "1920"
 HORIZONTAL_FORMAT_WIDTH = "1280"
 HORIZONTAL_FORMAT_HEIGHT = "720"
 
+# Transform constants for vertical format fill
+VERTICAL_SCALE_FACTOR = "3.27127 3.27127"  # Scale to fill 1080x1920 from 1920x1080
+
 # Default video properties (fallback when detection fails)
 DEFAULT_VIDEO_WIDTH = 1920
 DEFAULT_VIDEO_HEIGHT = 1080

@@ -5,14 +5,15 @@ Core FCPXML document handling.
 import sys
 from pathlib import Path
 
-from ..models.elements import Resources, Library, Format, Sequence, Project, Event, FCPXML, Asset, MediaRep, SmartCollection
+from ..models.elements import Resources, Library, Format, Sequence, Project, Event, FCPXML, Asset, MediaRep, SmartCollection, AdjustTransform
 from ..constants import (
     FCPXML_VERSION, DEFAULT_SEQUENCE_SETTINGS, STANDARD_FRAME_DURATION,
     VIDEO_COLOR_SPACE, REQUIRED_SMART_COLLECTIONS, IMAGE_DURATION,
     IMAGE_FORMAT_NAME, IMAGE_COLOR_SPACE, DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT,
     DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT, DEFAULT_VIDEO_DURATION, IMAGE_START_TIME,
     STANDARD_FRAME_RATE, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS,
-    VERTICAL_FORMAT_WIDTH, VERTICAL_FORMAT_HEIGHT, HORIZONTAL_FORMAT_WIDTH, HORIZONTAL_FORMAT_HEIGHT
+    VERTICAL_FORMAT_WIDTH, VERTICAL_FORMAT_HEIGHT, HORIZONTAL_FORMAT_WIDTH, HORIZONTAL_FORMAT_HEIGHT,
+    VERTICAL_SCALE_FACTOR
 )
 from ..utils.ids import generate_uid
 from ..utils.timing import convert_seconds_to_fcp_duration
@@ -245,7 +246,7 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
     return asset, format_obj
 
 
-def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_seconds: float = 5.0):
+def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_seconds: float = 5.0, use_horizontal: bool = False):
     """
     Add media files to timeline following CLAUDE.md rules.
     
@@ -253,6 +254,13 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
     - Images: Video element (NOT AssetClip) 
     - Videos: AssetClip element
     - Elements MUST be ordered by start time in spine
+    - In vertical format, applies 3.27x scale to fill screen
+    
+    Args:
+        fcpxml: The FCPXML document
+        media_files: List of media file paths
+        clip_duration_seconds: Duration for each clip
+        use_horizontal: If False (default), apply vertical scaling for 1080x1920
     """
     if not fcpxml.library or not fcpxml.library.events:
         raise ValueError("FCPXML must have library and events")
@@ -321,6 +329,10 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                     "name": Path(media_file).stem,
                     "start_time": timeline_position  # For sorting
                 }
+                
+                # Add scaling for vertical format to fill screen
+                if not use_horizontal:
+                    element["adjust_transform"] = {"scale": VERTICAL_SCALE_FACTOR}
             
             all_timeline_elements.append(element)
             timeline_position += clip_duration_seconds
@@ -357,6 +369,11 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                 # NO start attribute for AssetClip elements
                 "name": element["name"]
             }
+            
+            # Add transform if present
+            if "adjust_transform" in element:
+                asset_clip["adjust_transform"] = element["adjust_transform"]
+            
             sequence.spine.asset_clips.append(asset_clip)
             sequence.spine.ordered_elements.append(asset_clip)
     

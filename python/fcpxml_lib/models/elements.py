@@ -82,6 +82,30 @@ class Resources:
 
 
 @dataclass
+class AdjustTransform:
+    """Transform adjustments for video/image elements"""
+    scale: Optional[str] = None
+    rotation: Optional[str] = None
+    position_x: Optional[str] = None
+    position_y: Optional[str] = None
+    
+    def to_dict(self) -> Dict:
+        """Convert to dictionary for XML serialization"""
+        result = {}
+        if self.scale:
+            result["scale"] = self.scale
+        if self.rotation:
+            result["rotation"] = self.rotation
+        if self.position_x or self.position_y:
+            result["position"] = {}
+            if self.position_x:
+                result["position"]["X"] = self.position_x
+            if self.position_y:
+                result["position"]["Y"] = self.position_y
+        return result
+
+
+@dataclass
 class Spine:
     """Main timeline container - currently empty for minimal implementation"""
     asset_clips: List[Dict] = field(default_factory=list)

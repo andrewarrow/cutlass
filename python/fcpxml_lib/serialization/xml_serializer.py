@@ -124,6 +124,12 @@ def serialize_to_xml(fcpxml) -> str:
                                 # NO start attribute for asset-clip elements per samples/simple_video1.fcpxml
                                 if "name" in element:
                                     clip_elem.set("name", element["name"])
+                                
+                                # Add adjust-transform if present
+                                if "adjust_transform" in element:
+                                    transform_elem = SubElement(clip_elem, "adjust-transform")
+                                    if "scale" in element["adjust_transform"]:
+                                        transform_elem.set("scale", element["adjust_transform"]["scale"])
                             elif element["type"] == "video":
                                 video_elem = SubElement(spine_elem, "video")
                                 video_elem.set("ref", element["ref"])
@@ -148,6 +154,12 @@ def serialize_to_xml(fcpxml) -> str:
                             # NO start attribute for asset-clip elements per samples/simple_video1.fcpxml
                             if "name" in asset_clip:
                                 clip_elem.set("name", asset_clip["name"])
+                            
+                            # Add adjust-transform if present
+                            if "adjust_transform" in asset_clip:
+                                transform_elem = SubElement(clip_elem, "adjust-transform")
+                                if "scale" in asset_clip["adjust_transform"]:
+                                    transform_elem.set("scale", asset_clip["adjust_transform"]["scale"])
                         
                         # Add videos (for images)
                         for video in sequence.spine.videos:
