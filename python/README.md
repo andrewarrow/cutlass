@@ -74,10 +74,34 @@ The `schema.yaml` file contains 500+ lines of extracted rules from the Go/Swift 
 
 ## Validation
 
-All generated FCPXML is validated against the schema rules:
+The library includes comprehensive validation at multiple levels:
 
+### 1. Construction-Time Validation
+```python
+# This will fail immediately with clear error message:
+bad_sequence = Sequence(audio_rate="48000")  # Should be "48k"
+# ValidationError: Invalid audio rate: 48000. Must be one of ['32k', '44.1k', '48k', ...]
+```
+
+### 2. XML Well-Formedness Check
 ```bash
 xmllint empty_project.fcpxml --noout  # Should pass without errors
+```
+
+### 3. Schema Rule Validation
+- Frame alignment (24000/1001 timebase)
+- Resource ID format (r1, r2, etc.)
+- DTD enumerated values (audio rates, etc.)
+- Media type constraints
+
+Example output showing validation:
+```
+🧪 Testing validation failure detection...
+✅ Validation correctly caught error: Invalid audio rate: 48000. Must be one of ['32k', '44.1k', '48k', ...]
+
+📄 FCPXML saved to: empty_project.fcpxml
+🔍 Running XML well-formedness validation...
+✅ XML VALIDATION PASSED
 ```
 
 ## Comparison with Other Libraries

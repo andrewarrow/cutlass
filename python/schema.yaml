@@ -247,9 +247,10 @@ fcpxml_rules:
       - "1-14-18 (Rec. 2020 HLG)"
       - "1-16-18 (Rec. 2020 PQ)"
 
-  # Audio rates
+  # Audio rates (DTD enumerated values)
   audio_rates:
-    valid_values: ["44100", "48000", "96000", "192000"]
+    valid_values: ["32k", "44.1k", "48k", "88.2k", "96k", "176.4k", "192k"]
+    note: "These are the DTD-valid enumerated values, not raw sample rates"
 
   # Common crash patterns to avoid
   crash_patterns:

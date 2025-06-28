@@ -16,6 +16,8 @@ All XML is generated from structured data objects, never string templates.
 import os
 import time
 import yaml
+import subprocess
+import sys
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from xml.etree.ElementTree import Element, SubElement, tostring
@@ -106,6 +108,42 @@ def validate_resource_id(resource_id: str) -> bool:
     return bool(re.match(pattern, resource_id))
 
 
+def validate_audio_rate(audio_rate: str) -> bool:
+    """Validate audio rate is in DTD enumerated set"""
+    valid_rates = SCHEMA['fcpxml_rules']['audio_rates']['valid_values']
+    return audio_rate in valid_rates
+
+
+def run_xml_validation(xml_file_path: str) -> tuple[bool, str]:
+    """
+    Run basic XML well-formedness validation using xmllint.
+    
+    🚨 CRITICAL: XML must be well-formed for FCPXML (from schema.yaml)
+    Note: Full DTD validation requires Apple's DTD but basic validation catches most issues.
+    """
+    try:
+        result = subprocess.run(
+            ['xmllint', '--noout', xml_file_path],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        if result.returncode == 0:
+            return True, ""
+        else:
+            # Extract meaningful error from xmllint output
+            error_msg = result.stderr.strip()
+            return False, error_msg
+            
+    except subprocess.TimeoutExpired:
+        return False, "XML validation timed out"
+    except subprocess.CalledProcessError as e:
+        return False, f"xmllint error: {e.stderr}"
+    except FileNotFoundError:
+        return False, "xmllint not found - install libxml2-utils"
+
+
 @dataclass
 class MediaRep:
     """Media representation with file path and metadata"""
@@ -192,7 +230,7 @@ class Sequence:
     tc_start: str = "0s"
     tc_format: str = "NDF"
     audio_layout: str = "stereo"
-    audio_rate: str = "48000"
+    audio_rate: str = "48k"  # Use DTD-valid enumerated value
     spine: Spine = field(default_factory=Spine)
     
     def __post_init__(self):
@@ -200,6 +238,9 @@ class Sequence:
             raise ValidationError(f"Sequence duration not frame-aligned: {self.duration}")
         if not validate_frame_alignment(self.tc_start):
             raise ValidationError(f"Sequence tc_start not frame-aligned: {self.tc_start}")
+        if not validate_audio_rate(self.audio_rate):
+            valid_rates = SCHEMA['fcpxml_rules']['audio_rates']['valid_values']
+            raise ValidationError(f"Invalid audio rate: {self.audio_rate}. Must be one of {valid_rates}")
 
 
 @dataclass
@@ -286,7 +327,7 @@ def create_empty_project(project_name: str = "New Project", event_name: str = "N
         tc_start="0s",
         tc_format="NDF",
         audio_layout="stereo",
-        audio_rate="48000"
+        audio_rate="48k"
     )
     
     # Create project containing the sequence
@@ -327,6 +368,8 @@ def serialize_to_xml(fcpxml: FCPXML) -> str:
     
     🚨 CRITICAL: This implements the "STRUCT_BASED_GENERATION" principle
     from schema.yaml - no string templates, only structured XML building.
+    
+    Returns only the XML content without declaration (added separately).
     """
     
     # Create root element
@@ -419,24 +462,69 @@ def serialize_to_xml(fcpxml: FCPXML) -> str:
                     spine_elem = SubElement(seq_elem, "spine")
                     # TODO: Add spine content when implementing media elements
     
-    # Pretty print the XML
+    # Convert to string without XML declaration
     rough_string = tostring(root, encoding='unicode')
     reparsed = parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ", encoding=None)
+    pretty_xml = reparsed.toprettyxml(indent="  ", encoding=None)
+    
+    # Remove the first XML declaration line that parseString adds
+    lines = pretty_xml.split('\n')
+    if lines[0].startswith('<?xml'):
+        lines = lines[1:]
+    
+    return '\n'.join(lines).strip()
 
 
-def save_fcpxml(fcpxml: FCPXML, output_path: str) -> None:
-    """Save FCPXML document to file"""
+def save_fcpxml(fcpxml: FCPXML, output_path: str) -> bool:
+    """
+    Save FCPXML document to file and validate it.
+    
+    Returns True if successful and well-formed, False otherwise.
+    🚨 CRITICAL: XML validation is mandatory (from schema.yaml)
+    """
     xml_content = serialize_to_xml(fcpxml)
     
-    # Add XML declaration and DOCTYPE if needed
-    if not xml_content.startswith('<?xml'):
-        xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n' + xml_content
+    # Add XML declaration (no DTD for now as it requires Apple's server)
+    fcpxml_with_header = f'''<?xml version="1.0" encoding="UTF-8"?>
+{xml_content}'''
     
     with open(output_path, 'w', encoding='utf-8') as f:
-        f.write(xml_content)
+        f.write(fcpxml_with_header)
     
-    print(f"✅ FCPXML saved to: {output_path}")
+    print(f"📄 FCPXML saved to: {output_path}")
+    
+    # Run basic XML validation
+    print("🔍 Running XML well-formedness validation...")
+    is_valid, error_msg = run_xml_validation(output_path)
+    
+    if is_valid:
+        print("✅ XML VALIDATION PASSED")
+        print("⚠️  Note: For full DTD validation, test import in Final Cut Pro")
+        return True
+    else:
+        print("\n" + "="*60)
+        print("🚨 VALIDATION FAILED - XML ERRORS DETECTED")
+        print("="*60)
+        print(f"❌ XML Error: {error_msg}")
+        print("\n⚠️  FCPXML will likely fail to import into Final Cut Pro!")
+        print("   Fix the validation errors before using this file.")
+        print("="*60 + "\n")
+        return False
+
+
+def test_validation_failure():
+    """Demonstrate validation failure detection"""
+    print("\n🧪 Testing validation failure detection...")
+    
+    # Try to create a sequence with invalid audio rate
+    try:
+        bad_sequence = Sequence(
+            format="r1",
+            audio_rate="48000"  # Invalid - should be "48k"
+        )
+        print("❌ SHOULD HAVE FAILED - invalid audio rate was not caught!")
+    except ValidationError as e:
+        print(f"✅ Validation correctly caught error: {e}")
 
 
 def main():
@@ -450,6 +538,9 @@ def main():
     print("🎬 FCPXML Python Generator")
     print("Following schema.yaml rules for safe FCPXML generation")
     print()
+    
+    # Test validation system first
+    test_validation_failure()
     
     # Create empty project
     print("Creating empty FCPXML project...")
@@ -466,17 +557,21 @@ def main():
     print(f"   Projects: {len(fcpxml.library.events[0].projects)}")
     print()
     
-    # Save to file
+    # Save to file with validation
     output_path = Path(__file__).parent / "empty_project.fcpxml"
-    save_fcpxml(fcpxml, str(output_path))
+    validation_passed = save_fcpxml(fcpxml, str(output_path))
     
-    print("🎯 Next steps:")
-    print("1. Import empty_project.fcpxml into Final Cut Pro to test")
-    print("2. Extend this library to add media assets") 
-    print("3. Implement more spine elements (asset-clips, titles, etc.)")
-    print("4. Add keyframe animation support")
-    print()
-    print("📖 See schema.yaml for complete FCPXML rules and constraints")
+    if validation_passed:
+        print("🎯 Next steps:")
+        print("1. Import empty_project.fcpxml into Final Cut Pro to test")
+        print("2. Extend this library to add media assets") 
+        print("3. Implement more spine elements (asset-clips, titles, etc.)")
+        print("4. Add keyframe animation support")
+        print()
+        print("📖 See schema.yaml for complete FCPXML rules and constraints")
+    else:
+        print("❌ Cannot proceed - fix validation errors first")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

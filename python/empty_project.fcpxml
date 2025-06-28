@@ -1,12 +1,12 @@
-<?xml version="1.0" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <fcpxml version="1.11">
   <resources>
     <format id="r1" name="FFVideoFormat1080p2398" frameDuration="1001/24000s" width="1920" height="1080" colorSpace="1-1-1 (Rec. 709)"/>
   </resources>
   <library>
-    <event name="My First Event" uid="01F4DCA9499DF378A4F0E502E03361A3">
-      <project name="My First Project" uid="85F09A8DF819DB301C7D610DC27A258D" modDate="2025-06-28 06:13:58 -0700">
-        <sequence format="r1" duration="0s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48000">
+    <event name="My First Event" uid="752DC24D4F5E00206043757592FECDA4">
+      <project name="My First Project" uid="EA02825B151DB1D8DB29667C6CCF5CF5" modDate="2025-06-28 06:26:47 -0700">
+        <sequence format="r1" duration="0s" tcStart="0s" tcFormat="NDF" audioLayout="stereo" audioRate="48k">
           <spine/>
         </sequence>
       </project>
