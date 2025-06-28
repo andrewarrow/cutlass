@@ -107,9 +107,44 @@ def serialize_to_xml(fcpxml) -> str:
                     seq_elem.set("audioLayout", sequence.audio_layout)
                     seq_elem.set("audioRate", sequence.audio_rate)
                     
-                    # Add spine (empty for now)
+                    # Add spine with media content
                     spine_elem = SubElement(seq_elem, "spine")
-                    # TODO: Add spine content when implementing media elements
+                    
+                    # Add asset-clips (for videos)
+                    for asset_clip in sequence.spine.asset_clips:
+                        clip_elem = SubElement(spine_elem, "asset-clip")
+                        clip_elem.set("ref", asset_clip["ref"])
+                        if "duration" in asset_clip:
+                            clip_elem.set("duration", asset_clip["duration"])
+                        if "start" in asset_clip:
+                            clip_elem.set("start", asset_clip["start"])
+                    
+                    # Add videos (for images)
+                    for video in sequence.spine.videos:
+                        video_elem = SubElement(spine_elem, "video")
+                        video_elem.set("ref", video["ref"])
+                        if "duration" in video:
+                            video_elem.set("duration", video["duration"])
+                        if "start" in video:
+                            video_elem.set("start", video["start"])
+                    
+                    # Add gaps (if any)
+                    for gap in sequence.spine.gaps:
+                        gap_elem = SubElement(spine_elem, "gap")
+                        if "duration" in gap:
+                            gap_elem.set("duration", gap["duration"])
+                        if "start" in gap:
+                            gap_elem.set("start", gap["start"])
+                    
+                    # Add titles (if any)
+                    for title in sequence.spine.titles:
+                        title_elem = SubElement(spine_elem, "title")
+                        if "ref" in title:
+                            title_elem.set("ref", title["ref"])
+                        if "duration" in title:
+                            title_elem.set("duration", title["duration"])
+                        if "start" in title:
+                            title_elem.set("start", title["start"])
 
     # Convert to string without XML declaration
     rough_string = tostring(root, encoding='unicode')

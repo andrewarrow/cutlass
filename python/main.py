@@ -19,7 +19,7 @@ import random
 from pathlib import Path
 
 from fcpxml_lib import (
-    create_empty_project, save_fcpxml, ValidationError,
+    create_empty_project, save_fcpxml, add_media_to_timeline, ValidationError,
     Sequence
 )
 
@@ -108,16 +108,32 @@ def create_random_video_cmd(args):
     print(f"   Input directory: {input_dir}")
     print(f"   Files found: {[f.name for f in media_files[:5]]}{'...' if len(media_files) > 5 else ''}")
     
-    # For now, create an empty project as placeholder
-    # TODO: Implement actual media integration
+    # Create empty project
     fcpxml = create_empty_project(
         project_name=args.project_name or f"Random Video - {input_dir.name}",
         event_name=args.event_name or "Random Videos"
     )
     
-    print("⚠️  Currently creates empty project - media integration coming soon!")
+    # Add media files to timeline
+    media_file_paths = [str(f) for f in media_files]
+    clip_duration = args.clip_duration
+    
+    print(f"✅ Adding {len(media_files)} media files to timeline...")
+    print(f"   Each clip duration: {clip_duration}s")
     print(f"   Found {len([f for f in media_files if f.suffix.lower() in video_extensions])} videos")
     print(f"   Found {len([f for f in media_files if f.suffix.lower() in image_extensions])} images")
+    
+    try:
+        add_media_to_timeline(fcpxml, media_file_paths, clip_duration)
+        print(f"✅ Timeline created with {len(media_files)} clips")
+        
+        # Calculate total duration
+        total_duration = len(media_files) * clip_duration
+        print(f"   Total timeline duration: {total_duration:.1f}s")
+        
+    except Exception as e:
+        print(f"❌ Error adding media to timeline: {e}")
+        print("   Creating empty project instead")
     
     # Save to file with validation
     output_path = Path(args.output) if args.output else Path(__file__).parent / "random_video.fcpxml"
@@ -162,6 +178,7 @@ Examples:
     random_parser.add_argument('--project-name', help='Name of the project')
     random_parser.add_argument('--event-name', help='Name of the event')
     random_parser.add_argument('--output', help='Output FCPXML file path')
+    random_parser.add_argument('--clip-duration', type=float, default=5.0, help='Duration in seconds for each clip (default: 5.0)')
     
     args = parser.parse_args()
     
