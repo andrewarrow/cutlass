@@ -29,7 +29,7 @@ func TestMigrationManager_MigrateFromLegacy(t *testing.T) {
 								Start:    "0s",
 								MediaRep: MediaRep{
 									Kind: "original-media",
-									Src:  "file:///test.mp4",
+									Src:  "file:///tmp/test/path.mp4",
 								},
 							},
 						},
@@ -135,7 +135,7 @@ func TestMigrationManager_MigrateFromLegacy(t *testing.T) {
 								Start:    "0s",
 								MediaRep: MediaRep{
 									Kind: "original-media",
-									Src:  "file:///test.mp4",
+									Src:  "file:///tmp/test/path.mp4",
 								},
 							},
 						},

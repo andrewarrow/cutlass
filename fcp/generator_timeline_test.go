@@ -47,8 +47,8 @@ func TestComplexTimeline(t *testing.T) {
 		name         string
 	}{
 		{format1ID, "1001/24000s", "1920", "1080", "FFVideoFormat1080p2398"},
-		{format2ID, "1001/30000s", "1280", "720", "FFVideoFormat720p30"},
-		{format3ID, "1001/25000s", "3840", "2160", "FFVideoFormat4K25"},
+		{format2ID, "1001/24000s", "1280", "720", "FFVideoFormat720p24"},
+		{format3ID, "1001/24000s", "3840", "2160", "FFVideoFormat4K24"},
 		{audioFormatID, "", "", "", ""}, // Audio format has no video dimensions
 		{imageFormatID, "", "1920", "1080", "FFVideoFormatRateUndefined"}, // Image format
 	}
@@ -194,7 +194,7 @@ func TestComplexTimeline(t *testing.T) {
 					// Background music (lane -1)
 					{
 						Ref:       audio1Asset.ID,
-						Lane:      "-1",
+						// Spine element - no lane attribute
 						Offset:    musicStart,
 						Name:      audio1Asset.Name,
 						Duration:  audio1Duration,
@@ -222,7 +222,7 @@ func TestComplexTimeline(t *testing.T) {
 					// Sound effects (lane -2)
 					{
 						Ref:       audio2Asset.ID,
-						Lane:      "-2",
+						// Spine element - no lane attribute
 						Offset:    sfxStart,
 						Name:      audio2Asset.Name,
 						Duration:  audio2Duration,
@@ -234,7 +234,7 @@ func TestComplexTimeline(t *testing.T) {
 				Titles: []Title{
 					{
 						Ref:      titleEffectID,
-						Lane:     "1",
+						// Spine element - no lane attribute
 						Offset:   ConvertSecondsToFCPDuration(4.0),
 						Name:     "Main Title",
 						Duration: ConvertSecondsToFCPDuration(3.0),
@@ -293,7 +293,7 @@ func TestComplexTimeline(t *testing.T) {
 			// B-roll video (overlapping with cutaway)
 			{
 				Ref:      video3Asset.ID,
-				Lane:     "1", // Upper video layer
+				// Spine element - no lane attribute
 				Offset:   video3Start,
 				Name:     video3Asset.Name,
 				Duration: video3Duration,
@@ -325,7 +325,7 @@ func TestComplexTimeline(t *testing.T) {
 			// Waymo overlay
 			{
 				Ref:      image2Asset.ID,
-				Lane:     "2", // Higher layer
+				// Spine element - no lane attribute
 				Offset:   overlayStart,
 				Name:     image2Asset.Name,
 				Duration: overlayDisplayDuration,
@@ -513,7 +513,7 @@ func TestSynchronizedElements(t *testing.T) {
 		NestedAssetClips: []AssetClip{
 			{
 				Ref:       audioAsset.ID,
-				Lane:      "-1",
+				// Spine element - no lane attribute
 				Offset:    syncStartTime, // Exact sync
 				Name:      audioAsset.Name,
 				Duration:  audioDuration,
@@ -523,7 +523,7 @@ func TestSynchronizedElements(t *testing.T) {
 			// Synchronized secondary camera
 			{
 				Ref:      syncAsset.ID,
-				Lane:     "1", // Upper video layer
+				// Spine element - no lane attribute
 				Offset:   syncStartTime, // Perfect sync
 				Name:     syncAsset.Name,
 				Duration: syncDuration,
@@ -545,7 +545,7 @@ func TestSynchronizedElements(t *testing.T) {
 		
 		marker := Title{
 			Ref:      markerEffectID,
-			Lane:     fmt.Sprintf("%d", i+2), // High lanes for markers
+			// Spine element - no lane attribute
 			Offset:   markerOffset,
 			Name:     fmt.Sprintf("Sync Marker %d", i+1),
 			Duration: markerDuration,

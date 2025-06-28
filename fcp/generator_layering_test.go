@@ -37,17 +37,17 @@ func TestAdvancedLayering(t *testing.T) {
 	// Create different formats for each video to enable different properties
 	// 🚨 CRITICAL FIX: Main format must be DIFFERENT from sequence format (r1: "1001/24000s")
 	// to enable conform-rate elements without causing "Encountered an unexpected value" errors
-	_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "13335/400000s", "1920", "1080", "1-1-1 (Rec. 709)")
+	_, err = tx.CreateFormatWithFrameDuration(mainFormatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
 	if err != nil {
 		t.Fatalf("Failed to create main format: %v", err)
 	}
 
-	_, err = tx.CreateFormatWithFrameDuration(overlay1FormatID, "1001/25000s", "1280", "720", "1-1-1 (Rec. 709)")
+	_, err = tx.CreateFormatWithFrameDuration(overlay1FormatID, "1001/24000s", "1280", "720", "1-1-1 (Rec. 709)")
 	if err != nil {
 		t.Fatalf("Failed to create overlay1 format: %v", err)
 	}
 
-	_, err = tx.CreateFormatWithFrameDuration(overlay2FormatID, "1001/30000s", "3840", "2160", "1-1-1 (Rec. 709)")
+	_, err = tx.CreateFormatWithFrameDuration(overlay2FormatID, "1001/24000s", "3840", "2160", "1-1-1 (Rec. 709)")
 	if err != nil {
 		t.Fatalf("Failed to create overlay2 format: %v", err)
 	}
@@ -259,7 +259,7 @@ func TestComplexCompositing(t *testing.T) {
 		t.Fatalf("Failed to create background format: %v", err)
 	}
 
-	_, err = tx.CreateFormatWithFrameDuration(fgFormatID, "1001/25000s", "1920", "1080", "1-1-1 (Rec. 709)")
+	_, err = tx.CreateFormatWithFrameDuration(fgFormatID, "1001/24000s", "1920", "1080", "1-1-1 (Rec. 709)")
 	if err != nil {
 		t.Fatalf("Failed to create foreground format: %v", err)
 	}

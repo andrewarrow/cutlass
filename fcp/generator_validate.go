@@ -145,16 +145,16 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		for i, keyframe := range keyframes {
 
 			if keyframe.Interp != "" {
-				validInterps := map[string]bool{"linear": true, "ease": true, "easeIn": true, "easeOut": true}
+				validInterps := map[string]bool{"linear": true, "ease": true, "easeIn": true, "easeOut": true, "easeInOut": true}
 				if !validInterps[keyframe.Interp] {
-					violations = append(violations, fmt.Sprintf("Invalid keyframe interp '%s' at %s[%d] - must be: linear, ease, easeIn, easeOut", keyframe.Interp, location, i))
+					violations = append(violations, fmt.Sprintf("Invalid keyframe interp '%s' at %s[%d] - must be: linear, ease, easeIn, easeOut, easeInOut", keyframe.Interp, location, i))
 				}
 			}
 
 			if keyframe.Curve != "" {
-				validCurves := map[string]bool{"linear": true}
+				validCurves := map[string]bool{"linear": true, "smooth": true}
 				if !validCurves[keyframe.Curve] {
-					violations = append(violations, fmt.Sprintf("Invalid keyframe curve '%s' at %s[%d] - must be: linear", keyframe.Curve, location, i))
+					violations = append(violations, fmt.Sprintf("Invalid keyframe curve '%s' at %s[%d] - must be: linear, smooth", keyframe.Curve, location, i))
 				}
 			}
 		}

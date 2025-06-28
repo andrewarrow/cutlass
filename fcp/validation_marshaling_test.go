@@ -22,7 +22,7 @@ func TestSpineStructuralValidation(t *testing.T) {
 					HasVideo: "1",
 					MediaRep: MediaRep{
 						Kind: "original-media",
-						Src:  "file:///test.mp4",
+						Src:  "file:///tmp/test/path.mp4",
 					},
 				},
 			},
@@ -119,7 +119,7 @@ func TestSpineStructuralValidationValid(t *testing.T) {
 					HasVideo: "1",
 					MediaRep: MediaRep{
 						Kind: "original-media",
-						Src:  "file:///test.mp4",
+						Src:  "file:///tmp/test/path.mp4",
 					},
 				},
 			},
@@ -207,7 +207,7 @@ func TestValidationMarshaling(t *testing.T) {
 							HasVideo: "1",
 							MediaRep: MediaRep{
 								Kind: "original-media",
-								Src:  "file:///test.mp4",
+								Src:  "file:///tmp/test/path.mp4",
 							},
 						},
 					},
@@ -308,7 +308,7 @@ func TestValidationMarshaling(t *testing.T) {
 							UID:      "test-uid",
 							Duration: "invalid-duration", // Invalid format
 							MediaRep: MediaRep{
-								Src: "file:///test.mp4",
+								Src: "file:///tmp/test/path.mp4",
 							},
 						},
 					},
@@ -418,7 +418,7 @@ func TestStructValidator(t *testing.T) {
 					UID:      "test-uid",
 					Duration: "240240/24000s",
 					MediaRep: MediaRep{
-						Src: "file:///test.mp4",
+						Src: "file:///tmp/test/path.mp4",
 					},
 				},
 			},
@@ -433,7 +433,7 @@ func TestStructValidator(t *testing.T) {
 					UID:      "test-uid",
 					Duration: "240240/24000s",
 					MediaRep: MediaRep{
-						Src: "file:///test.mp4",
+						Src: "file:///tmp/test/path.mp4",
 					},
 				},
 			},
@@ -449,7 +449,7 @@ func TestStructValidator(t *testing.T) {
 					UID:      "test-uid",
 					Duration: "invalid", // Invalid duration
 					MediaRep: MediaRep{
-						Src: "file:///test.mp4",
+						Src: "file:///tmp/test/path.mp4",
 					},
 				},
 			},
@@ -611,7 +611,7 @@ func BenchmarkValidateAndMarshal(b *testing.B) {
 					Duration: "240240/24000s",
 					HasVideo: "1",
 					MediaRep: MediaRep{
-						Src: "file:///test.mp4",
+						Src: "file:///tmp/test/path.mp4",
 					},
 				},
 			},

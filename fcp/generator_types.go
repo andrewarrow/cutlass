@@ -316,15 +316,16 @@ func AddVideo(fcpxml *FCPXML, videoPath string) error {
 		return fmt.Errorf("video file does not exist: %s", absPath)
 	}
 
-	ids := tx.ReserveIDs(1)
+	ids := tx.ReserveIDs(2) // Reserve IDs for both asset and format
 	assetID := ids[0]
+	formatID := ids[1]
 
 	videoName := strings.TrimSuffix(filepath.Base(videoPath), filepath.Ext(videoPath))
 
 	defaultDurationSeconds := 10.0
 	frameDuration := ConvertSecondsToFCPDuration(defaultDurationSeconds)
 
-	err = tx.CreateVideoAssetWithDetection(assetID, absPath, videoName, frameDuration, "r1")
+	err = tx.CreateVideoAssetWithDetection(assetID, absPath, videoName, frameDuration, formatID)
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("failed to create video asset with detection: %v", err)

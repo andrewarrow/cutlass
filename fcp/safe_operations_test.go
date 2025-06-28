@@ -88,7 +88,7 @@ func TestAddBackgroundVideo(t *testing.T) {
 	}{
 		{
 			name:            "Valid video",
-			videoPath:       "/path/to/video.mp4",
+			videoPath:       "/tmp/path/to/video.mp4",
 			durationSeconds: 60.0,
 			expectError:     false,
 		},
@@ -108,14 +108,14 @@ func TestAddBackgroundVideo(t *testing.T) {
 		},
 		{
 			name:            "Zero duration",
-			videoPath:       "/path/to/video.mp4",
+			videoPath:       "/tmp/path/to/video.mp4",
 			durationSeconds: 0.0,
 			expectError:     true,
 			errorContains:   "duration must be positive",
 		},
 		{
 			name:            "Negative duration",
-			videoPath:       "/path/to/video.mp4",
+			videoPath:       "/tmp/path/to/video.mp4",
 			durationSeconds: -5.0,
 			expectError:     true,
 			errorContains:   "duration must be positive",
@@ -465,7 +465,7 @@ func TestAddMultiLayerComposite(t *testing.T) {
 			name: "Valid composite",
 			mediaFiles: []MediaLayerSpec{
 				{
-					Path:            "/path/to/video.mp4",
+					Path:            "/tmp/path/to/video.mp4",
 					Type:            "video",
 					StartSeconds:    0.0,
 					DurationSeconds: 10.0,
@@ -515,7 +515,7 @@ func TestAddMultiLayerComposite(t *testing.T) {
 			if len(tt.mediaFiles) > 10 {
 				for i := range tt.mediaFiles {
 					tt.mediaFiles[i] = MediaLayerSpec{
-						Path:            "/path/to/video.mp4",
+						Path:            "/tmp/path/to/video.mp4",
 						Type:            "video",
 						StartSeconds:    0.0,
 						DurationSeconds: 10.0,
@@ -546,7 +546,7 @@ func TestAddMultiLayerComposite(t *testing.T) {
 
 func TestConvenienceFunctions(t *testing.T) {
 	t.Run("CreateSimpleVideo", func(t *testing.T) {
-		ops, err := CreateSimpleVideo("Simple Project", "/path/to/video.mp4", 60.0)
+		ops, err := CreateSimpleVideo("Simple Project", "/tmp/path/to/video.mp4", 60.0)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			return
@@ -682,7 +682,7 @@ func TestGenerateAndValidate(t *testing.T) {
 	}
 
 	// Add some basic content
-	if err := ops.AddBackgroundVideo("/path/to/video.mp4", 30.0); err != nil {
+	if err := ops.AddBackgroundVideo("/tmp/path/to/video.mp4", 30.0); err != nil {
 		t.Fatalf("failed to add background video: %v", err)
 	}
 
@@ -719,7 +719,7 @@ func TestSaveToFile(t *testing.T) {
 	}
 
 	// Add some content
-	if err := ops.AddBackgroundVideo("/path/to/video.mp4", 30.0); err != nil {
+	if err := ops.AddBackgroundVideo("/tmp/path/to/video.mp4", 30.0); err != nil {
 		t.Fatalf("failed to add background video: %v", err)
 	}
 

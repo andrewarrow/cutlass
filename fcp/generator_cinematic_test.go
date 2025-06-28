@@ -117,7 +117,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 		Duration: ConvertSecondsToFCPDuration(8.0), // Only 8 seconds of the 45-second clip
 		Format:   brollVideo.Format,
 		TCFormat: "NDF",
-		Lane:     "1", // Upper video layer
+		// Spine element - no lane attribute
 		Start:    ConvertSecondsToFCPDuration(5.0), // Start from 5 seconds into the source
 		AdjustTransform: &AdjustTransform{
 			// Picture-in-picture positioning for B-roll
@@ -146,7 +146,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 		Duration:  audioDuration,
 		Format:    audioAsset.Format,
 		TCFormat:  "NDF",
-		Lane:      "-1",      // Audio lane
+		// Spine element - no lane attribute
 		AudioRole: "music",   // Professional audio role
 		// Audio mixing through precise timeline placement
 	}
@@ -158,7 +158,7 @@ func TestCinematicVideoProduction(t *testing.T) {
 		Name:     "Production Logo",
 		Duration: ConvertSecondsToFCPDuration(10.0),
 		Start:    "86399313/24000s", // Standard image start time
-		Lane:     "2",               // Top layer
+		// Spine element - no lane attribute
 		AdjustTransform: &AdjustTransform{
 			// Professional logo animation
 			Params: []Param{
@@ -238,15 +238,15 @@ func TestCinematicVideoProduction(t *testing.T) {
 		{"Transform animation", `<adjust-transform>`},
 		{"Position keyframes", `<param name="position"`},
 		{"Scale animation", `<param name="scale"`},
-		{"B-roll layering", `lane="1"`},
+		{"B-roll layering", `name="B-Roll Insert"`},
 		{"Audio role assignment", `audioRole="music"`},
 		{"Professional cropping", `<adjust-crop mode="trim"`},
 		{"Logo entrance", `name="Production Logo"`},
 		{"Rotation animation", `<param name="rotation"`},
 		{"Timing gap", `<gap name="Timing Gap"`},
-		{"Multi-layer composition", `lane="2"`},
+		{"Multi-layer composition", `name="Production Logo"`},
 		{"Frame-aligned timing", `1001/24000s`},
-		{"Professional audio lane", `lane="-1"`},
+		{"Professional audio track", `name="Background Music"`},
 		{"Keyframe interpolation", `interp="easeOut"`},
 		{"Smooth curves", `curve="smooth"`},
 		{"Professional timing", `offset="`},

@@ -406,17 +406,22 @@ func (sv *StructValidator) validateFormatStructure(format *Format) error {
 		return fmt.Errorf("format ID is required")
 	}
 
-	if format.Width == "" || format.Height == "" {
+	// Audio formats don't require width/height dimensions
+	isAudioFormat := strings.Contains(strings.ToLower(format.Name), "audio")
+	
+	if !isAudioFormat && (format.Width == "" || format.Height == "") {
 		return fmt.Errorf("format width and height are required")
 	}
 
-	// Validate width and height are numeric
-	if _, err := strconv.Atoi(format.Width); err != nil {
-		return fmt.Errorf("invalid format width: %s", format.Width)
-	}
+	// Validate width and height are numeric (only for non-audio formats)
+	if !isAudioFormat {
+		if _, err := strconv.Atoi(format.Width); err != nil {
+			return fmt.Errorf("invalid format width: %s", format.Width)
+		}
 
-	if _, err := strconv.Atoi(format.Height); err != nil {
-		return fmt.Errorf("invalid format height: %s", format.Height)
+		if _, err := strconv.Atoi(format.Height); err != nil {
+			return fmt.Errorf("invalid format height: %s", format.Height)
+		}
 	}
 
 	// Validate frame duration if present

@@ -342,7 +342,7 @@ func TestKeyframeAnimation(t *testing.T) {
 		Offset:   ConvertSecondsToFCPDuration(5.0),
 		Name:     "Animated Title",
 		Duration: ConvertSecondsToFCPDuration(15.0),
-		Lane:     "1",
+		// Spine element - no lane attribute
 		Params: []Param{
 			{
 				Name: "Position",
@@ -571,26 +571,18 @@ func TestParticleSystemAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(5.0),
 								Value: "-300 -200", // Move up-left (simulates wind/gravity)
-								Interp: "easeOut",
-								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(10.0),
 								Value: "300 200", // Move down-right
-								Interp: "ease",
-								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(15.0),
 								Value: "-100 -300", // Move up again
-								Interp: "easeIn",
-								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(20.0),
 								Value: "0 0", // Return to center
-								Interp: "easeOut",
-								Curve:  "smooth",
 							},
 						},
 					},
@@ -606,25 +598,21 @@ func TestParticleSystemAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(2.0),
 								Value: "1.5 1.5", // Expand (particle burst)
-								Interp: "easeOut",
 								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(8.0),
 								Value: "1.0 1.0", // Normal size (steady)
-								Interp: "linear",
 								Curve:  "linear",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(15.0),
 								Value: "2.0 2.0", // Large expansion (final burst)
-								Interp: "easeIn",
 								Curve:  "smooth",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(20.0),
 								Value: "0.1 0.1", // Shrink to nothing
-								Interp: "easeOut",
 								Curve:  "smooth",
 							},
 						},
@@ -641,13 +629,11 @@ func TestParticleSystemAnimation(t *testing.T) {
 							{
 								Time:  ConvertSecondsToFCPDuration(10.0),
 								Value: "360", // Full rotation (emission angle change)
-								Interp: "linear",
 								Curve:  "linear",
 							},
 							{
 								Time:  ConvertSecondsToFCPDuration(20.0),
 								Value: "720", // Two full rotations
-								Interp: "linear",
 								Curve:  "linear",
 							},
 						},

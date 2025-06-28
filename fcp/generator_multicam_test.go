@@ -179,7 +179,7 @@ func TestMultiCameraProduction(t *testing.T) {
 		Duration:  interviewDuration,
 		Format:    lapelMic.Format,
 		TCFormat:  "NDF",
-		Lane:      "-1",
+		// Spine element - no lane attribute
 		AudioRole: "dialogue",
 		// Audio level management through precise placement
 	}
@@ -192,7 +192,7 @@ func TestMultiCameraProduction(t *testing.T) {
 		Duration:  interviewDuration,
 		Format:    boomMic.Format,
 		TCFormat:  "NDF",
-		Lane:      "-2",
+		// Spine element - no lane attribute
 		AudioRole: "effects",
 		// Audio level management through precise placement
 	}
@@ -205,7 +205,7 @@ func TestMultiCameraProduction(t *testing.T) {
 		Duration:  interviewDuration,
 		Format:    syncAudio.Format,
 		TCFormat:  "NDF",
-		Lane:      "-3",
+		// Spine element - no lane attribute
 		AudioRole: "dialogue",
 		// Audio level management through precise placement
 	}

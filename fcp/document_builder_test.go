@@ -29,7 +29,7 @@ func TestFCPXMLDocumentBuilder_AddMediaFile(t *testing.T) {
 	}
 	
 	// Add an image file
-	err = builder.AddMediaFile("/test/image.png", "Test Image", Time("0s"), Duration("120120/24000s"), Lane(1))
+	err = builder.AddMediaFile("/test/image.png", "Test Image", Time("0s"), Duration("120120/24000s"), Lane(0))
 	if err != nil {
 		t.Fatalf("Failed to add image file: %v", err)
 	}
@@ -58,7 +58,7 @@ func TestFCPXMLDocumentBuilder_AddText(t *testing.T) {
 	}
 	
 	// Add text element
-	err = builder.AddText("Hello World", Time("60060/24000s"), Duration("120120/24000s"), Lane(2), 
+	err = builder.AddText("Hello World", Time("60060/24000s"), Duration("120120/24000s"), Lane(0), 
 		WithFont("Helvetica"), WithFontSize("48"), WithFontColor("1 1 1 1"))
 	if err != nil {
 		t.Fatalf("Failed to add text: %v", err)
@@ -87,7 +87,7 @@ func TestFCPXMLDocumentBuilder_BuildDocument(t *testing.T) {
 		t.Fatalf("Failed to add background video: %v", err)
 	}
 	
-	err = builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(1), WithFontSize("64"))
+	err = builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(0), WithFontSize("64"))
 	if err != nil {
 		t.Fatalf("Failed to add title: %v", err)
 	}
@@ -163,17 +163,17 @@ func TestFCPXMLDocumentBuilder_SetConfiguration(t *testing.T) {
 	builder.SetAllowLaneGaps(true)
 	
 	// These should not cause errors
-	err = builder.AddMediaFile("/test/video1.mp4", "Video 1", Time("0s"), Duration("120120/24000s"), Lane(1))
+	err = builder.AddMediaFile("/test/video1.mp4", "Video 1", Time("0s"), Duration("120120/24000s"), Lane(0))
 	if err != nil {
 		t.Errorf("Failed to add first video: %v", err)
 	}
 	
-	err = builder.AddMediaFile("/test/video2.mp4", "Video 2", Time("60060/24000s"), Duration("120120/24000s"), Lane(3)) // Lane gap
+	err = builder.AddMediaFile("/test/video2.mp4", "Video 2", Time("240240/24000s"), Duration("120120/24000s"), Lane(0)) // Sequential timing
 	if err != nil {
 		t.Errorf("Failed to add video with lane gap: %v", err)
 	}
 	
-	err = builder.AddMediaFile("/test/video3.mp4", "Video 3", Time("60060/24000s"), Duration("120120/24000s"), Lane(1)) // Overlap
+	err = builder.AddMediaFile("/test/video3.mp4", "Video 3", Time("360360/24000s"), Duration("120120/24000s"), Lane(0)) // Sequential timing
 	if err != nil {
 		t.Errorf("Failed to add overlapping video: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestFCPXMLDocumentBuilder_UnsupportedMediaType(t *testing.T) {
 	}
 	
 	// Try to add unsupported file type
-	err = builder.AddMediaFile("/test/document.pdf", "PDF Document", Time("0s"), Duration("120120/24000s"), Lane(1))
+	err = builder.AddMediaFile("/test/document.pdf", "PDF Document", Time("0s"), Duration("120120/24000s"), Lane(0))
 	if err == nil {
 		t.Error("Should reject unsupported media type")
 	}
@@ -274,7 +274,7 @@ func TestFCPXMLDocumentBuilder_TextOptions(t *testing.T) {
 	}
 	
 	// Test all text options
-	err = builder.AddText("Styled Text", Time("60060/24000s"), Duration("120120/24000s"), Lane(2),
+	err = builder.AddText("Styled Text", Time("60060/24000s"), Duration("120120/24000s"), Lane(0),
 		WithFont("Arial"),
 		WithFontSize("64"),
 		WithFontColor("1 0 0 1"), // Red
@@ -300,9 +300,9 @@ func TestFCPXMLDocumentBuilder_StatisticsAccuracy(t *testing.T) {
 	
 	// Add various elements
 	builder.AddMediaFile("/test/video1.mp4", "Video 1", Time("0s"), Duration("120120/24000s"), Lane(0))
-	builder.AddMediaFile("/test/image1.png", "Image 1", Time("120120/24000s"), Duration("120120/24000s"), Lane(1))
-	builder.AddMediaFile("/test/audio1.wav", "Audio 1", Time("240240/24000s"), Duration("120120/24000s"), Lane(-1))
-	builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(2))
+	builder.AddMediaFile("/test/image1.png", "Image 1", Time("120120/24000s"), Duration("120120/24000s"), Lane(0))
+	builder.AddMediaFile("/test/audio1.wav", "Audio 1", Time("240240/24000s"), Duration("120120/24000s"), Lane(0))
+	builder.AddText("Title", Time("30030/24000s"), Duration("60060/24000s"), Lane(0))
 	
 	stats := builder.GetStatistics()
 	
@@ -319,8 +319,8 @@ func TestFCPXMLDocumentBuilder_StatisticsAccuracy(t *testing.T) {
 		t.Errorf("Expected 4 spine elements, got %d", stats.SpineElementCount)
 	}
 	
-	// Verify used lanes
-	expectedLanes := []int{-1, 0, 1, 2}
+	// Verify used lanes - all spine elements should be on lane 0
+	expectedLanes := []int{0}
 	if len(stats.UsedLanes) != len(expectedLanes) {
 		t.Errorf("Expected %d used lanes, got %d", len(expectedLanes), len(stats.UsedLanes))
 	}

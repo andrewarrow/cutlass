@@ -328,7 +328,7 @@ func createValidTestFCPXML(t *testing.T) *FCPXML {
 					HasVideo: "1",
 					MediaRep: MediaRep{
 						Kind: "original-media",
-						Src:  "file:///test/path.mp4",
+						Src:  "file:///tmp/test/path.mp4",
 					},
 				},
 			},
