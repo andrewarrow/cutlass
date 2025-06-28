@@ -129,6 +129,30 @@ def serialize_to_xml(fcpxml) -> str:
                                     transform_elem = SubElement(clip_elem, "adjust-transform")
                                     if "scale" in element["adjust_transform"]:
                                         transform_elem.set("scale", element["adjust_transform"]["scale"])
+                                
+                                # Add nested elements (for multi-lane structure) - CRITICAL for asset-clip
+                                if "nested_elements" in element:
+                                    for nested in element["nested_elements"]:
+                                        nested_video_elem = SubElement(clip_elem, "video")
+                                        nested_video_elem.set("ref", nested["ref"])
+                                        if "lane" in nested:
+                                            nested_video_elem.set("lane", str(nested["lane"]))
+                                        if "duration" in nested:
+                                            nested_video_elem.set("duration", nested["duration"])
+                                        if "offset" in nested:
+                                            nested_video_elem.set("offset", nested["offset"])
+                                        if "start" in nested:
+                                            nested_video_elem.set("start", nested["start"])
+                                        if "name" in nested:
+                                            nested_video_elem.set("name", nested["name"])
+                                        
+                                        # Add nested transforms
+                                        if "adjust_transform" in nested:
+                                            nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
+                                            if "scale" in nested["adjust_transform"]:
+                                                nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
+                                            if "position" in nested["adjust_transform"]:
+                                                nested_transform_elem.set("position", nested["adjust_transform"]["position"])
                             elif element["type"] == "video":
                                 video_elem = SubElement(spine_elem, "video")
                                 video_elem.set("ref", element["ref"])

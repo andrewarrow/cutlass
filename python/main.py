@@ -305,11 +305,20 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             else:
                 sequence.spine.videos.append(bg_element)
     
-    # Generate random PNG tiles as separate lane elements (NOT nested)
-    lane_counter = 1  # Start lanes from 1
-    
-    for lane_num in range(1, num_lanes + 1):
-        for tile_num in range(tiles_per_lane):
+    # Generate PNG tiles as nested lane elements (like safe.fcpxml structure)
+    if background_video:
+        # Find the background element to add nested lanes
+        bg_element = sequence.spine.ordered_elements[-1]  # Last added element (background)
+        
+        # Add nested_elements list if not exists
+        if "nested_elements" not in bg_element:
+            bg_element["nested_elements"] = []
+        
+        # Generate tiles with each PNG on its own lane
+        current_lane = 1
+        total_tiles = num_lanes * tiles_per_lane
+        
+        for tile_index in range(total_tiles):
             # Select random PNG
             png_file = random.choice(png_files)
             
@@ -345,35 +354,113 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
             
-            # Create PNG tile element as separate lane element (not nested)
+            # Create PNG tile element as nested lane element (like safe.fcpxml)
             tile_duration = convert_seconds_to_fcp_duration(duration)
+            
+            # Use timing values that match Info.fcpxml pattern
+            # Some elements use simple "3600s", others use frame-aligned versions
+            if tile_index < 2:  # First two elements use simple timing like Info.fcpxml
+                tile_offset = "0s"
+                tile_start = "3600s" if tile_index == 0 else "86399313/24000s"
+            else:  # Remaining elements use frame-aligned timing
+                tile_offset = "86400314/24000s"  # Frame-aligned version of ~3600s
+                tile_start = "86486400/24000s"   # Frame-aligned start
+            
             tile_element = {
                 "type": "video",
                 "ref": asset_id,
-                "lane": lane_counter,  # Each tile gets its own lane number
+                "lane": current_lane,  # Each PNG gets its own lane
                 "duration": tile_duration,
-                "offset": "0s",  # All tiles start at the same time as background
-                "start": "0s",  # Required for image video elements
-                "name": f"{png_file.stem}_tile_{lane_num}_{tile_num}",
+                "offset": tile_offset,  # Frame-aligned offset
+                "start": tile_start,  # Frame-aligned start
+                "name": f"{png_file.stem}_lane_{current_lane}",
                 "adjust_transform": {
                     "position": f"{x_pos:.3f} {y_pos:.3f}",
                     "scale": f"{scale:.3f} {scale:.3f}"
                 }
             }
             
-            # Add as separate element to spine (not nested inside background)
+            # Add as nested element inside background (like safe.fcpxml structure)
+            bg_element["nested_elements"].append(tile_element)
+            
+            # Increment lane for next PNG
+            current_lane += 1
+    else:
+        # If no background, create PNG tiles as separate spine elements
+        current_lane = 1
+        total_tiles = num_lanes * tiles_per_lane
+        
+        for tile_index in range(total_tiles):
+            # Select random PNG
+            png_file = random.choice(png_files)
+            
+            # Create asset using shared image format
+            asset_id = f"r{resource_counter}"
+            resource_counter += 1
+            
+            # Create asset manually to use shared format
+            from fcpxml_lib.models.elements import Asset, MediaRep
+            from fcpxml_lib.utils.ids import generate_uid
+            from fcpxml_lib.constants import IMAGE_DURATION
+            
+            abs_path = Path(png_file).resolve()
+            uid = generate_uid(f"MEDIA_{abs_path.name}")
+            media_rep = MediaRep(src=str(abs_path))
+            
+            asset = Asset(
+                id=asset_id,
+                name=abs_path.stem,
+                uid=uid,
+                duration=IMAGE_DURATION,
+                has_video="1",
+                format=image_format_id,  # Use shared format
+                video_sources="1",
+                media_rep=media_rep
+            )
+            fcpxml.resources.assets.append(asset)
+            
+            # Generate random position within screen bounds
+            x_pos = random.uniform(SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT)
+            y_pos = random.uniform(SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM)
+            
+            # Generate random scale (smaller tiles)
+            scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
+            
+            # Create PNG tile element as separate spine element
+            tile_duration = convert_seconds_to_fcp_duration(duration)
+            tile_element = {
+                "type": "video",
+                "ref": asset_id,
+                "lane": current_lane,  # Each PNG gets its own lane
+                "duration": tile_duration,
+                "offset": "0s",  # All tiles start at the same time
+                "start": "0s",  # Required for image video elements
+                "name": f"{png_file.stem}_lane_{current_lane}",
+                "adjust_transform": {
+                    "position": f"{x_pos:.3f} {y_pos:.3f}",
+                    "scale": f"{scale:.3f} {scale:.3f}"
+                }
+            }
+            
+            # Add as separate element to spine
             sequence.spine.videos.append(tile_element)
             sequence.spine.ordered_elements.append(tile_element)
             
-            lane_counter += 1  # Increment lane counter for next tile
+            # Increment lane for next PNG
+            current_lane += 1
     
     # Update sequence duration
     sequence.duration = convert_seconds_to_fcp_duration(duration)
     
     total_tiles = num_lanes * tiles_per_lane
-    print(f"   Generated {total_tiles} random PNG tiles on separate lanes {1}-{lane_counter-1}")
+    if background_video:
+        print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
+        print(f"   Structure: Background video + {total_tiles} nested lane elements")
+    else:
+        print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
+        print(f"   Structure: {total_tiles} separate lane elements")
     print(f"   Screen bounds: X({SCREEN_EDGE_LEFT:.1f} to {SCREEN_EDGE_RIGHT:.1f}), Y({SCREEN_EDGE_TOP:.1f} to {SCREEN_EDGE_BOTTOM:.1f})")
-    print(f"   Structure: Background + {total_tiles} separate lane elements (no nesting)")
+    print(f"   Original request: {num_lanes} lanes × {tiles_per_lane} tiles = {total_tiles} total PNG lanes")
 
 
 def main():
