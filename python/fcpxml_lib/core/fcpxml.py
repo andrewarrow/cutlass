@@ -317,6 +317,10 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                     "name": Path(media_file).stem,
                     "start_time": timeline_position  # For sorting
                 }
+                
+                # Add scaling for vertical format to fill screen (images need scaling too)
+                if not use_horizontal:
+                    element["adjust_transform"] = {"scale": VERTICAL_SCALE_FACTOR}
             else:
                 # Videos: Use AssetClip element with NO start attribute
                 clip_duration = convert_seconds_to_fcp_duration(clip_duration_seconds)
@@ -358,6 +362,11 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                 "start": element["start"],  # Include start attribute for Video elements
                 "name": element["name"]
             }
+            
+            # Add transform if present
+            if "adjust_transform" in element:
+                video_clip["adjust_transform"] = element["adjust_transform"]
+            
             sequence.spine.videos.append(video_clip)
             sequence.spine.ordered_elements.append(video_clip)
         else:  # asset-clip

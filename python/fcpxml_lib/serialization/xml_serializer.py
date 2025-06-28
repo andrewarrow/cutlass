@@ -140,6 +140,12 @@ def serialize_to_xml(fcpxml) -> str:
                                     video_elem.set("start", element["start"])  # Video elements need start attribute
                                 if "name" in element:
                                     video_elem.set("name", element["name"])
+                                
+                                # Add adjust-transform if present
+                                if "adjust_transform" in element:
+                                    transform_elem = SubElement(video_elem, "adjust-transform")
+                                    if "scale" in element["adjust_transform"]:
+                                        transform_elem.set("scale", element["adjust_transform"]["scale"])
                     else:
                         # Fallback to old method if ordered_elements not available
                         # Add asset-clips (for videos)
@@ -172,6 +178,12 @@ def serialize_to_xml(fcpxml) -> str:
                                 video_elem.set("start", video["start"])  # Video elements need start attribute
                             if "name" in video:
                                 video_elem.set("name", video["name"])
+                            
+                            # Add adjust-transform if present
+                            if "adjust_transform" in video:
+                                transform_elem = SubElement(video_elem, "adjust-transform")
+                                if "scale" in video["adjust_transform"]:
+                                    transform_elem.set("scale", video["adjust_transform"]["scale"])
                     
                     # Add gaps (if any)
                     for gap in sequence.spine.gaps:
