@@ -376,6 +376,11 @@ func (ops *SafeFCPXMLOperations) AddMultiLayerComposite(mediaFiles []MediaLayerS
 		}
 	}
 	
+	// Check for overlapping elements on the same lane
+	if err := ops.validateNoOverlaps(mediaFiles); err != nil {
+		return fmt.Errorf("overlap validation failed: %v", err)
+	}
+	
 	// Add each layer
 	for i, spec := range mediaFiles {
 		var err error
@@ -618,6 +623,40 @@ func (ops *SafeFCPXMLOperations) validateDocumentSettings(settings DocumentSetti
 	}
 	
 	return nil
+}
+
+// validateNoOverlaps checks for overlapping media elements on the same lane
+func (ops *SafeFCPXMLOperations) validateNoOverlaps(mediaFiles []MediaLayerSpec) error {
+	// Group by lane
+	laneGroups := make(map[int][]MediaLayerSpec)
+	for _, spec := range mediaFiles {
+		laneGroups[spec.Lane] = append(laneGroups[spec.Lane], spec)
+	}
+	
+	// Check each lane for overlaps
+	for lane, specs := range laneGroups {
+		for i := 0; i < len(specs); i++ {
+			for j := i + 1; j < len(specs); j++ {
+				if ops.hasTimeOverlap(specs[i], specs[j]) {
+					return fmt.Errorf("overlap detected on lane %d between elements starting at %.1fs and %.1fs", 
+						lane, specs[i].StartSeconds, specs[j].StartSeconds)
+				}
+			}
+		}
+	}
+	
+	return nil
+}
+
+// hasTimeOverlap checks if two media specs overlap in time
+func (ops *SafeFCPXMLOperations) hasTimeOverlap(spec1, spec2 MediaLayerSpec) bool {
+	start1 := spec1.StartSeconds
+	end1 := spec1.StartSeconds + spec1.DurationSeconds
+	start2 := spec2.StartSeconds
+	end2 := spec2.StartSeconds + spec2.DurationSeconds
+	
+	// Check for overlap: elements overlap if one starts before the other ends
+	return start1 < end2 && start2 < end1
 }
 
 // ===============================

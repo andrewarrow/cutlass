@@ -99,14 +99,14 @@ func (nrv *NumericRangeValidator) ValidateFontSize(fontSize string) error {
 		return fmt.Errorf("font size cannot be NaN or infinity: %s", fontSize)
 	}
 	
-	if size < 1.0 || size > 2000.0 {
-		return fmt.Errorf("font size out of range: %.1f (must be 1.0-2000.0)", size)
+	if size < 1.0 || size > 500.0 {
+		return fmt.Errorf("font size out of range: %.1f (must be 1.0-500.0)", size)
 	}
 	
 	return nil
 }
 
-// ValidateLineSpacing validates line spacing values (0.1 to 20.0)
+// ValidateLineSpacing validates line spacing values (0.5 to 5.0)
 func (nrv *NumericRangeValidator) ValidateLineSpacing(lineSpacing string) error {
 	if lineSpacing == "" {
 		return nil
@@ -122,8 +122,8 @@ func (nrv *NumericRangeValidator) ValidateLineSpacing(lineSpacing string) error 
 		return fmt.Errorf("line spacing cannot be NaN or infinity: %s", lineSpacing)
 	}
 	
-	if spacing < 0.1 || spacing > 20.0 {
-		return fmt.Errorf("line spacing out of range: %.2f (must be 0.1-20.0)", spacing)
+	if spacing < 0.5 || spacing > 5.0 {
+		return fmt.Errorf("line spacing out of range: %.2f (must be 0.5-5.0)", spacing)
 	}
 	
 	return nil
