@@ -767,6 +767,11 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 	
 	direction := directions[index%len(directions)]
 	
+	// Use start="3600s" relative timing like Info.fcpxml and size.fcpxml
+	// The animation starts immediately when the video element begins (at its start time)
+	animationStartTime := "3600s" // Relative to video element's start time
+	animationEndTime := "3624000/1000s" // 1 second later (3600 + 24 = 3624 seconds)
+	
 	return &AdjustTransform{
 		Params: []Param{
 			{
@@ -774,7 +779,7 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
-							Time:  "3600s",
+							Time:  animationStartTime,
 							Value: "0 0",
 							Curve: "linear",
 						},
@@ -790,11 +795,11 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 						KeyframeAnimation: &KeyframeAnimation{
 							Keyframes: []Keyframe{
 								{
-									Time:  "3600s", // Match Info.fcpxml start time exactly
+									Time:  animationStartTime, // Start immediately when video begins
 									Value: direction.startX,
 								},
 								{
-									Time:  "2594882880/720000s", // Match Info.fcpxml end time exactly
+									Time:  animationEndTime, // Slide in over 1 second
 									Value: direction.endX,
 								},
 							},
@@ -806,7 +811,7 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 						KeyframeAnimation: &KeyframeAnimation{
 							Keyframes: []Keyframe{
 								{
-									Time:  "3600s", // Match Info.fcpxml exactly - only one Y keyframe
+									Time:  animationStartTime, // Start immediately when video begins
 									Value: direction.startY,
 									Curve: "linear",
 								},
@@ -820,7 +825,7 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
-							Time:  "3600s",
+							Time:  animationStartTime,
 							Value: direction.rotation,
 							Curve: "linear",
 						},
@@ -832,7 +837,7 @@ func createSlidingAnimationWithRotation(startTime, duration float64, index int) 
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
-							Time:  "3600s",
+							Time:  animationStartTime,
 							Value: "0.675003 0.675003", // Match size.fcpxml scale for smaller postcard effect
 							Curve: "linear",
 						},
