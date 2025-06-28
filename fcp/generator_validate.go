@@ -69,6 +69,19 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 
 	for _, asset := range fcpxml.Resources.Assets {
 		checkDuration(asset.Duration, fmt.Sprintf("Asset %s", asset.ID))
+		
+		// 🚨 CRITICAL: Check for empty/invalid media files
+		if asset.MediaRep.Src != "" {
+			// Extract file path from file:// URL
+			filePath := strings.TrimPrefix(asset.MediaRep.Src, "file://")
+			if fileInfo, err := os.Stat(filePath); err == nil {
+				if fileInfo.Size() == 0 {
+					violations = append(violations, fmt.Sprintf("Empty media file detected: Asset '%s' references zero-byte file '%s' - FCP cannot import empty files", asset.ID, filePath))
+				}
+			} else {
+				violations = append(violations, fmt.Sprintf("Missing media file: Asset '%s' references non-existent file '%s'", asset.ID, filePath))
+			}
+		}
 	}
 
 	for _, event := range fcpxml.Library.Events {
@@ -278,6 +291,34 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 								filePath := strings.TrimPrefix(referencedAsset.MediaRep.Src, "file://")
 								if isImageFile(filePath) {
 									violations = append(violations, fmt.Sprintf("🚨 CRASH RISK: asset-clip[%d] '%s' references image asset '%s' - images MUST use <video> elements, NOT <asset-clip> (causes addAssetClip:toObject:parentFormatID crash)", i, clip.Name, referencedAsset.ID))
+								}
+							}
+						}
+					}
+				}
+
+				// 🚨 CRITICAL: Check for nested Video elements inside AssetClips that reference image assets
+				// This prevents "Invalid edit with no respective media" errors in FCP
+				for i, clip := range sequence.Spine.AssetClips {
+					for j, nestedVideo := range clip.Videos {
+						// Find the referenced asset for the nested video
+						var referencedAsset *Asset
+						for k := range fcpxml.Resources.Assets {
+							if fcpxml.Resources.Assets[k].ID == nestedVideo.Ref {
+								referencedAsset = &fcpxml.Resources.Assets[k]
+								break
+							}
+						}
+						
+						if referencedAsset != nil {
+							// Check if this is an image asset (duration="0s" + image file extension)
+							if referencedAsset.Duration == "0s" {
+								// Extract the source file path from media-rep
+								if strings.HasPrefix(referencedAsset.MediaRep.Src, "file://") {
+									filePath := strings.TrimPrefix(referencedAsset.MediaRep.Src, "file://")
+									if isImageFile(filePath) {
+										violations = append(violations, fmt.Sprintf("🚨 CRASH RISK: asset-clip[%d] '%s' contains nested video[%d] '%s' that references image asset '%s' - nested images in asset-clips cause 'Invalid edit with no respective media' errors", i, clip.Name, j, nestedVideo.Name, referencedAsset.ID))
+									}
 								}
 							}
 						}

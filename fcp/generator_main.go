@@ -513,6 +513,12 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
+	// 🚨 CRITICAL: VALIDATE COMPLIANCE (per CLAUDE.md)
+	violations := ValidateClaudeCompliance(fcpxml)
+	if len(violations) > 0 {
+		return nil, fmt.Errorf("ERROR: validation failed with %d violations:\n%s", len(violations), strings.Join(violations, "\n"))
+	}
+
 	if verbose {
 		fmt.Printf("Successfully generated PNG pile with %d images\n", len(pngFiles))
 	}
