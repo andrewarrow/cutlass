@@ -305,16 +305,15 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             else:
                 sequence.spine.videos.append(bg_element)
     
-    # Generate PNG tiles as nested lane elements (like safe.fcpxml structure)
+    # Generate PNG tiles as nested elements inside background video (Pattern A - like Go implementation)
     if background_video:
-        # Find the background element to add nested lanes
+        # Find the background element to add nested PNGs inside it
         bg_element = sequence.spine.ordered_elements[-1]  # Last added element (background)
         
-        # Add nested_elements list if not exists
+        # Add nested_elements list if not exists  
         if "nested_elements" not in bg_element:
             bg_element["nested_elements"] = []
         
-        # Generate tiles with each PNG on its own lane
         current_lane = 1
         total_tiles = num_lanes * tiles_per_lane
         
@@ -354,20 +353,20 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
             
-            # Create PNG tile element as nested lane element (like safe.fcpxml)
+            # Create PNG tile element as nested video inside background (like Go's addSlidingPngImageToAssetClip)
             tile_duration = convert_seconds_to_fcp_duration(duration)
             
-            # Use consistent frame-aligned timing for all elements
-            tile_offset = "86400314/24000s"  # Frame-aligned version of ~3600s
-            tile_start = "86486400/24000s"   # Frame-aligned start
+            # Use proper timing like Info.fcpxml (start="3600s" pattern)
+            tile_offset = "0s"  # When PNG appears relative to background start
+            tile_start = "3600s"   # PNG start time like Info.fcpxml
             
             tile_element = {
                 "type": "video",
                 "ref": asset_id,
-                "lane": current_lane,  # Each PNG gets its own lane
+                "lane": current_lane,  # Each PNG gets its own lane (like Go implementation)
                 "duration": tile_duration,
-                "offset": tile_offset,  # Frame-aligned offset
-                "start": tile_start,  # Frame-aligned start
+                "offset": tile_offset,
+                "start": tile_start,  # Match Info.fcpxml timing
                 "name": f"{png_file.stem}_lane_{current_lane}",
                 "adjust_transform": {
                     "position": f"{x_pos:.3f} {y_pos:.3f}",
@@ -375,13 +374,13 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 }
             }
             
-            # Add as nested element inside background (like safe.fcpxml structure)
+            # Add as nested element inside background (Pattern A - like Go/Info.fcpxml)
             bg_element["nested_elements"].append(tile_element)
             
             # Increment lane for next PNG
             current_lane += 1
     else:
-        # If no background, create PNG tiles as separate spine elements
+        # If no background video, fall back to separate spine elements
         current_lane = 1
         total_tiles = num_lanes * tiles_per_lane
         
@@ -421,14 +420,15 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
             
-            # Create PNG tile element as separate spine element
+            # Create PNG tile element as separate spine element with lane
             tile_duration = convert_seconds_to_fcp_duration(duration)
+            
             tile_element = {
                 "type": "video",
                 "ref": asset_id,
                 "lane": current_lane,  # Each PNG gets its own lane
                 "duration": tile_duration,
-                "offset": "0s",  # All tiles start at the same time
+                "offset": "0s",
                 "start": "0s",  # Required for image video elements
                 "name": f"{png_file.stem}_lane_{current_lane}",
                 "adjust_transform": {
@@ -437,7 +437,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 }
             }
             
-            # Add as separate element to spine
+            # Add as separate spine element with lane number
             sequence.spine.videos.append(tile_element)
             sequence.spine.ordered_elements.append(tile_element)
             
@@ -448,13 +448,13 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
     sequence.duration = convert_seconds_to_fcp_duration(duration)
     
     total_tiles = num_lanes * tiles_per_lane
+    print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
     if background_video:
-        print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
-        print(f"   Structure: Background video + {total_tiles} nested lane elements")
+        print(f"   Structure: Background AssetClip + {total_tiles} nested PNG Video elements (Pattern A - like Go/Info.fcpxml)")
+        print(f"   Timing: Background at offset=0s, PNGs at start=3600s (like Info.fcpxml)")
     else:
-        print(f"   Generated {total_tiles} random PNG tiles, each on its own lane (lanes 1-{total_tiles})")
-        print(f"   Structure: {total_tiles} separate lane elements")
-    print(f"   Screen bounds: X({SCREEN_EDGE_LEFT:.1f} to {SCREEN_EDGE_RIGHT:.1f}), Y({SCREEN_EDGE_TOP:.1f} to {SCREEN_EDGE_BOTTOM:.1f})")
+        print(f"   Structure: {total_tiles} separate PNG spine elements (Pattern B)")
+    print(f"   Screen bounds: X(-30.0 to 30.0), Y(-50.0 to 50.0)")
     print(f"   Original request: {num_lanes} lanes × {tiles_per_lane} tiles = {total_tiles} total PNG lanes")
 
 
