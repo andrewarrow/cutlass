@@ -9,13 +9,13 @@ import (
 
 // UltimateBaffleConfig controls the extremeness of the baffle test
 type UltimateBaffleConfig struct {
-	EnableSecurityExploits   bool // XSS, path traversal, code injection
-	EnableNumericalExtremes  bool // NaN, infinity, massive numbers
-	EnableBoundaryViolations bool // Massive positions, negative timing
-	EnableUnicodeAttacks     bool // BOM, RTL override, etc.
-	EnableMemoryExhaustion   bool // Massive strings, deep nesting
-	EnableValidationEvasion  bool // Attempts to bypass validators
-	ExtremeFactor           float64 // 0.0-1.0, how extreme to make values
+	EnableSecurityExploits   bool    // XSS, path traversal, code injection
+	EnableNumericalExtremes  bool    // NaN, infinity, massive numbers
+	EnableBoundaryViolations bool    // Massive positions, negative timing
+	EnableUnicodeAttacks     bool    // BOM, RTL override, etc.
+	EnableMemoryExhaustion   bool    // Massive strings, deep nesting
+	EnableValidationEvasion  bool    // Attempts to bypass validators
+	ExtremeFactor            float64 // 0.0-1.0, how extreme to make values
 }
 
 // DefaultUltimateBaffleConfig returns a config that tests all validation boundaries
@@ -27,103 +27,8 @@ func DefaultUltimateBaffleConfig() UltimateBaffleConfig {
 		EnableUnicodeAttacks:     true,
 		EnableMemoryExhaustion:   true,
 		EnableValidationEvasion:  true,
-		ExtremeFactor:           0.8, // Very extreme
+		ExtremeFactor:            0.8, // Very extreme
 	}
-}
-
-// GenerateUltimateBaffle creates the most extreme possible FCPXML to test validation
-func GenerateUltimateBaffle(outputPath string, config UltimateBaffleConfig) error {
-	// Seed random generator for consistent chaos
-	rand.Seed(time.Now().UnixNano() + 666) // Add some chaos
-
-	fmt.Printf("🚨 GENERATING ULTIMATE BAFFLE TEST 🚨\n")
-	fmt.Printf("Extreme Factor: %.1f/1.0\n", config.ExtremeFactor)
-	fmt.Printf("Target: %s\n", outputPath)
-
-	// Create base FCPXML with extreme metadata
-	fcpxml, err := GenerateEmpty("")
-	if err != nil {
-		return fmt.Errorf("failed to create base FCPXML: %v", err)
-	}
-
-	// Set up resource management
-	registry := NewResourceRegistry(fcpxml)
-	tx := NewTransaction(registry)
-	defer tx.Rollback()
-
-	// Generate extreme timeline duration
-	extremeDuration := generateExtremeDuration(config)
-	fmt.Printf("Extreme Duration: %s\n", extremeDuration)
-
-	// Create complex assets with valid but extreme properties  
-	assetCount := 10 + int(config.ExtremeFactor*20) // 10-30 assets
-	successfulAssets := 0
-	for i := 0; i < assetCount; i++ {
-		if err := createUltimateExtremeAsset(fcpxml, tx, i, config); err != nil {
-			fmt.Printf("⚠️  Asset %d creation failed, skipping: %v\n", i, err)
-			continue
-		}
-		successfulAssets++
-	}
-	fmt.Printf("✅ Created %d complex assets\n", successfulAssets)
-
-	// Create complex spine elements
-	spineElementCount := 20 + int(config.ExtremeFactor*50) // 20-70 elements
-	successfulSpineElements := 0
-	for i := 0; i < spineElementCount; i++ {
-		if err := createUltimateExtremeSpineElement(fcpxml, tx, i, config, extremeDuration); err != nil {
-			fmt.Printf("⚠️  Spine element %d creation failed, skipping: %v\n", i, err)
-			continue
-		}
-		successfulSpineElements++
-	}
-	fmt.Printf("✅ Created %d complex spine elements\n", successfulSpineElements)
-
-	// Add complex text elements with valid but extreme formatting
-	textElementCount := 5 + int(config.ExtremeFactor*15) // 5-20 text elements
-	successfulTextElements := 0
-	for i := 0; i < textElementCount; i++ {
-		if err := createUltimateExtremeText(fcpxml, tx, i, config); err != nil {
-			fmt.Printf("⚠️  Text element %d creation failed, skipping: %v\n", i, err)
-			continue
-		}
-		successfulTextElements++
-	}
-	fmt.Printf("✅ Created %d complex text elements\n", successfulTextElements)
-
-	// Add complex keyframe animations  
-	if err := addUltimateExtremeAnimations(fcpxml, config); err != nil {
-		fmt.Printf("⚠️  Animation creation failed, skipping: %v\n", err)
-	} else {
-		fmt.Printf("✅ Added complex keyframe animations\n")
-	}
-
-	// Attempt to commit the transaction
-	if err := tx.Commit(); err != nil {
-		fmt.Printf("❌ Transaction commit failed: %v\n", err)
-		return fmt.Errorf("transaction commit failed: %v", err)
-	}
-
-	// Validate the structure - should pass for complex but valid content
-	fmt.Printf("🔍 Validating complex timeline structure...\n")
-	if err := fcpxml.ValidateStructure(); err != nil {
-		fmt.Printf("❌ Validation failed: %v\n", err)
-		return fmt.Errorf("validation failed: %v", err)
-	}
-
-	fmt.Printf("✅ Complex timeline structure validated successfully\n")
-
-	// Write the file - should succeed
-	if err := WriteToFile(fcpxml, outputPath); err != nil {
-		fmt.Printf("❌ File write failed: %v\n", err)
-		return fmt.Errorf("file write failed: %v", err)
-	}
-
-	fmt.Printf("✅ BAFFLE SUCCESS: Complex valid FCPXML generated!\n")
-	fmt.Printf("File written to: %s\n", outputPath)
-	fmt.Printf("Ready for Final Cut Pro import and stress testing!\n")
-
-	return nil
 }
 
 // generateExtremeDuration creates the most extreme duration possible
@@ -133,15 +38,15 @@ func generateExtremeDuration(config UltimateBaffleConfig) string {
 	}
 
 	extremeDurations := []string{
-		"-1000/24000s",               // Negative duration
-		"0s",                        // Zero duration
-		"999999999999/1s",           // Massive duration
-		"1/0s",                      // Division by zero
-		"∞s",                        // Infinity
-		"NaN/24000s",                // NaN
-		"1001/0s",                   // Zero denominator
-		"18446744073709551615/1s",   // Uint64 max
-		"-9223372036854775808/1s",   // Int64 min
+		"-1000/24000s",            // Negative duration
+		"0s",                      // Zero duration
+		"999999999999/1s",         // Massive duration
+		"1/0s",                    // Division by zero
+		"∞s",                      // Infinity
+		"NaN/24000s",              // NaN
+		"1001/0s",                 // Zero denominator
+		"18446744073709551615/1s", // Uint64 max
+		"-9223372036854775808/1s", // Int64 min
 	}
 
 	if config.ExtremeFactor > 0.7 {
@@ -189,11 +94,11 @@ func generateUltimateExtremeName(config UltimateBaffleConfig, prefix string) str
 
 	if config.EnableUnicodeAttacks && rand.Float64() < 0.3 {
 		unicode := []string{
-			"\uFEFF" + prefix + "\uFEFF",        // BOM
-			prefix + "\u202E" + "REVERSED",      // RTL override
-			prefix + "\u200B\u200C\u200D",      // Zero-width chars
-			prefix + "\u0000\u0001\u0002",      // Control chars
-			prefix + "\u2028\u2029",            // Line/paragraph separators
+			"\uFEFF" + prefix + "\uFEFF",   // BOM
+			prefix + "\u202E" + "REVERSED", // RTL override
+			prefix + "\u200B\u200C\u200D",  // Zero-width chars
+			prefix + "\u0000\u0001\u0002",  // Control chars
+			prefix + "\u2028\u2029",        // Line/paragraph separators
 		}
 		return unicode[rand.Intn(len(unicode))]
 	}
@@ -216,7 +121,7 @@ func generateUltimateExtremeUID(config UltimateBaffleConfig) string {
 	if config.EnableSecurityExploits && rand.Float64() < 0.5 {
 		return "javascript:eval('BAFFLE_XSS')"
 	}
-	
+
 	if config.EnableMemoryExhaustion && rand.Float64() < 0.3 {
 		return strings.Repeat("BAFFLE_UID_", 5000)
 	}
@@ -232,13 +137,13 @@ func generateUltimateExtremeDuration(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999999/24000s",           // Negative
-		"0/24000s",                 // Zero
-		"18446744073709551615/1s",  // Massive
-		"1/0s",                     // Zero denominator
-		"NaN/24000s",               // NaN numerator
-		"100/NaN s",                // NaN denominator
-		"∞/24000s",                 // Infinity
+		"-999999/24000s",          // Negative
+		"0/24000s",                // Zero
+		"18446744073709551615/1s", // Massive
+		"1/0s",                    // Zero denominator
+		"NaN/24000s",              // NaN numerator
+		"100/NaN s",               // NaN denominator
+		"∞/24000s",                // Infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -251,7 +156,7 @@ func generateUltimateExtremeDuration(config UltimateBaffleConfig) string {
 // createUltimateExtremeFormat creates formats with extreme properties
 func createUltimateExtremeFormat(tx *ResourceTransaction, formatID string, config UltimateBaffleConfig) error {
 	name := generateUltimateExtremeName(config, "Format")
-	
+
 	var width, height string
 	if config.EnableBoundaryViolations && rand.Float64() < config.ExtremeFactor {
 		width = generateExtremeNumber(config)
@@ -282,12 +187,12 @@ func generateExtremeNumber(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999999",              // Negative
-		"0",                    // Zero  
-		"999999999999999",      // Massive
-		"NaN",                  // Not a number
-		"∞",                    // Infinity
-		"-∞",                   // Negative infinity
+		"-999999",                 // Negative
+		"0",                       // Zero
+		"999999999999999",         // Massive
+		"NaN",                     // Not a number
+		"∞",                       // Infinity
+		"-∞",                      // Negative infinity
 		"1.7976931348623157e+308", // Float64 max
 	}
 
@@ -339,19 +244,19 @@ func createUltimateExtremeSpineElement(fcpxml *FCPXML, tx *ResourceTransaction, 
 			{
 				ID: fmt.Sprintf("ts_baffle_%d", index),
 				TextStyle: TextStyle{
-					Font:            generateUltimateExtremeName(config, "Font"),
-					FontSize:        generateExtremeFontSize(config),
-					FontColor:       generateExtremeColor(config),
-					LineSpacing:     generateExtremeLineSpacing(config),
-					Bold:            generateExtremeBool(config),
-					Italic:          generateExtremeBool(config),
-					StrokeColor:     generateExtremeColor(config),
-					StrokeWidth:     generateExtremeNumber(config),
-					ShadowColor:     generateExtremeColor(config),
-					ShadowOffset:    generateExtremePosition(config),
+					Font:             generateUltimateExtremeName(config, "Font"),
+					FontSize:         generateExtremeFontSize(config),
+					FontColor:        generateExtremeColor(config),
+					LineSpacing:      generateExtremeLineSpacing(config),
+					Bold:             generateExtremeBool(config),
+					Italic:           generateExtremeBool(config),
+					StrokeColor:      generateExtremeColor(config),
+					StrokeWidth:      generateExtremeNumber(config),
+					ShadowColor:      generateExtremeColor(config),
+					ShadowOffset:     generateExtremePosition(config),
 					ShadowBlurRadius: generateExtremeNumber(config),
-					Kerning:         generateExtremeNumber(config),
-					Alignment:       generateExtremeAlignment(config),
+					Kerning:          generateExtremeNumber(config),
+					Alignment:        generateExtremeAlignment(config),
 				},
 			},
 		}
@@ -368,12 +273,12 @@ func generateExtremeOffset(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999999/24000s",    // Negative timing
-		"0s",                // Zero
-		"999999999/1s",      // Massive offset  
-		"1/0s",              // Division by zero
-		"NaN/24000s",        // NaN
-		"∞/24000s",          // Infinity
+		"-999999/24000s", // Negative timing
+		"0s",             // Zero
+		"999999999/1s",   // Massive offset
+		"1/0s",           // Division by zero
+		"NaN/24000s",     // NaN
+		"∞/24000s",       // Infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -390,11 +295,11 @@ func generateExtremeLane(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999999",        // Massive negative
-		"999999",         // Massive positive
-		"0",              // Zero lane
-		"NaN",            // Not a number
-		"∞",              // Infinity
+		"-999999", // Massive negative
+		"999999",  // Massive positive
+		"0",       // Zero lane
+		"NaN",     // Not a number
+		"∞",       // Infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -411,12 +316,12 @@ func generateExtremeFontSize(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-100",           // Negative size
-		"0",              // Zero size
-		"999999",         // Massive size
-		"NaN",            // Not a number
-		"∞",              // Infinity
-		"-∞",             // Negative infinity
+		"-100",   // Negative size
+		"0",      // Zero size
+		"999999", // Massive size
+		"NaN",    // Not a number
+		"∞",      // Infinity
+		"-∞",     // Negative infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -434,12 +339,12 @@ func generateExtremeColor(config UltimateBaffleConfig) string {
 
 	extremes := []string{
 		"∞ ∞ ∞ ∞",             // Infinity
-		"NaN NaN NaN NaN",       // NaN
-		"-5.0 -5.0 -5.0 -5.0",  // Negative
-		"999 999 999 999",       // Massive
-		"1",                     // Wrong component count
-		"1 2 3 4 5 6 7 8",      // Too many components
-		"red green blue",        // Non-numeric
+		"NaN NaN NaN NaN",     // NaN
+		"-5.0 -5.0 -5.0 -5.0", // Negative
+		"999 999 999 999",     // Massive
+		"1",                   // Wrong component count
+		"1 2 3 4 5 6 7 8",     // Too many components
+		"red green blue",      // Non-numeric
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -456,11 +361,11 @@ func generateExtremeLineSpacing(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999.0",    // Negative
-		"0.0",       // Zero
-		"999999.0",  // Massive
-		"NaN",       // Not a number
-		"∞",         // Infinity
+		"-999.0",   // Negative
+		"0.0",      // Zero
+		"999999.0", // Massive
+		"NaN",      // Not a number
+		"∞",        // Infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -477,13 +382,13 @@ func generateExtremeBool(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"true",     // Wrong format
-		"false",    // Wrong format
-		"yes",      // Wrong format
-		"no",       // Wrong format
-		"-1",       // Invalid
-		"999",      // Invalid
-		"NaN",      // Invalid
+		"true",  // Wrong format
+		"false", // Wrong format
+		"yes",   // Wrong format
+		"no",    // Wrong format
+		"-1",    // Invalid
+		"999",   // Invalid
+		"NaN",   // Invalid
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -497,14 +402,14 @@ func generateExtremeBool(config UltimateBaffleConfig) string {
 func generateExtremeAlignment(config UltimateBaffleConfig) string {
 	// Always generate valid alignments, but use variety for complexity
 	validAlignments := []string{
-		"left", 
-		"center", 
-		"right", 
-		"justify",  // Valid FCPXML alignment
-		"start",    // Valid CSS-style alignment  
-		"end",      // Valid CSS-style alignment
+		"left",
+		"center",
+		"right",
+		"justify", // Valid FCPXML alignment
+		"start",   // Valid CSS-style alignment
+		"end",     // Valid CSS-style alignment
 	}
-	
+
 	// Generate complex but valid alignment patterns
 	if config.EnableValidationEvasion && rand.Float64() < config.ExtremeFactor {
 		// Use edge cases that are valid but complex
@@ -526,12 +431,12 @@ func generateExtremePosition(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-999999 -999999",    // Massive negative
-		"999999 999999",      // Massive positive
-		"NaN NaN",            // NaN
-		"∞ ∞",                // Infinity
-		"0",                  // Wrong component count
-		"1 2 3 4 5",          // Too many components
+		"-999999 -999999", // Massive negative
+		"999999 999999",   // Massive positive
+		"NaN NaN",         // NaN
+		"∞ ∞",             // Infinity
+		"0",               // Wrong component count
+		"1 2 3 4 5",       // Too many components
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
@@ -556,10 +461,10 @@ func addUltimateExtremeAnimations(fcpxml *FCPXML, config UltimateBaffleConfig) e
 
 	// Add extreme animations to existing elements
 	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
-	
+
 	for i := range spine.Titles {
 		title := &spine.Titles[i]
-		
+
 		// Add extreme transform animation
 		title.Params = []Param{
 			{
@@ -572,15 +477,15 @@ func addUltimateExtremeAnimations(fcpxml *FCPXML, config UltimateBaffleConfig) e
 							Curve: generateExtremeKeyfameAttr(config),
 						},
 						{
-							Time:  "1001/24000s",
-							Value: generateExtremePosition(config),
+							Time:   "1001/24000s",
+							Value:  generateExtremePosition(config),
 							Interp: generateExtremeKeyfameAttr(config),
 						},
 					},
 				},
 			},
 			{
-				Name: "scale", 
+				Name: "scale",
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
@@ -595,7 +500,7 @@ func addUltimateExtremeAnimations(fcpxml *FCPXML, config UltimateBaffleConfig) e
 				KeyframeAnimation: &KeyframeAnimation{
 					Keyframes: []Keyframe{
 						{
-							Time:  "0s", 
+							Time:  "0s",
 							Value: generateExtremeOpacity(config),
 						},
 					},
@@ -643,11 +548,11 @@ func generateExtremeOpacity(config UltimateBaffleConfig) string {
 	}
 
 	extremes := []string{
-		"-0.5",    // Negative opacity
-		"2.0",     // Opacity > 1
-		"999.0",   // Massive opacity
-		"NaN",     // NaN
-		"∞",       // Infinity
+		"-0.5",  // Negative opacity
+		"2.0",   // Opacity > 1
+		"999.0", // Massive opacity
+		"NaN",   // NaN
+		"∞",     // Infinity
 	}
 
 	if rand.Float64() < config.ExtremeFactor {
