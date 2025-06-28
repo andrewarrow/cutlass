@@ -13,7 +13,7 @@ from ..constants import (
     DEFAULT_VIDEO_WIDTH, DEFAULT_VIDEO_HEIGHT, DEFAULT_VIDEO_DURATION, IMAGE_START_TIME,
     STANDARD_FRAME_RATE, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS,
     VERTICAL_FORMAT_WIDTH, VERTICAL_FORMAT_HEIGHT, HORIZONTAL_FORMAT_WIDTH, HORIZONTAL_FORMAT_HEIGHT,
-    VERTICAL_SCALE_FACTOR
+    VERTICAL_SCALE_FACTOR, ASPECT_RATIO_PORTRAIT_THRESHOLD
 )
 from ..utils.ids import generate_uid
 from ..utils.timing import convert_seconds_to_fcp_duration
@@ -144,24 +144,71 @@ def detect_video_properties(file_path: str) -> dict:
             audio_result = subprocess.run(audio_cmd, capture_output=True, text=True)
             has_audio = bool(audio_result.stdout.strip())
             
+            width_int = int(width)
+            height_int = int(height)
+            aspect_ratio = width_int / height_int if height_int > 0 else 1.0
+            
             return {
                 "duration_seconds": float(duration_str),
-                "width": int(width),
-                "height": int(height),
+                "width": width_int,
+                "height": height_int,
                 "frame_rate": frame_rate,
-                "has_audio": has_audio
+                "has_audio": has_audio,
+                "aspect_ratio": aspect_ratio
             }
     
     except Exception as e:
         print(f"⚠️  Failed to detect properties for {file_path}: {e}")
     
-    # Return safe defaults if detection fails
+    # Return safe defaults if detection fails (16:9 aspect ratio)
     return {
         "duration_seconds": DEFAULT_VIDEO_DURATION,
         "width": DEFAULT_VIDEO_WIDTH,
         "height": DEFAULT_VIDEO_HEIGHT,
         "frame_rate": STANDARD_FRAME_RATE,
-        "has_audio": False  # Safe default: no audio
+        "has_audio": False,  # Safe default: no audio
+        "aspect_ratio": DEFAULT_VIDEO_WIDTH / DEFAULT_VIDEO_HEIGHT  # 16:9 = 1.777...
+    }
+
+
+def detect_image_properties(file_path: str) -> dict:
+    """
+    Detect image properties using ffprobe.
+    
+    Returns aspect ratio and dimensions for images to determine if scaling is needed.
+    """
+    import subprocess
+    
+    try:
+        # Get image properties using ffprobe
+        cmd = [
+            "ffprobe", "-v", "error", "-select_streams", "v:0",
+            "-show_entries", "stream=width,height",
+            "-of", "csv=p=0", str(file_path)
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        image_info = result.stdout.strip().split(',')
+        
+        if len(image_info) >= 2:
+            width_str, height_str = image_info[:2]
+            width_int = int(width_str)
+            height_int = int(height_str)
+            aspect_ratio = width_int / height_int if height_int > 0 else 1.0
+            
+            return {
+                "width": width_int,
+                "height": height_int,
+                "aspect_ratio": aspect_ratio
+            }
+    
+    except Exception as e:
+        print(f"⚠️  Failed to detect image properties for {file_path}: {e}")
+    
+    # Return safe defaults if detection fails (assume 16:9)
+    return {
+        "width": int(DEFAULT_IMAGE_WIDTH),
+        "height": int(DEFAULT_IMAGE_HEIGHT),
+        "aspect_ratio": int(DEFAULT_IMAGE_WIDTH) / int(DEFAULT_IMAGE_HEIGHT)
     }
 
 
@@ -246,6 +293,39 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
     return asset, format_obj
 
 
+def needs_vertical_scaling(file_path: str, is_image: bool) -> bool:
+    """
+    Determine if a media file needs vertical scaling.
+    
+    Only 16:9 (landscape) assets need scaling to fit in 9:16 vertical format.
+    9:16 (portrait) assets already fit and don't need scaling.
+    
+    Args:
+        file_path: Path to the media file
+        is_image: True if file is an image, False if video
+        
+    Returns:
+        True if scaling is needed (landscape), False if not (portrait)
+    """
+    try:
+        if is_image:
+            props = detect_image_properties(file_path)
+        else:
+            props = detect_video_properties(file_path)
+        
+        aspect_ratio = props.get("aspect_ratio", 1.0)
+        
+        # If aspect ratio >= portrait threshold (0.75), it needs scaling
+        # Only truly portrait assets (aspect ratio < 0.75) don't need scaling
+        # This includes: landscape (>1.0), square (=1.0), and wide portrait (0.75-1.0)
+        return aspect_ratio >= ASPECT_RATIO_PORTRAIT_THRESHOLD
+        
+    except Exception as e:
+        print(f"⚠️  Could not determine aspect ratio for {file_path}: {e}")
+        # Default to needing scaling (safer assumption)
+        return True
+
+
 def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_seconds: float = 5.0, use_horizontal: bool = False):
     """
     Add media files to timeline following CLAUDE.md rules.
@@ -318,8 +398,8 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                     "start_time": timeline_position  # For sorting
                 }
                 
-                # Add scaling for vertical format to fill screen (images need scaling too)
-                if not use_horizontal:
+                # Add scaling for vertical format only if aspect ratio requires it
+                if not use_horizontal and needs_vertical_scaling(media_file, is_image=True):
                     element["adjust_transform"] = {"scale": VERTICAL_SCALE_FACTOR}
             else:
                 # Videos: Use AssetClip element with NO start attribute
@@ -334,8 +414,8 @@ def add_media_to_timeline(fcpxml: FCPXML, media_files: list[str], clip_duration_
                     "start_time": timeline_position  # For sorting
                 }
                 
-                # Add scaling for vertical format to fill screen
-                if not use_horizontal:
+                # Add scaling for vertical format only if aspect ratio requires it
+                if not use_horizontal and needs_vertical_scaling(media_file, is_image=False):
                     element["adjust_transform"] = {"scale": VERTICAL_SCALE_FACTOR}
             
             all_timeline_elements.append(element)

@@ -46,6 +46,12 @@ HORIZONTAL_FORMAT_HEIGHT = "720"
 # Transform constants for vertical format fill
 VERTICAL_SCALE_FACTOR = "3.27127 3.27127"  # Scale to fill 1080x1920 from 1920x1080
 
+# Aspect ratio constants for scaling decision
+ASPECT_RATIO_16_9 = 16 / 9  # ≈ 1.777 (landscape)
+ASPECT_RATIO_9_16 = 9 / 16  # ≈ 0.5625 (portrait)
+ASPECT_RATIO_SQUARE = 1.0  # Square (1:1)
+ASPECT_RATIO_PORTRAIT_THRESHOLD = 0.75  # Below this is considered portrait (taller than wide)
+
 # Default video properties (fallback when detection fails)
 DEFAULT_VIDEO_WIDTH = 1920
 DEFAULT_VIDEO_HEIGHT = 1080
