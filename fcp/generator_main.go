@@ -525,6 +525,9 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 		return nil, fmt.Errorf("failed to commit transaction: %v", err)
 	}
 
+	// 🚨 CRITICAL: Set sequence duration to prevent "Invalid edit with no respective media" error
+	fcpxml.Library.Events[0].Projects[0].Sequences[0].Duration = ConvertSecondsToFCPDuration(config.Duration)
+
 	// 🚨 CRITICAL: VALIDATE COMPLIANCE (per CLAUDE.md)
 	violations := ValidateClaudeCompliance(fcpxml)
 	if len(violations) > 0 {

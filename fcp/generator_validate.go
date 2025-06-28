@@ -247,6 +247,17 @@ func ValidateClaudeCompliance(fcpxml *FCPXML) []string {
 		}
 	}
 
+	// 🚨 CRITICAL: Check for zero-duration sequences (causes "Invalid edit with no respective media")
+	for _, event := range fcpxml.Library.Events {
+		for _, project := range event.Projects {
+			for _, sequence := range project.Sequences {
+				if sequence.Duration == "0s" && (len(sequence.Spine.AssetClips) > 0 || len(sequence.Spine.Videos) > 0 || len(sequence.Spine.Titles) > 0) {
+					violations = append(violations, fmt.Sprintf("🚨 CRASH RISK: Sequence in project '%s' has Duration='0s' but contains media elements - causes 'Invalid edit with no respective media' error in FCP", project.Name))
+				}
+			}
+		}
+	}
+
 	// 🚨 CRITICAL: Validate spine structural rules (FCPXML architecture)
 	// This catches violations from ALL code paths, not just SpineBuilder
 	for _, event := range fcpxml.Library.Events {
