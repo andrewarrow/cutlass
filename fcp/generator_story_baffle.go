@@ -170,8 +170,8 @@ func GenerateStoryBaffleStep1(config *StoryBaffleConfig, verbose bool) (*FCPXML,
 		fmt.Printf("Duration: %.1f seconds, Images: %d, Cuts every: 0.5s\n", config.Duration, config.ImageCount)
 	}
 
-	// Create base FCPXML
-	fcpxml, err := GenerateEmptyWithFormat("", config.Format)
+	// Create base FCPXML with portrait format
+	fcpxml, err := GenerateEmptyWithFormat("", "vertical")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
 	}
@@ -444,13 +444,9 @@ func createStep1PrimaryVideo(fcpxml *FCPXML, imagePath string, startTime, durati
 	assetID := ids[0]
 	formatID := ids[1]
 
-	// Create format for image
-	width := "1280"
-	height := "720"
-	if format == "vertical" {
-		width = "1080"
-		height = "1920"
-	}
+	// Create format for image (always use 1080x1920 portrait)
+	width := "1080"
+	height := "1920"
 
 	_, err := tx.CreateFormat(formatID, "Step1Primary", width, height, "1-13-1")
 	if err != nil {
@@ -495,13 +491,9 @@ func addStep1ConnectedClip(fcpxml *FCPXML, primaryVideo *Video, imagePath string
 	assetID := ids[0]
 	formatID := ids[1]
 
-	// Create format for image
-	width := "1280"
-	height := "720"
-	if format == "vertical" {
-		width = "1080"
-		height = "1920"
-	}
+	// Create format for image (always use 1080x1920 portrait)
+	width := "1080"
+	height := "1920"
 
 	_, err := tx.CreateFormat(formatID, "Step1Connected", width, height, "1-13-1")
 	if err != nil {
@@ -660,107 +652,66 @@ func createStep1TextAnimation(startTime, duration float64) []Param {
 	return params
 }
 
-// createStep1Animation creates Michael Bay style explosive animations
+// createStep1Animation creates slide animations: first from right, then from left
 func createStep1Animation(startTime, duration float64, imageIndex int) *AdjustTransform {
-	// Seed randomness for consistent animations per image
-	randSeed := int64(imageIndex * 42)
-	localRand := rand.New(rand.NewSource(randSeed))
+	// Determine slide direction: first image from right, second from left, alternating
+	var startX float64
+	var fixedRotation string
 	
-	// EXPLOSIVE entry from off-screen
-	entryDirections := []string{"left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"}
-	direction := entryDirections[imageIndex%len(entryDirections)]
-	
-	var startX, startY float64
-	switch direction {
-	case "left":
-		startX, startY = -800, (localRand.Float64()-0.5)*400
-	case "right":
-		startX, startY = 800, (localRand.Float64()-0.5)*400
-	case "top":
-		startX, startY = (localRand.Float64()-0.5)*400, -600
-	case "bottom":
-		startX, startY = (localRand.Float64()-0.5)*400, 600
-	case "top-left":
-		startX, startY = -800, -600
-	case "top-right":
-		startX, startY = 800, -600
-	case "bottom-left":
-		startX, startY = -800, 600
-	case "bottom-right":
-		startX, startY = 800, 600
+	if imageIndex%2 == 0 {
+		// Even index: slide from right
+		startX = 62.5
+		fixedRotation = "16.02"
+	} else {
+		// Odd index: slide from left  
+		startX = -62.5
+		fixedRotation = "-26.6193"
 	}
 	
-	// EXPLOSIVE POSITION ANIMATION
-	positionKeyframes := []Keyframe{
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime),
-			Value: fmt.Sprintf("%.1f %.1f", startX, startY),
-		},
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime + 0.15), // Hit center fast
-			Value: "0 0",
-		},
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime + duration),
-			Value: fmt.Sprintf("%.1f %.1f", (localRand.Float64()-0.5)*200, (localRand.Float64()-0.5)*200),
-		},
-	}
-	
-	// EXPLOSIVE SCALE ANIMATION
-	scaleKeyframes := []Keyframe{
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime),
-			Value: "0.1 0.1", // Start tiny
-			Curve: "linear",
-		},
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime + 0.1),
-			Value: "2.0 2.0", // EXPLODE bigger
-			Curve: "linear",
-		},
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime + duration),
-			Value: "1.2 1.2", // Settle at large size
-			Curve: "linear",
+	// Position animation using separate X and Y parameters (matching Info.fcpxml pattern)
+	positionParam := Param{
+		Name: "position",
+		NestedParams: []Param{
+			{
+				Name: "X",
+				Key:  "1",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: fmt.Sprintf("%.1f", startX),
+						},
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime + duration),
+							Value: "0",
+						},
+					},
+				},
+			},
+			{
+				Name: "Y", 
+				Key:  "2",
+				KeyframeAnimation: &KeyframeAnimation{
+					Keyframes: []Keyframe{
+						{
+							Time:  ConvertSecondsToFCPDuration(startTime),
+							Value: "0",
+							Curve: "linear",
+						},
+					},
+				},
+			},
 		},
 	}
 	
-	// RAPID ROTATION
-	rotationAmount := (localRand.Float64() - 0.5) * 720 // Up to ±360 degrees
-	rotationKeyframes := []Keyframe{
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime),
-			Value: fmt.Sprintf("%.1f", (localRand.Float64()-0.5)*180),
-			Curve: "linear",
-		},
-		{
-			Time:  ConvertSecondsToFCPDuration(startTime + duration),
-			Value: fmt.Sprintf("%.1f", rotationAmount),
-			Curve: "linear",
-		},
+	// Add rotation as a separate parameter
+	rotationParam := Param{
+		Name:  "rotation",
+		Value: fixedRotation,
 	}
 	
 	return &AdjustTransform{
-		Params: []Param{
-			{
-				Name: "position",
-				KeyframeAnimation: &KeyframeAnimation{
-					Keyframes: positionKeyframes,
-				},
-			},
-			{
-				Name: "scale",
-				KeyframeAnimation: &KeyframeAnimation{
-					Keyframes: scaleKeyframes,
-				},
-			},
-			{
-				Name: "rotation",
-				KeyframeAnimation: &KeyframeAnimation{
-					Keyframes: rotationKeyframes,
-				},
-			},
-		},
+		Params: []Param{positionParam, rotationParam},
 	}
 }
 

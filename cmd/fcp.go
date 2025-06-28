@@ -918,6 +918,80 @@ Examples:
 	},
 }
 
+var pngPileCmd = &cobra.Command{
+	Use:   "png-pile [output-filename]",
+	Short: "Generate a PNG pile effect like Info.fcpxml with 164240-830460859.mp4 base and 90 sliding PNGs",
+	Long: `Generate a PNG pile effect similar to Info.fcpxml with:
+- Base track using 164240-830460859.mp4 video
+- 90 different PNG images sliding in from all directions
+- Black borders on all images like the reference
+- Increasing pace as more images appear
+- Progressive multi-lane composition up to 90 lanes
+- Themed story progression through the images
+
+The animation pattern:
+1. Starts slowly with a few images sliding in
+2. Pace increases progressively 
+3. Images slide from left, right, top, bottom, and diagonals
+4. All images have black border effects
+5. Creates a visual story arc through image themes
+
+Examples:
+  cutlass fcp png-pile                       # Generate png_pile_timestamp.fcpxml
+  cutlass fcp png-pile mypile.fcpxml         # Custom filename
+  cutlass fcp png-pile --duration 30 --images 90  # 30 seconds with 90 images`,
+	Args: cobra.RangeArgs(0, 1),
+	Run: func(cmd *cobra.Command, args []string) {
+		// Get output filename
+		var filename string
+		if len(args) > 0 {
+			filename = args[0]
+		} else {
+			timestamp := time.Now().Unix()
+			filename = fmt.Sprintf("png_pile_%d.fcpxml", timestamp)
+		}
+		
+		// Get flags
+		durationStr, _ := cmd.Flags().GetString("duration")
+		imagesStr, _ := cmd.Flags().GetString("images")
+		inputDir, _ := cmd.Flags().GetString("input-dir")
+		verbose, _ := cmd.Flags().GetBool("verbose")
+		
+		// Parse duration
+		duration, err := strconv.ParseFloat(durationStr, 64)
+		if err != nil {
+			fmt.Printf("Error parsing duration '%s': %v\n", durationStr, err)
+			return
+		}
+		
+		// Parse total images
+		totalImages, err := strconv.Atoi(imagesStr)
+		if err != nil {
+			fmt.Printf("Error parsing images '%s': %v\n", imagesStr, err)
+			return
+		}
+		
+		// Generate PNG pile timeline
+		fmt.Printf("Generating PNG pile timeline (%.1f seconds with %d images)...\n", duration, totalImages)
+		
+		fcpxml, err := fcp.GeneratePngPile(duration, totalImages, inputDir, verbose)
+		if err != nil {
+			fmt.Printf("Error generating PNG pile timeline: %v\n", err)
+			return
+		}
+		
+		// Write to file
+		err = fcp.WriteToFile(fcpxml, filename)
+		if err != nil {
+			fmt.Printf("Error writing FCPXML: %v\n", err)
+			return
+		}
+		
+		fmt.Printf("Generated PNG pile timeline: %s\n", filename)
+		fmt.Printf("Import this into Final Cut Pro to view the sliding PNG pile effect.\n")
+	},
+}
+
 var storyCmd = &cobra.Command{
 	Use:   "story [output-filename]",
 	Short: "Generate a 3-minute story video using random words and Pixabay images",
@@ -1086,6 +1160,12 @@ func init() {
 	storyBaffleCmd.Flags().String("format", "horizontal", "Video format: 'horizontal' (1280x720) or 'vertical' (1080x1920) (default 'horizontal')")
 	storyBaffleCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
 
+	// Add flags to png-pile subcommand
+	pngPileCmd.Flags().String("duration", "30", "Total PNG pile duration in seconds (default 30)")
+	pngPileCmd.Flags().String("images", "90", "Total number of PNG images to use (default 90)")
+	pngPileCmd.Flags().String("input-dir", "./png_pile_assets", "Directory containing PNG images (default ./png_pile_assets)")
+	pngPileCmd.Flags().BoolP("verbose", "v", false, "Verbose output showing generation details")
+
 	// Add flags to story subcommand
 	storyCmd.Flags().String("duration", "180", "Total story duration in seconds (default 180 = 3 minutes)")
 	storyCmd.Flags().String("images", "90", "Total number of images to download and use (default 90)")
@@ -1109,5 +1189,6 @@ func init() {
 	fcpCmd.AddCommand(addConversationCmd)
 	fcpCmd.AddCommand(baffleCmd)
 	fcpCmd.AddCommand(storyBaffleCmd)
+	fcpCmd.AddCommand(pngPileCmd)
 	fcpCmd.AddCommand(storyCmd)
 }

@@ -2,10 +2,12 @@ package fcp
 
 import (
 	"fmt"
-
+	"io/fs"
+	"math"
 	"math/rand"
-
 	"path/filepath"
+	"sort"
+	"strings"
 )
 
 // createLaneAssetClipElement creates an asset-clip element with proper lane assignment for spine
@@ -371,4 +373,303 @@ func addBaffleImageElement(fcpxml *FCPXML, tx *ResourceTransaction, imagePath st
 	spine.Videos = append(spine.Videos, video)
 
 	return nil
+}
+
+// GeneratePngPile creates a PNG pile effect similar to Info.fcpxml with base video and sliding PNGs
+func GeneratePngPile(duration float64, totalImages int, inputDir string, verbose bool) (*FCPXML, error) {
+	if verbose {
+		fmt.Printf("Generating PNG pile with %.1fs duration, %d images from %s\n", duration, totalImages, inputDir)
+	}
+
+	// Create base FCPXML structure
+	fcpxml, err := GenerateEmpty("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base FCPXML: %v", err)
+	}
+
+	// Initialize resource management
+	registry := NewResourceRegistry(fcpxml)
+	tx := NewTransaction(registry)
+	defer tx.Rollback()
+
+	// Track created assets to avoid duplicates
+	createdAssets := make(map[string]string)
+	createdFormats := make(map[string]string)
+
+	// Add base video track (164240-830460859.mp4)
+	videoPath := "164240-830460859.mp4"
+	if verbose {
+		fmt.Printf("Adding base video track: %s\n", videoPath)
+	}
+
+	ids := tx.ReserveIDs(2)
+	videoAssetID := ids[0]
+	videoFormatID := ids[1]
+
+	err = tx.CreateVideoAssetWithDetection(videoAssetID, videoPath, "164240-830460859", ConvertSecondsToFCPDuration(duration), videoFormatID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create base video asset: %v", err)
+	}
+
+	// Create main video asset-clip with scaling like Info.fcpxml
+	baseClip := AssetClip{
+		Ref:      videoAssetID,
+		Offset:   "0s",
+		Name:     "164240-830460859",
+		Duration: ConvertSecondsToFCPDuration(duration),
+		Format:   videoFormatID,
+		AdjustTransform: &AdjustTransform{
+			Scale: "3.27127 3.27127", // Match Info.fcpxml scaling
+		},
+	}
+
+	// Get PNG files from input directory
+	pngFiles, err := getPngFiles(inputDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get PNG files: %v", err)
+	}
+
+	if len(pngFiles) == 0 {
+		return nil, fmt.Errorf("no PNG files found in %s", inputDir)
+	}
+
+	// Limit to requested number of images
+	if len(pngFiles) > totalImages {
+		pngFiles = pngFiles[:totalImages]
+	}
+
+	if verbose {
+		fmt.Printf("Found %d PNG files, using %d images\n", len(pngFiles), len(pngFiles))
+	}
+
+	// Create border effect like Info.fcpxml
+	effectIDs := tx.ReserveIDs(1)
+	borderEffectID := effectIDs[0]
+	_, err = tx.CreateEffect(borderEffectID, "Simple Border", ".../Effects.localized/Stylize.localized/Simple Border.localized/Simple Border.moef")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create border effect: %v", err)
+	}
+
+	// Calculate timing progression (starts slow, speeds up)
+	imageTimings := calculateProgessiveTiming(len(pngFiles), duration)
+
+	// Add PNG images with increasing pace and varied directions
+	for i, pngFile := range pngFiles {
+		timing := imageTimings[i]
+		
+		if verbose && (i < 5 || i%10 == 0) {
+			fmt.Printf("Adding PNG %d/%d: %s at %.2fs\n", i+1, len(pngFiles), filepath.Base(pngFile), timing.startTime)
+		}
+
+		err = addSlidingPngImage(&baseClip, tx, pngFile, timing, i, borderEffectID, verbose, createdAssets, createdFormats)
+		if err != nil {
+			if verbose {
+				fmt.Printf("Warning: Failed to add PNG %s: %v\n", pngFile, err)
+			}
+			continue
+		}
+	}
+
+	// Add the base clip to spine
+	spine := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine
+	spine.AssetClips = append(spine.AssetClips, baseClip)
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit transaction: %v", err)
+	}
+
+	if verbose {
+		fmt.Printf("Successfully generated PNG pile with %d images\n", len(pngFiles))
+	}
+
+	return fcpxml, nil
+}
+
+// ImageTiming represents when and how long an image appears
+type ImageTiming struct {
+	startTime float64
+	duration  float64
+}
+
+// calculateProgessiveTiming calculates start times with increasing pace
+func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTiming {
+	timings := make([]ImageTiming, numImages)
+	
+	// Progressive acceleration: start slow, speed up exponentially
+	totalWeight := 0.0
+	for i := 0; i < numImages; i++ {
+		// Weight decreases exponentially for faster pace later
+		weight := math.Pow(0.7, float64(i)/10.0)
+		totalWeight += weight
+	}
+	
+	currentTime := 0.0
+	baseDuration := 4.0 // Each image shows for 4 seconds
+	
+	for i := 0; i < numImages; i++ {
+		timings[i] = ImageTiming{
+			startTime: currentTime,
+			duration:  baseDuration,
+		}
+		
+		// Calculate time until next image (gets shorter over time)
+		weight := math.Pow(0.7, float64(i)/10.0)
+		timeStep := (totalDuration * 0.8) * (weight / totalWeight)
+		currentTime += timeStep
+		
+		// Don't go past the end
+		if currentTime > totalDuration-baseDuration {
+			currentTime = totalDuration - baseDuration
+		}
+	}
+	
+	return timings
+}
+
+// addSlidingPngImage adds a PNG with sliding animation and black border
+func addSlidingPngImage(baseClip *AssetClip, tx *ResourceTransaction, pngPath string, timing ImageTiming, index int, borderEffectID string, verbose bool, createdAssets, createdFormats map[string]string) error {
+	// Create image asset if not exists
+	var assetID, formatID string
+	var err error
+
+	if existingAssetID, exists := createdAssets[pngPath]; exists {
+		assetID = existingAssetID
+		formatID = createdFormats[pngPath]
+	} else {
+		ids := tx.ReserveIDs(2)
+		assetID = ids[0]
+		formatID = ids[1]
+
+		_, err = tx.CreateAsset(assetID, pngPath, filepath.Base(pngPath), "0s", formatID)
+		if err != nil {
+			return fmt.Errorf("failed to create PNG asset: %v", err)
+		}
+
+		_, err = tx.CreateFormat(formatID, "FFVideoFormatRateUndefined", "800", "600", "1-13-1")
+		if err != nil {
+			return fmt.Errorf("failed to create PNG format: %v", err)
+		}
+
+		createdAssets[pngPath] = assetID
+		createdFormats[pngPath] = formatID
+	}
+
+	// Create sliding animation from random direction
+	slideAnimation := createSlidingAnimation(timing.startTime, timing.duration, index)
+	
+	// Create video element for PNG (images use Video elements, not AssetClip)
+	video := Video{
+		Ref:      assetID,
+		Offset:   ConvertSecondsToFCPDuration(timing.startTime),
+		Duration: ConvertSecondsToFCPDuration(timing.duration),
+		Name:     fmt.Sprintf("PNG_%d_%s", index+1, strings.TrimSuffix(filepath.Base(pngPath), filepath.Ext(pngPath))),
+		Lane:     fmt.Sprintf("%d", index+1), // Each PNG gets its own lane
+		AdjustTransform: slideAnimation,
+		FilterVideos: []FilterVideo{
+			{
+				Ref:  borderEffectID,
+				Name: "Simple Border",
+				Params: []Param{
+					{
+						Name:  "Color",
+						Key:   "9999/987171795/987171799/3/987171806/2",
+						Value: "0 0 0 1", // Black border like Info.fcpxml
+					},
+				},
+			},
+		},
+	}
+
+	// Add to base clip's nested videos
+	baseClip.Videos = append(baseClip.Videos, video)
+
+	return nil
+}
+
+// createSlidingAnimation creates position animation from various directions
+func createSlidingAnimation(startTime, duration float64, index int) *AdjustTransform {
+	// Determine slide direction based on index
+	directions := []struct{ startX, endX, startY, endY string }{
+		{"62.5", "0", "0", "0"},     // Right to center (like Info.fcpxml)
+		{"-62.5", "0", "0", "0"},    // Left to center (like Info.fcpxml) 
+		{"0", "0", "45", "0"},       // Top to center
+		{"0", "0", "-45", "0"},      // Bottom to center
+		{"44.2", "0", "31.2", "0"},  // Top-right diagonal
+		{"-44.2", "0", "31.2", "0"}, // Top-left diagonal
+		{"44.2", "0", "-31.2", "0"}, // Bottom-right diagonal
+		{"-44.2", "0", "-31.2", "0"}, // Bottom-left diagonal
+	}
+	
+	direction := directions[index%len(directions)]
+	
+	return &AdjustTransform{
+		Params: []Param{
+			{
+				Name: "position",
+				NestedParams: []Param{
+					{
+						Name: "X",
+						Key:  "1",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime),
+									Value: direction.startX,
+								},
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime + 1.0), // 1 second slide
+									Value: direction.endX,
+								},
+							},
+						},
+					},
+					{
+						Name: "Y",
+						Key:  "2",
+						KeyframeAnimation: &KeyframeAnimation{
+							Keyframes: []Keyframe{
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime),
+									Value: direction.startY,
+									Curve: "linear",
+								},
+								{
+									Time:  ConvertSecondsToFCPDuration(startTime + 1.0),
+									Value: direction.endY,
+									Curve: "linear",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// getPngFiles finds all PNG files in the given directory
+func getPngFiles(dir string) ([]string, error) {
+	var pngFiles []string
+	
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		
+		if !d.IsDir() && strings.ToLower(filepath.Ext(path)) == ".png" {
+			pngFiles = append(pngFiles, path)
+		}
+		
+		return nil
+	})
+	
+	if err != nil {
+		return nil, err
+	}
+	
+	// Sort for consistent ordering
+	sort.Strings(pngFiles)
+	
+	return pngFiles, nil
 }

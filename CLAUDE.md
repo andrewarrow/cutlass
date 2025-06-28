@@ -1,5 +1,8 @@
 # Project Context for AI Assistance
 
+## 🚨 CRITICAL: ALL CODE MUST USE VALIDATION 🚨
+**There are lots of validation checks in fcp package. Never go around these. Better to let an error stop the generation because a validation failed than to ever produce invalid fcpxml**
+
 ## 🚨 CRITICAL: CHANGE CODE NOT XML 🚨
 **NEVER EVER only change problem xml in an xml file, always change the code that generates it too**
 
