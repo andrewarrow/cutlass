@@ -225,7 +225,8 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
     
     resource_counter = len(fcpxml.resources.assets) + len(fcpxml.resources.formats) + 1
     
-    # Add background video if provided
+    # Create the main background element
+    bg_element = None
     if background_video:
         bg_path = Path(background_video)
         if bg_path.exists():
@@ -240,21 +241,52 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             fcpxml.resources.assets.append(asset)
             fcpxml.resources.formats.append(format_obj)
             
-            # Add to spine as background
+            # Determine if background video needs scaling
+            from fcpxml_lib.core.fcpxml import needs_vertical_scaling
+            is_video = bg_path.suffix.lower() in {'.mov', '.mp4', '.avi', '.mkv', '.m4v'}
+            needs_scaling = needs_vertical_scaling(str(bg_path), is_image=not is_video)
+            
+            # Create background element (use video for scaling compatibility)
             bg_duration = convert_seconds_to_fcp_duration(duration)
             bg_element = {
-                "type": "asset-clip",
+                "type": "video",
                 "ref": asset_id,
                 "duration": bg_duration,
                 "offset": "0s",
-                "name": bg_path.stem
+                "start": "3600s",  # Required for video elements
+                "name": bg_path.stem,
+                "nested_elements": []  # Will contain lane elements
             }
-            sequence.spine.asset_clips.append(bg_element)
-            sequence.spine.ordered_elements.append(bg_element)
+            
+            # Add scaling if needed
+            if needs_scaling:
+                from fcpxml_lib.constants import VERTICAL_SCALE_FACTOR
+                bg_element["adjust_transform"] = {"scale": VERTICAL_SCALE_FACTOR}
+                print(f"   Background video scaled for vertical format")
+    else:
+        # If no background video, create a simple container element
+        # Use first PNG as placeholder background
+        png_file = png_files[0]
+        asset_id = f"r{resource_counter}"
+        format_id = f"r{resource_counter + 1}"
+        resource_counter += 2
+        
+        asset, format_obj = create_media_asset(str(png_file), asset_id, format_id, duration)
+        fcpxml.resources.assets.append(asset)
+        fcpxml.resources.formats.append(format_obj)
+        
+        bg_duration = convert_seconds_to_fcp_duration(duration)
+        bg_element = {
+            "type": "video",
+            "ref": asset_id,
+            "duration": bg_duration,
+            "offset": "0s",
+            "start": "3600s",
+            "name": f"{png_file.stem}_background",
+            "nested_elements": []
+        }
     
-    # Generate random PNG tiles across multiple lanes
-    all_png_tiles = []
-    
+    # Generate random PNG tiles as nested elements within the background
     for lane_num in range(1, num_lanes + 1):
         for tile_num in range(tiles_per_lane):
             # Select random PNG
@@ -276,7 +308,7 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
             # Generate random scale (smaller tiles)
             scale = random.uniform(0.1, 0.5)  # 10% to 50% original size
             
-            # Create PNG tile element
+            # Create PNG tile element as nested element
             tile_duration = convert_seconds_to_fcp_duration(duration)
             tile_element = {
                 "type": "video",
@@ -292,17 +324,18 @@ def create_edge_tiled_timeline(fcpxml, png_files, background_video, duration, nu
                 }
             }
             
-            all_png_tiles.append(tile_element)
+            # Add to nested elements
+            bg_element["nested_elements"].append(tile_element)
     
-    # Add all PNG tiles to the spine
-    for tile in all_png_tiles:
-        sequence.spine.videos.append(tile)
-        sequence.spine.ordered_elements.append(tile)
+    # Add the background element with all nested tiles to the spine
+    sequence.spine.videos.append(bg_element)
+    sequence.spine.ordered_elements.append(bg_element)
     
     # Update sequence duration
     sequence.duration = convert_seconds_to_fcp_duration(duration)
     
-    print(f"   Generated {len(all_png_tiles)} random PNG tiles")
+    total_tiles = num_lanes * tiles_per_lane
+    print(f"   Generated {total_tiles} random PNG tiles nested in {num_lanes} lanes")
     print(f"   Screen bounds: X({SCREEN_EDGE_LEFT:.1f} to {SCREEN_EDGE_RIGHT:.1f}), Y({SCREEN_EDGE_TOP:.1f} to {SCREEN_EDGE_BOTTOM:.1f})")
 
 
