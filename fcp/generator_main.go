@@ -442,11 +442,13 @@ func GeneratePngPileWithConfig(config *PngPileConfig, verbose bool) (*FCPXML, er
 
 	// Create main video asset-clip with scaling like Info.fcpxml
 	baseClip := AssetClip{
-		Ref:      videoAssetID,
-		Offset:   "0s",
-		Name:     "164240-830460859",
-		Duration: ConvertSecondsToFCPDuration(config.Duration),
-		Format:   videoFormatID,
+		Ref:       videoAssetID,
+		Offset:    "0s",
+		Name:      "164240-830460859",
+		Duration:  ConvertSecondsToFCPDuration(config.Duration),
+		Format:    videoFormatID,
+		TCFormat:  "NDF", // Non-Drop Frame timecode format
+		AudioRole: "dialogue", // Standard audio role for main video
 		AdjustTransform: &AdjustTransform{
 			Scale: "3.27127 3.27127", // Match Info.fcpxml scaling
 		},
