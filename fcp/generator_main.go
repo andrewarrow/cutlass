@@ -593,15 +593,16 @@ type ImageTiming struct {
 	duration  float64
 }
 
-// calculateProgessiveTiming calculates start times with increasing pace
+// calculateProgessiveTiming calculates start times with FAST initial pace that gets even faster
 func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTiming {
 	timings := make([]ImageTiming, numImages)
 	
-	// Progressive acceleration: start slow, speed up exponentially
+	// 🚨 FAST FROM START: Begin with rapid-fire PNGs, then accelerate to insanity!
+	// Much faster initial pace - PNGs flying in like machine gun fire
 	totalWeight := 0.0
 	for i := 0; i < numImages; i++ {
-		// Weight decreases exponentially for faster pace later
-		weight := math.Pow(0.7, float64(i)/10.0)
+		// More aggressive acceleration curve - starts fast, gets insane
+		weight := math.Pow(0.4, float64(i)/8.0) // Faster decay = quicker acceleration
 		totalWeight += weight
 	}
 	
@@ -616,14 +617,15 @@ func calculateProgessiveTiming(numImages int, totalDuration float64) []ImageTimi
 			duration:  remainingDuration,
 		}
 		
-		// Calculate time until next image (gets shorter over time)
-		weight := math.Pow(0.7, float64(i)/10.0)
-		timeStep := (totalDuration * 0.8) * (weight / totalWeight)
+		// Calculate time until next image (starts fast, gets MUCH faster)
+		weight := math.Pow(0.4, float64(i)/8.0)
+		// Use much smaller portion of total duration for faster initial pace
+		timeStep := (totalDuration * 0.5) * (weight / totalWeight) // Reduced from 0.8 to 0.5
 		currentTime += timeStep
 		
 		// Don't go past the end
-		if currentTime > totalDuration-1.0 { // Leave at least 1 second for the last image
-			currentTime = totalDuration - 1.0
+		if currentTime > totalDuration-0.5 { // Leave only 0.5 seconds for final images
+			currentTime = totalDuration - 0.5
 		}
 	}
 	
@@ -753,17 +755,46 @@ func addSlidingPngImage(spine *Spine, tx *ResourceTransaction, pngPath string, t
 
 // createSlidingAnimationWithRotation creates position animation with rotation from various directions (like Info.fcpxml)
 func createSlidingAnimationWithRotation(startTime, duration float64, index int) *AdjustTransform {
-	// 🚨 FIXED: Use vertical-screen-appropriate offscreen positions for 1080x1920 format
-	// Images start way offscreen and slide into view (preventing "pop" effect)
+	// 🚨 TRULY OFFSCREEN: For 1080x1920, visible area is roughly X:±540, Y:±960
+	// Must start way beyond these bounds to be truly offscreen!
 	directions := []struct{ startX, endX, startY, endY, rotation string }{
-		{"150", "0", "0", "0", "16.02"},      // Far right to center with rotation
-		{"-150", "0", "0", "0", "-26.6193"},  // Far left to center with counter-rotation
-		{"0", "0", "200", "0", "12.5"},       // Far top to center (vertical screen needs more Y range)
-		{"0", "0", "-200", "0", "-15.3"},     // Far bottom to center
-		{"106", "0", "141", "0", "22.8"},     // Top-right diagonal (further out)
-		{"-106", "0", "141", "0", "-18.4"},   // Top-left diagonal
-		{"106", "0", "-141", "0", "14.7"},    // Bottom-right diagonal
-		{"-106", "0", "-141", "0", "-21.1"},  // Bottom-left diagonal
+		// Cardinal directions (truly offscreen for 1080x1920)
+		{"800", "0", "0", "0", "25.7"},         // Far right (beyond +540 visible)
+		{"-800", "0", "0", "0", "-31.2"},       // Far left (beyond -540 visible)
+		{"0", "0", "1200", "0", "18.9"},        // Far top (beyond +960 visible)
+		{"0", "0", "-1200", "0", "-22.4"},      // Far bottom (beyond -960 visible)
+		
+		// Diagonal corners (truly offscreen)
+		{"700", "0", "1100", "0", "45.3"},      // Top-right
+		{"-700", "0", "1100", "0", "-38.7"},    // Top-left
+		{"700", "0", "-1100", "0", "33.1"},     // Bottom-right
+		{"-700", "0", "-1100", "0", "-41.6"},   // Bottom-left
+		
+		// Extreme diagonal corners
+		{"900", "0", "1400", "0", "67.2"},      // Top-right extreme
+		{"-900", "0", "1400", "0", "-58.9"},    // Top-left extreme
+		{"900", "0", "-1400", "0", "52.4"},     // Bottom-right extreme
+		{"-900", "0", "-1400", "0", "-71.8"},   // Bottom-left extreme
+		
+		// Mid-range angled approaches (all truly offscreen)
+		{"850", "0", "600", "0", "28.3"},       // Right-high
+		{"-850", "0", "600", "0", "-35.7"},     // Left-high
+		{"850", "0", "-600", "0", "19.8"},      // Right-low
+		{"-850", "0", "-600", "0", "-44.2"},    // Left-low
+		{"600", "0", "1300", "0", "61.5"},      // High-right
+		{"-600", "0", "1300", "0", "-49.7"},    // High-left
+		{"600", "0", "-1300", "0", "37.9"},     // Low-right
+		{"-600", "0", "-1300", "0", "-55.3"},   // Low-left
+		
+		// Wild random angles (chaos mode - all truly offscreen)
+		{"1000", "0", "700", "0", "77.4"},      // Far right, slight up
+		{"-1000", "0", "-700", "0", "-82.1"},   // Far left, slight down
+		{"650", "0", "1500", "0", "15.6"},      // Slight right, way up
+		{"-650", "0", "-1500", "0", "-91.8"},   // Slight left, way down
+		{"1200", "0", "800", "0", "66.9"},      // Extreme right, mid up
+		{"-1200", "0", "800", "0", "-73.2"},    // Extreme left, mid up
+		{"750", "0", "1600", "0", "29.7"},      // Mid right, extreme up
+		{"-750", "0", "-1600", "0", "-84.5"},   // Mid left, extreme down
 	}
 	
 	direction := directions[index%len(directions)]
