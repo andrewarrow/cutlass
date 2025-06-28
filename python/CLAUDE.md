@@ -1,19 +1,19 @@
-# Project Context for AI Assistance
+# Project Context for AI Assistance - Python FCPXML Library
 
 ## 🚨 CRITICAL: ALL CODE MUST USE VALIDATION 🚨
-**There are lots of validation checks in fcp package. Never go around these. Better to let an error stop the generation because a validation failed than to ever produce invalid fcpxml**
+**There are extensive validation checks in `fcpxml_lib/validation/`. Never bypass these. Better to let an error stop generation because validation failed than to ever produce invalid FCPXML.**
 
 ## 🚨 CRITICAL: CHANGE CODE NOT XML 🚨
-**NEVER EVER only change problem xml in an xml file, always change the code that generates it too**
+**NEVER EVER only change problem XML in an XML file, always change the code that generates it too**
 
 ## 🚨 CRITICAL: NO XML STRING TEMPLATES 🚨
-**NEVER EVER generate XML from hardcoded string templates with %s placeholders, use structs**
+**NEVER EVER generate XML from hardcoded string templates with f-strings or % formatting, use dataclasses**
 
-❌ BAD: `xml := "<video ref=\"" + videoRef + "\">" + content + "</video>"`
-❌ BAD: `fmt.Sprintf("<asset-clip ref=\"%s\" name=\"%s\"/>", ref, name)`
-✅ GOOD: `xml.MarshalIndent(&fcp.Video{Ref: videoRef, Name: name}, "", "    ")`
+❌ BAD: `xml = f"<video ref=\"{video_ref}\">{content}</video>"`
+❌ BAD: `"<asset-clip ref=\"%s\" name=\"%s\"/>" % (ref, name)`
+✅ GOOD: `Video(ref=video_ref, duration=duration)` → `serialize_to_xml()`
 
-**All FCPXML generation MUST use the fcp.* structs in the fcp package.**
+**All FCPXML generation MUST use the dataclasses in `fcpxml_lib/models/elements.py`.**
 
 ## 🚨 CRITICAL: Images vs Videos Architecture 🚨
 
@@ -49,241 +49,254 @@
 2. **frameDuration on image formats** → `performAudioPreflightCheckForObject` crash  
 3. **Complex effects on images** → Various import crashes
 
-## 🚨 CRITICAL: Keyframe Interpolation Rules 🚨
+## 🚨 CRITICAL: Python Dataclass Usage 🚨
 
-**Different parameters support different keyframe attributes (check samples/*.fcpxml):**
+**Use dataclasses from `fcpxml_lib/models/elements.py`:**
 
-### Position keyframes: NO attributes
-```xml
-<param name="position">
-    <keyframe time="86399313/24000s" value="0 0"/>  <!-- NO interp/curve -->
-</param>
-```
+```python
+from fcpxml_lib.models.elements import Video, AssetClip, Asset, Format
 
-### Scale/Rotation/Anchor keyframes: Only curve attribute
-```xml
-<param name="scale">
-    <keyframe time="86399313/24000s" value="1 1" curve="linear"/>  <!-- Only curve -->
-</param>
-```
+# ✅ Images use Video elements
+video_element = Video(
+    ref="r2",
+    duration="240240/24000s",
+    start="0s"  # Required for images
+)
 
-**Adding unsupported attributes causes "param element was ignored" warnings.**
-
-## 🚨 CRITICAL: Effect UID Reality Check 🚨
-
-**ONLY use verified effect UIDs from samples/ directory:**
-
-✅ **Verified Working UIDs:**
-- **Vivid Generator**: `.../Generators.localized/Solids.localized/Vivid.localized/Vivid.motn`
-- **Text Title**: `.../Titles.localized/Basic Text.localized/Text.localized/Text.moti`
-- **Shape Mask**: `FFSuperEllipseMask`
-
-❌ **Never create fictional UIDs** - causes "invalid effect ID" crashes
-- `FFGaussianBlur` → "The effect ID is invalid" crash
-- `FFColorCorrector` → Not verified, avoid
-
-✅ **Prefer built-in elements:**
-```go
-AdjustTransform: &AdjustTransform{...}   // ✅ Built-in, crash-safe
-AdjustCrop: &AdjustCrop{...}            // ✅ Built-in, crash-safe
-// Add rotation via parameters:
-AdjustTransform.Params = append(params, Param{Name: "rotation", Value: "15.0"})
+# ✅ Videos use AssetClip elements  
+asset_clip = AssetClip(
+    ref="r2", 
+    duration="373400/3000s"
+    # NO start attribute for videos
+)
 ```
 
 ## MANDATORY: Testing and Validation
 
 ### Required Tests (ALWAYS run):
-1. **FCP Package Tests**: `cd fcp && go test` - MUST pass
+1. **Python Tests**: `python -m pytest tests/` - MUST pass
 2. **XML Validation**: `xmllint output.fcpxml --noout` - MUST pass  
 3. **FCP Import Test**: Import into actual Final Cut Pro
 
-### Study fcp/* Package Tests
-**Before writing FCPXML code, review the logic in `fcp/*_test.go` files:**
-- `fcp/generate_test.go` - Shows correct resource management patterns
-- `fcp/generator_*_test.go` - Shows working animation/effect patterns
+### Study tests/* Package Patterns
+**Before writing FCPXML code, review the logic in `tests/` files:**
+- `tests/test_crash_prevention.py` - Shows critical crash prevention patterns
+- `tests/test_timeline_elements.py` - Shows correct element type usage
+- `tests/test_media_detection.py` - Shows proper media property detection
 - These tests contain proven patterns that prevent crashes
 
 ### Common Error Patterns to Check:
-1. **ID collisions** - Use proper ResourceRegistry/Transaction pattern
+1. **ID collisions** - Use proper ID generation from `fcpxml_lib/utils/ids.py`
 2. **Missing resources** - Every `ref=` needs matching `id=`
 3. **Wrong element types** - Images use Video, videos use AssetClip
-4. **Fictional effect UIDs** - Only use verified UIDs from samples/
+4. **Missing smart collections** - All 5 required collections must be present
 
 ## 🏗️ Required Architecture Pattern
 
-**ALWAYS follow this pattern (from working tests):**
+**ALWAYS follow this pattern (from `fcpxml_lib/core/fcpxml.py`):**
 
-```go
-func GenerateMyFeature(inputFile, outputFile string) error {
-    // 1. Use existing infrastructure  
-    fcpxml, err := fcp.GenerateEmpty("")
-    if err != nil {
-        return fmt.Errorf("failed to create base FCPXML: %v", err)
-    }
+```python
+from fcpxml_lib.core.fcpxml import create_empty_project, add_media_to_timeline, save_fcpxml
+
+def generate_my_feature(input_files: list, output_file: str) -> bool:
+    # 1. Create base FCPXML structure
+    fcpxml = create_empty_project()
     
-    // 2. Use proper resource management
-    registry := fcp.NewResourceRegistry(fcpxml)
-    tx := fcp.NewTransaction(registry)
-    defer tx.Rollback()
+    # 2. Add media using validated functions
+    success = add_media_to_timeline(
+        fcpxml, 
+        input_files, 
+        clip_duration_seconds=3.0
+    )
+    if not success:
+        raise RuntimeError("Failed to add media to timeline")
     
-    // 3. Add content using existing functions
-    if err := fcp.AddImage(fcpxml, imagePath, duration); err != nil {
-        return err
-    }
+    # 3. Apply modifications to timeline elements
+    # Access via: fcpxml.library.events[0].projects[0].sequences[0].spine
     
-    // 4. Apply animations (simple transforms only for images)
-    imageVideo := &fcpxml.Library.Events[0].Projects[0].Sequences[0].Spine.Videos[0]
-    imageVideo.AdjustTransform = createAnimation(duration, startTime)
-    
-    // 5. Commit and write
-    if err := tx.Commit(); err != nil {
-        return err
-    }
-    return fcp.WriteToFile(fcpxml, outputFile)
-}
+    # 4. Save with validation
+    return save_fcpxml(fcpxml, output_file)
 ```
 
 ## Frame Boundary Alignment
 
-**All durations MUST use `fcp.ConvertSecondsToFCPDuration()`:**
-- FCP uses 24000/1001 ≈ 23.976 fps timebase
-- Manual calculations cause "not on edit frame boundary" errors
-- Always use the conversion function
+**All durations MUST use `fcpxml_lib/utils/timing.py`:**
+```python
+from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
+
+# ✅ Proper frame alignment
+duration = convert_seconds_to_fcp_duration(3.5)  # "84084/24000s"
+
+# ❌ Manual calculations cause "not on edit frame boundary" errors
+duration = "3.5s"  # Wrong!
+```
 
 ## Resource ID Management
 
-**NEVER manually generate IDs:**
-```go
-❌ BAD: assetID := fmt.Sprintf("r%d", count+1)  // Race conditions!
-✅ GOOD: ids := tx.ReserveIDs(1); assetID := ids[0]  // Thread-safe
+**Use proper ID generation from `fcpxml_lib/utils/ids.py`:**
+```python
+from fcpxml_lib.utils.ids import generate_resource_id
+
+# ✅ Thread-safe ID generation
+asset_id = generate_resource_id()  # "r1", "r2", etc.
+
+# ❌ Manual ID generation causes collisions
+asset_id = f"r{count + 1}"  # Race conditions!
 ```
 
-## Asset Reuse to Prevent UID Collisions
+## 🚨 CRITICAL: Media Property Detection 🚨
 
-**Same media file used multiple times MUST reuse same asset:**
-```go
-❌ BAD: Create new asset for each use (causes UID collisions)
-// Multiple assets with same UID = FCP import crash
-asset1 := Asset{ID: "r2", UID: "ABC-123", Src: "file.mp4"} 
-asset2 := Asset{ID: "r5", UID: "ABC-123", Src: "file.mp4"} // Same UID!
+**ALWAYS use `fcpxml_lib/core/fcpxml.py` detection functions:**
 
-✅ GOOD: Reuse asset, create multiple timeline references
-createdAssets := make(map[string]string) // filepath -> assetID
-if existingID, exists := createdAssets[filepath]; exists {
-    assetID = existingID  // Reuse existing asset
-} else {
-    assetID = tx.ReserveIDs(1)[0]
-    tx.CreateAsset(assetID, filepath, ...)
-    createdAssets[filepath] = assetID  // Remember for reuse
-}
-// Multiple timeline elements can reference same asset:
-// <asset-clip ref="r2"... /> and <asset-clip ref="r2"... />
+```python
+from fcpxml_lib.core.fcpxml import detect_video_properties
+
+# ✅ Automatic property detection
+props = detect_video_properties("video.mp4")
+# Returns: width, height, duration_seconds, has_audio, frame_rate
+
+# ❌ Hardcoded properties cause import failures  
+width = 1920  # Video might be 1080×1920 portrait!
+has_audio = True  # Video might not have audio!
 ```
 
-## 🚨 CRITICAL: Video Property Detection 🚨
+## 🚨 CRITICAL: Media Asset Creation 🚨
 
-**ALWAYS detect actual video properties instead of hardcoding:**
+**Use `fcpxml_lib/core/fcpxml.py` functions for proper media handling:**
 
-```go
-❌ BAD: Hardcoded properties cause import failures
-asset.HasAudio = "1"  // Video might not have audio!
-format.Width = "1920" // Video might be 1080×1920 portrait!
-format.FrameDuration = "1001/30000s" // Video might be different fps!
+```python
+from fcpxml_lib.core.fcpxml import create_media_asset
 
-✅ GOOD: Use CreateVideoAssetWithDetection() for proper detection
-tx.CreateVideoAssetWithDetection(assetID, videoPath, baseName, duration, formatID)
-// Automatically detects: width, height, frame rate, audio presence
-// Matches samples: portrait videos get correct 1080×1920 dimensions
-// Audio-only if file actually has audio tracks
-// Frame rate validation: Rejects bogus rates >120fps, maps to standard FCP rates
+# ✅ Automatic media type detection and proper asset creation
+asset, format_obj = create_media_asset(
+    file_path="video.mp4",
+    asset_id="r2", 
+    format_id="r3"
+)
+# Handles: absolute paths, media type detection, audio properties
+
+# ❌ Manual asset creation bypasses validation
+asset = Asset(id="r2", src="./video.mp4")  # Relative path fails!
 ```
 
-## 🚨 CRITICAL: Transaction Resource Creation 🚨
+## 🚨 CRITICAL: Smart Collections Requirement 🚨
 
-**ALWAYS use transaction methods to create resources:**
+**All FCPXML must include 5 required smart collections (see `fcpxml_lib/constants.py`):**
 
-```go
-❌ BAD: Direct manipulation bypasses transaction
-effectID := tx.ReserveIDs(1)[0]
-effect := Effect{ID: effectID, Name: "Blur", UID: "FFGaussianBlur"}
-fcpxml.Resources.Effects = append(fcpxml.Resources.Effects, effect)
-// Result: "Effect ID is invalid" - resource never committed!
+```python
+# ✅ Automatically included by create_empty_project()
+fcpxml = create_empty_project()
+# Includes: Projects, All Video, Audio Only, Stills, Favorites
 
-✅ GOOD: Use transaction creation methods
-effectID := tx.ReserveIDs(1)[0]
-tx.CreateEffect(effectID, "Gaussian Blur", "FFGaussianBlur")
-// Resource properly managed and committed with tx.Commit()
+# ❌ Missing smart collections cause FCP crashes
+# Never create FCPXML without all 5 collections
 ```
 
-**Why Direct Append Fails:**
-- Reserved IDs don't automatically create resources
-- Transaction manages resource lifecycle
-- Only tx.Commit() adds resources to final FCPXML
-- Direct append bypasses validation and registration
+## 🚨 CRITICAL: Timeline Element Rules 🚨
 
-## 🚨 CRITICAL: Asset File Paths 🚨
+**Images vs Videos have different timeline element requirements:**
 
-**Final Cut Pro requires absolute file paths in MediaRep src attributes:**
+```python
+from fcpxml_lib.models.elements import Video, AssetClip
 
-```go
-❌ BAD: Relative paths cause "missing media" errors
-MediaRep{
-    Src: "file://./assets/video.mp4",  // Relative path
-}
+# ✅ Images: Use Video elements with start attribute
+if file_path.lower().endswith(('.jpg', '.png')):
+    element = Video(
+        ref=asset_id,
+        duration=duration,
+        start="0s"  # Required for images
+    )
 
-✅ GOOD: Always use absolute paths
-absPath, err := filepath.Abs(videoPath)
-MediaRep{
-    Src: "file://" + absPath,  // Absolute path
-}
+# ✅ Videos: Use AssetClip elements without start attribute  
+elif file_path.lower().endswith(('.mp4', '.mov')):
+    element = AssetClip(
+        ref=asset_id,
+        duration=duration
+        # NO start attribute for videos
+    )
 ```
 
-**BAFFLE Lesson:** Test imports in Final Cut Pro to catch path issues!
+## Validation Integration
 
-## 🚨 CRITICAL: Media Type Properties 🚨
+**All dataclasses have built-in validation (see `fcpxml_lib/validation/`):**
 
-**Use transaction methods - they handle media type detection automatically:**
+```python
+from fcpxml_lib.validation.validators import validate_frame_alignment
 
-```go
-❌ BAD: Manual asset creation loses audio properties
-asset := Asset{
-    HasVideo: "1",
-    HasAudio: "1",  // Will be lost if not handled properly
-    // ... other properties
-}
-fcpxml.Resources.Assets = append(fcpxml.Resources.Assets, asset)
+# ✅ Validation is automatic in dataclass __post_init__
+asset = Asset(id="r2", duration="invalid")  # Raises ValueError
 
-✅ GOOD: Transaction methods detect media types automatically
-tx.CreateAsset(assetID, videoPath, baseName, duration, formatID)
-// Automatically sets HasAudio="1" for videos, omits for images
+# ✅ Manual validation for complex cases
+is_valid = validate_frame_alignment("84084/24000s")  # True
 ```
 
-**Why Transaction Methods Work:**
-- `isImageFile()` detection sets correct properties for images (duration="0s", no audio)
-- `isAudioFile()` detection sets audio-only properties  
-- Video files get both video and audio properties automatically
-- Proper absolute path handling built-in
+## XML Generation
 
-## Unique ID Requirements
+**Use structured serialization from `fcpxml_lib/serialization/`:**
 
-**All IDs must be unique within document:**
-- Text style IDs: Use `generateUID()` not hardcoded "ts1"
-- Asset/format/effect IDs: Use ResourceRegistry
-- Media UIDs: Use filename-based generation for consistency
+```python
+from fcpxml_lib.serialization.xml_serializer import serialize_to_xml
 
-## 🚨 CRITICAL: FCP Library UID Caching 🚨
+# ✅ Structured XML generation
+xml_content = serialize_to_xml(fcpxml)
 
-**Final Cut Pro caches media file UIDs in its library database:**
+# ❌ Never manipulate XML strings directly
+xml_content = xml_content.replace("<video", "<asset-clip")  # Wrong!
+```
 
-❌ **Problem**: Once FCP imports a file with UID "ABC-123", it rejects future imports with different UIDs
-- Error: "The media already exists in the library with a different unique identifier"
-- Error: "The file X.mp4 cannot be imported again with a different unique identifier"
+## Testing Integration
 
-✅ **Solutions**:
-- Use **consistent UIDs** (same file = same UID always)
-- For testing: Create **new FCP library** or use **different filenames**
-- Never change UID generation logic for existing media files
+**Run tests to verify crash prevention patterns:**
+
+```python
+# Required test commands:
+python -m pytest tests/test_crash_prevention.py -v
+python -m pytest tests/test_timeline_elements.py -v  
+python -m pytest tests/test_xml_structure.py -v
+
+# XML validation:
+xmllint output.fcpxml --noout
+```
+
+## 🚨 CRITICAL: File Path Requirements 🚨
+
+**Final Cut Pro requires absolute file paths:**
+
+```python
+import os
+
+# ✅ Always convert to absolute paths
+abs_path = os.path.abspath(file_path)
+media_rep = MediaRep(src=f"file://{abs_path}")
+
+# ❌ Relative paths cause "missing media" errors
+media_rep = MediaRep(src="file://./video.mp4")  # Fails!
+```
+
+## Effect and Animation Safety
+
+**Prefer built-in transforms over effects:**
+
+```python
+from fcpxml_lib.models.elements import AdjustTransform
+
+# ✅ Built-in transforms are crash-safe
+transform = AdjustTransform(
+    scale="2.0 2.0",
+    rotation="15.0"
+)
+
+# ❌ Avoid fictional effect UIDs - causes crashes
+# Only use verified UIDs from samples/
+```
 
 ---
 
-**Key Principle: Follow existing patterns in fcp/ package. If FCPXML generation requires more than 1 iteration to work, you're doing it wrong.**
+**Key Principle: Use `fcpxml_lib/` functions and validation. If FCPXML generation requires more than 1 iteration to work, you're using the wrong approach.**
+
+**Critical File References:**
+- **Core Functions**: `fcpxml_lib/core/fcpxml.py`
+- **Data Models**: `fcpxml_lib/models/elements.py` 
+- **Validation**: `fcpxml_lib/validation/validators.py`
+- **Testing Patterns**: `tests/test_crash_prevention.py`
+- **Utilities**: `fcpxml_lib/utils/timing.py`, `fcpxml_lib/utils/ids.py`
