@@ -429,10 +429,74 @@ fcpxml_lib/
 ```
 
 ### Refactoring Guidelines:
-- **Move command logic** from `main.py` to `fcpxml_lib/commands/`
+- **Move command logic** from `main.py` to `fcpxml_lib/cmd/`
 - **Extract reusable functions** to appropriate utility modules
 - **Keep imports clean** - no circular dependencies
 - **Maintain backwards compatibility** when moving functions
+
+## 🚨 CRITICAL: Command Package Organization 🚨
+
+**CLI commands are organized for scalability with hundreds of commands:**
+
+### Command Package Structure:
+```
+fcpxml_lib/cmd/
+├── __init__.py                  # Package exports all commands
+├── create_empty_project.py      # create-empty-project command
+├── create_random_video.py       # create-random-video command
+├── video_at_edge.py            # video-at-edge command
+├── stress_test.py              # stress-test command
+└── [future_command].py         # New commands go here
+```
+
+### Command Implementation Rules:
+- **One command per file**: Each CLI command gets its own module
+- **File naming**: Use underscores (create_empty_project.py)
+- **Function naming**: End with `_cmd` (create_empty_project_cmd)
+- **CLI argument names**: Use hyphens (create-empty-project)
+
+### Required Function Signature:
+```python
+def command_name_cmd(args):
+    """Command implementation that takes parsed arguments"""
+    # Handle CLI concerns: validation, output, error messages
+    # Delegate business logic to other fcpxml_lib modules
+```
+
+### Command File Template:
+```python
+"""
+Command Name Implementation
+
+Brief description of what this command does.
+"""
+
+import sys
+from pathlib import Path
+
+# Import required fcpxml_lib modules
+from fcpxml_lib import create_empty_project, save_fcpxml
+from fcpxml_lib.generators.timeline_generators import some_generator
+
+def command_name_cmd(args):
+    """CLI implementation for command-name"""
+    # Argument validation and processing
+    # Business logic delegation
+    # Output and error handling
+```
+
+### Adding New Commands:
+1. **Create new file**: `fcpxml_lib/cmd/new_command.py`
+2. **Implement function**: `new_command_cmd(args)`
+3. **Update `__init__.py`**: Add import and export
+4. **Update `main.py`**: Add argument parser and dispatcher
+5. **Keep main.py minimal**: Only argument parsing and command routing
+
+### Scalability Benefits:
+- **Easy to add commands**: Just create new file and update imports
+- **Parallel development**: Multiple developers can work on different commands
+- **Clear separation**: CLI logic separated from business logic
+- **Maintainable**: Each command is self-contained and testable
 
 ---
 
@@ -444,5 +508,6 @@ fcpxml_lib/
 - **Validation**: `fcpxml_lib/validation/validators.py`
 - **Testing Patterns**: `tests/test_crash_prevention.py`
 - **Multi-Lane Testing**: `tests/test_video_at_edge.py`
-- **Pattern Implementation**: `main.py:create_edge_tiled_timeline()`
+- **Timeline Generators**: `fcpxml_lib/generators/timeline_generators.py`
+- **Command Implementations**: `fcpxml_lib/cmd/`
 - **Utilities**: `fcpxml_lib/utils/timing.py`, `fcpxml_lib/utils/ids.py`
