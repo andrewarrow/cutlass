@@ -394,6 +394,46 @@ transform = AdjustTransform(
 # Only use verified UIDs from samples/
 ```
 
+## 🚨 CRITICAL: File Size and Organization Rules 🚨
+
+**Keep code well-organized and maintainable:**
+
+### File Size Limits:
+- **`main.py`**: Keep minimal - CLI argument parsing and command dispatching ONLY
+- **`fcpxml_lib/` files**: Maximum 600 lines per file
+- **No file exceptions**: If a file exceeds 600 lines, split into multiple modules
+
+### Code Organization Rules:
+- **CLI Layer (`main.py`)**: Argument parsing, command routing, basic validation only
+- **Core Logic**: All business logic must be in `fcpxml_lib/` packages  
+- **Package Structure**: Use appropriate subpackages (`core/`, `models/`, `utils/`, etc.)
+- **Single Responsibility**: Each module should have one clear purpose
+
+### When to Split Files:
+```python
+# 🚨 File getting too long? Split by:
+# 1. Related functionality into separate modules
+# 2. Different data models into separate files  
+# 3. Different command implementations into separate modules
+
+# ✅ Example split:
+fcpxml_lib/
+├── commands/
+│   ├── pile_commands.py      # png-pile, video-pile logic
+│   ├── edge_commands.py      # edge, video-at-edge logic  
+│   └── timeline_commands.py  # basic timeline operations
+├── core/
+│   └── fcpxml.py            # Core FCPXML operations
+└── models/
+    └── elements.py          # Dataclass definitions
+```
+
+### Refactoring Guidelines:
+- **Move command logic** from `main.py` to `fcpxml_lib/commands/`
+- **Extract reusable functions** to appropriate utility modules
+- **Keep imports clean** - no circular dependencies
+- **Maintain backwards compatibility** when moving functions
+
 ---
 
 **Key Principle: Use `fcpxml_lib/` functions and validation. If FCPXML generation requires more than 1 iteration to work, you're using the wrong approach.**
