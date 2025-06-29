@@ -83,12 +83,39 @@ class Resources:
 
 
 @dataclass
+class Keyframe:
+    """Individual keyframe in animation"""
+    time: str
+    value: str
+    curve: Optional[str] = None
+    
+    def __post_init__(self):
+        if not validate_frame_alignment(self.time):
+            raise ValidationError(f"Keyframe time not frame-aligned: {self.time}")
+
+
+@dataclass
+class KeyframeAnimation:
+    """Collection of keyframes for parameter animation"""
+    keyframes: List[Keyframe] = field(default_factory=list)
+
+
+@dataclass
+class Param:
+    """Parameter with optional keyframe animation"""
+    name: str
+    value: Optional[str] = None
+    keyframe_animation: Optional[KeyframeAnimation] = None
+
+
+@dataclass
 class AdjustTransform:
-    """Transform adjustments for video/image elements"""
+    """Transform adjustments for video/image elements with keyframe support"""
     scale: Optional[str] = None
     rotation: Optional[str] = None
     position_x: Optional[str] = None
     position_y: Optional[str] = None
+    params: List[Param] = field(default_factory=list)
     
     def to_dict(self) -> Dict:
         """Convert to dictionary for XML serialization"""
@@ -103,6 +130,23 @@ class AdjustTransform:
                 result["position"]["X"] = self.position_x
             if self.position_y:
                 result["position"]["Y"] = self.position_y
+        
+        # Add keyframe parameters
+        if self.params:
+            result["params"] = []
+            for param in self.params:
+                param_dict = {"name": param.name}
+                if param.value:
+                    param_dict["value"] = param.value
+                if param.keyframe_animation:
+                    param_dict["keyframes"] = []
+                    for kf in param.keyframe_animation.keyframes:
+                        kf_dict = {"time": kf.time, "value": kf.value}
+                        if kf.curve:
+                            kf_dict["curve"] = kf.curve
+                        param_dict["keyframes"].append(kf_dict)
+                result["params"].append(param_dict)
+        
         return result
 
 
@@ -125,6 +169,62 @@ class Title:
             raise ValidationError(f"Title duration not frame-aligned: {self.duration}")
         if not validate_frame_alignment(self.start):
             raise ValidationError(f"Title start not frame-aligned: {self.start}")
+
+
+@dataclass
+class Video:
+    """Video element (for images without audio)"""
+    ref: str
+    duration: str
+    offset: Optional[str] = None
+    start: Optional[str] = None
+    lane: Optional[str] = None
+    
+    def __post_init__(self):
+        if not validate_resource_id(self.ref):
+            raise ValidationError(f"Invalid video ref: {self.ref}")
+        if not validate_frame_alignment(self.duration):
+            raise ValidationError(f"Video duration not frame-aligned: {self.duration}")
+        if self.offset and not validate_frame_alignment(self.offset):
+            raise ValidationError(f"Video offset not frame-aligned: {self.offset}")
+        if self.start and not validate_frame_alignment(self.start):
+            raise ValidationError(f"Video start not frame-aligned: {self.start}")
+
+
+@dataclass
+class AssetClip:
+    """Asset clip element (for videos with audio)"""
+    ref: str
+    duration: str
+    offset: Optional[str] = None
+    lane: Optional[str] = None
+    name: Optional[str] = None
+    
+    def __post_init__(self):
+        if not validate_resource_id(self.ref):
+            raise ValidationError(f"Invalid asset-clip ref: {self.ref}")
+        if not validate_frame_alignment(self.duration):
+            raise ValidationError(f"Asset-clip duration not frame-aligned: {self.duration}")
+        if self.offset and not validate_frame_alignment(self.offset):
+            raise ValidationError(f"Asset-clip offset not frame-aligned: {self.offset}")
+
+
+@dataclass
+class Clip:
+    """Complex clip container with nested elements"""
+    offset: Optional[str] = None
+    name: Optional[str] = None
+    duration: Optional[str] = None
+    format: Optional[str] = None
+    tc_format: Optional[str] = None
+    lane: Optional[str] = None
+    nested_elements: List = field(default_factory=list)
+    
+    def __post_init__(self):
+        if self.offset and not validate_frame_alignment(self.offset):
+            raise ValidationError(f"Clip offset not frame-aligned: {self.offset}")
+        if self.duration and not validate_frame_alignment(self.duration):
+            raise ValidationError(f"Clip duration not frame-aligned: {self.duration}")
 
 
 @dataclass

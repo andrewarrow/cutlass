@@ -11,6 +11,40 @@ if TYPE_CHECKING:
     from ..models.elements import FCPXML
 
 
+def serialize_keyframe_animation(parent_elem, param_name, keyframes):
+    """Serialize keyframe animation to XML"""
+    param_elem = SubElement(parent_elem, "param")
+    param_elem.set("name", param_name)
+    
+    keyframe_anim_elem = SubElement(param_elem, "keyframeAnimation")
+    
+    for keyframe in keyframes:
+        keyframe_elem = SubElement(keyframe_anim_elem, "keyframe")
+        keyframe_elem.set("time", keyframe["time"])
+        keyframe_elem.set("value", keyframe["value"])
+        if "curve" in keyframe:
+            keyframe_elem.set("curve", keyframe["curve"])
+
+
+def serialize_adjust_transform(parent_elem, transform_data):
+    """Serialize adjust-transform element with keyframe support"""
+    transform_elem = SubElement(parent_elem, "adjust-transform")
+    
+    # Handle simple transform properties
+    if "scale" in transform_data:
+        transform_elem.set("scale", transform_data["scale"])
+    if "rotation" in transform_data:
+        transform_elem.set("rotation", transform_data["rotation"])
+    if "position" in transform_data:
+        transform_elem.set("position", transform_data["position"])
+    
+    # Handle keyframe parameters
+    if "params" in transform_data:
+        for param in transform_data["params"]:
+            if "keyframes" in param:
+                serialize_keyframe_animation(transform_elem, param["name"], param["keyframes"])
+
+
 def serialize_to_xml(fcpxml) -> str:
     """
     Serialize FCPXML to XML string using structured approach.
