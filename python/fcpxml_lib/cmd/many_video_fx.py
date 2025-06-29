@@ -62,55 +62,7 @@ def calculate_tile_positions(num_videos):
     return positions
 
 
-def calculate_step_positions(num_steps):
-    """
-    Calculate step-by-step positions based on Info.fcpxml pattern.
-    
-    For steps=2: Upper-left (-17.2101, 43.0307), Upper-right (2.38541, 43.2326)
-    For steps=4: Add bottom positions
-    
-    Returns list of (x, y) positions for step-by-step animation.
-    """
-    if num_steps == 2:
-        # Exact Info.fcpxml pattern
-        return [
-            (-17.2101, 43.0307),  # Upper-left (first video)
-            (2.38541, 43.2326)    # Upper-right (second video)
-        ]
-    elif num_steps == 4:
-        # Extend to 4 corners
-        return [
-            (-17.2101, 43.0307),  # Upper-left (first video)
-            (2.38541, 43.2326),   # Upper-right (second video)
-            (-17.2101, -43.0307), # Lower-left (third video)
-            (2.38541, -43.2326)   # Lower-right (fourth video)
-        ]
-    else:
-        # For other step counts, create a simple grid pattern in upper area
-        positions = []
-        cols = math.ceil(math.sqrt(num_steps))
-        rows = math.ceil(num_steps / cols)
-        
-        # Focus on upper half of screen
-        x_spacing = 40.0 / cols  # Spread across ~40 units width
-        y_spacing = 20.0 / rows  # Use upper ~20 units height
-        
-        start_x = -20.0 + (x_spacing / 2)
-        start_y = 30.0 + (y_spacing / 2)
-        
-        for i in range(num_steps):
-            row = i // cols
-            col = i % cols
-            
-            x = start_x + (col * x_spacing)
-            y = start_y + (row * y_spacing)
-            
-            positions.append((x, y))
-        
-        return positions
-
-
-def create_tiled_video_timeline(fcpxml, video_files, total_duration, steps=None):
+def create_tiled_video_timeline(fcpxml, video_files, total_duration):
     """
     Create timeline with videos that animate from center to tile positions.
     
@@ -119,32 +71,17 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration, steps=None)
     - Videos are scaled down for tiling
     - Next video starts as soon as previous one clears center
     - Uses proven structure from animation.py command
-    
-    Args:
-        steps: If provided, use step-by-step animation (2=Info.fcpxml pattern)
-               If None, tile all videos simultaneously
     """
     if not video_files:
         print("❌ No video files provided")
         return
     
+    # Calculate tile positions
     num_videos = len(video_files)
+    tile_positions = calculate_tile_positions(num_videos)
     
-    # Determine positioning strategy
-    if steps is not None:
-        # Step-by-step animation (Info.fcpxml pattern)
-        if steps > num_videos:
-            print(f"⚠️  Warning: --steps {steps} > {num_videos} videos, using {num_videos} steps")
-            steps = num_videos
-        
-        tile_positions = calculate_step_positions(steps)
-        print(f"   Step-by-step animation: {steps} videos")
-        print(f"   Pattern: Info.fcpxml style (center to corners)")
-    else:
-        # Traditional tiling
-        tile_positions = calculate_tile_positions(num_videos)
-        print(f"   Tiling {num_videos} videos in {math.ceil(math.sqrt(num_videos))} columns")
-        print(f"   Screen bounds: X({SCREEN_EDGE_LEFT} to {SCREEN_EDGE_RIGHT}), Y({SCREEN_EDGE_TOP} to {SCREEN_EDGE_BOTTOM})")
+    print(f"   Tiling {num_videos} videos in {math.ceil(math.sqrt(num_videos))} columns")
+    print(f"   Screen bounds: X({SCREEN_EDGE_LEFT} to {SCREEN_EDGE_RIGHT}), Y({SCREEN_EDGE_TOP} to {SCREEN_EDGE_BOTTOM})")
     
     # Animation timing (based on Info.fcpxml pattern)
     animation_duration_fcp = "144144/24000s"  # ~6 seconds (same as Info.fcpxml)
@@ -154,9 +91,6 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration, steps=None)
     # First video uses negative X scale (flip), others use positive
     info_scales = ["-0.356424 0.356424", "0.313976 0.313976"]
     
-    # For step-by-step animation, limit to steps count
-    videos_to_animate = min(len(video_files), steps) if steps is not None else len(video_files)
-    
     # Get sequence and set it up like animation.py
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     sequence.format = "r1"  # Use the existing vertical format
@@ -165,12 +99,12 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration, steps=None)
     from fcpxml_lib.utils.ids import set_resource_id_counter
     set_resource_id_counter(1)
     
-    # Create assets for videos (limited by steps if specified)
+    # Create assets for all videos
     video_assets = []
     video_formats = []
     
-    for i, video_file in enumerate(video_files[:videos_to_animate]):
-        print(f"   Processing video {i+1}/{videos_to_animate}: {video_file.name}")
+    for i, video_file in enumerate(video_files):
+        print(f"   Processing video {i+1}/{num_videos}: {video_file.name}")
         
         # Generate resource IDs
         asset_id = generate_resource_id()
@@ -369,10 +303,6 @@ def many_video_fx_cmd(args):
     print(f"   Input directory: {input_dir}")
     print(f"   Video files found: {len(video_files)}")
     print(f"   Duration: {args.duration}s")
-    if hasattr(args, 'steps') and args.steps:
-        print(f"   Step mode: {args.steps} videos (Info.fcpxml pattern)")
-    else:
-        print(f"   Tile mode: All videos simultaneously")
     
     # Create empty project (always vertical for tiling)
     fcpxml = create_empty_project(
@@ -386,16 +316,10 @@ def many_video_fx_cmd(args):
         create_tiled_video_timeline(
             fcpxml, 
             video_files, 
-            args.duration,
-            steps=getattr(args, 'steps', None)
+            args.duration
         )
         
-        steps_used = getattr(args, 'steps', None)
-        if steps_used:
-            actual_steps = min(steps_used, len(video_files))
-            print(f"✅ Timeline created with {actual_steps} step-by-step animated videos")
-        else:
-            print(f"✅ Timeline created with {len(video_files)} animated video tiles")
+        print(f"✅ Timeline created with {len(video_files)} animated video tiles")
         
     except Exception as e:
         print(f"❌ Error creating tiled video timeline: {e}")
