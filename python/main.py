@@ -20,7 +20,8 @@ from fcpxml_lib.cmd import (
     video_at_edge_cmd,
     stress_test_cmd,
     random_font_cmd,
-    animation_cmd
+    animation_cmd,
+    many_video_fx_cmd
 )
 
 
@@ -37,6 +38,7 @@ Examples:
   %(prog)s stress-test --output stress_test.fcpxml
   %(prog)s random-font --output random_font.fcpxml
   %(prog)s animation video1.mp4 video2.mp4 --output animated.fcpxml
+  %(prog)s many-video-fx /path/to/video/folder --output tiled_videos.fcpxml
         """
     )
     
@@ -100,6 +102,15 @@ Examples:
     animation_parser.add_argument('input_files', nargs=2, help='Two video files (.mp4 or .mov)')
     animation_parser.add_argument('--output', dest='output_path', required=True, help='Output FCPXML file path')
     
+    # Many video FX command
+    many_fx_parser = subparsers.add_parser(
+        'many-video-fx',
+        help='Create tiled video animation effect where videos start in center and animate to tile positions'
+    )
+    many_fx_parser.add_argument('input_dir', help='Directory containing .mov video files')
+    many_fx_parser.add_argument('--output', help='Output FCPXML file path')
+    many_fx_parser.add_argument('--duration', type=float, default=60.0, help='Total timeline duration in seconds (default: 60.0)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -119,6 +130,8 @@ Examples:
         random_font_cmd(args)
     elif args.command == 'animation':
         animation_cmd(args)
+    elif args.command == 'many-video-fx':
+        many_video_fx_cmd(args)
     else:
         print(f"❌ Unknown command: {args.command}", file=sys.stderr)
         parser.print_help()

@@ -23,6 +23,7 @@ Modules:
 - stress_test: Generate complex stress test timeline
 - random_font: Create video with random font title elements
 - animation: Create keyframe animated videos (Info.fcpxml pattern)
+- many_video_fx: Create tiled video animation effect
 """
 
 from .create_empty_project import create_empty_project_cmd
@@ -31,6 +32,7 @@ from .video_at_edge import video_at_edge_cmd
 from .stress_test import stress_test_cmd
 from .random_font import random_font_cmd
 from .animation import animation_cmd
+from .many_video_fx import many_video_fx_cmd
 
 __all__ = [
     'create_empty_project_cmd',
@@ -38,5 +40,6 @@ __all__ = [
     'video_at_edge_cmd',
     'stress_test_cmd',
     'random_font_cmd',
-    'animation_cmd'
+    'animation_cmd',
+    'many_video_fx_cmd'
 ]
