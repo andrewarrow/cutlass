@@ -74,7 +74,7 @@ def test_recreate_info_fcpxml():
             sig=video_info["uid"],
             src=f"file://{dummy_file}"
         )
-        asset.media_reps = [media_rep]
+        asset.media_rep = media_rep
         
         assets.append(asset)
     
@@ -248,10 +248,21 @@ def test_recreate_info_fcpxml():
         "duration": main_clip.duration,
         "format": main_clip.format,
         "tcFormat": main_clip.tc_format,
-        "adjust_transform": main_clip.adjust_transform.to_dict(),
-        "videos": [{"ref": main_video.ref, "offset": main_video.offset, "duration": main_video.duration}],
         "nested_elements": []
     }
+    
+    # Add adjust-transform as nested element (this is what serializer expects)
+    transform_dict = main_clip.adjust_transform.to_dict()
+    transform_dict["type"] = "adjust_transform"
+    main_clip_dict["nested_elements"].append(transform_dict)
+    
+    # Add video element to main clip nested_elements (required for "respective media")
+    main_clip_dict["nested_elements"].append({
+        "type": "video",
+        "ref": main_video.ref,
+        "offset": main_video.offset,
+        "duration": main_video.duration
+    })
     
     # Add nested clips to main clip
     for nested_clip in main_clip.clips:
@@ -263,16 +274,29 @@ def test_recreate_info_fcpxml():
             "duration": nested_clip.duration,
             "format": "r2",  # Add missing format attribute
             "tcFormat": nested_clip.tc_format,
-            "adjust_transform": nested_clip.adjust_transform.to_dict(),
-            "videos": [{"ref": video.ref, "offset": video.offset, "duration": video.duration} for video in nested_clip.videos]
+            "nested_elements": []
         }
+        
+        # Add adjust-transform as nested element
+        nested_transform_dict = nested_clip.adjust_transform.to_dict()
+        nested_transform_dict["type"] = "adjust_transform"
+        nested_dict["nested_elements"].append(nested_transform_dict)
+        
+        # Add video elements to nested clip's nested_elements
+        for video in nested_clip.videos:
+            nested_dict["nested_elements"].append({
+                "type": "video",
+                "ref": video.ref,
+                "offset": video.offset,
+                "duration": video.duration
+            })
         main_clip_dict["nested_elements"].append(nested_dict)
     
     # Add to spine
     sequence.spine.ordered_elements.append(main_clip_dict)
     
     # Generate XML and save to file
-    output_file = "/tmp/test_info_recreation.fcpxml"
+    output_file = "test_info_recreation.fcpxml"
     success = save_fcpxml(fcpxml, output_file)
     
     assert success, "Failed to save FCPXML file"
