@@ -19,7 +19,8 @@ from fcpxml_lib.cmd import (
     create_random_video_cmd,
     video_at_edge_cmd,
     stress_test_cmd,
-    random_font_cmd
+    random_font_cmd,
+    animation_cmd
 )
 
 
@@ -35,6 +36,7 @@ Examples:
   %(prog)s video-at-edge /path/to/image/folder --output edge_video.fcpxml --background-video bg.mp4
   %(prog)s stress-test --output stress_test.fcpxml
   %(prog)s random-font --output random_font.fcpxml
+  %(prog)s animation video1.mp4 video2.mp4 --output animated.fcpxml
         """
     )
     
@@ -90,6 +92,14 @@ Examples:
     font_parser.add_argument('--event-name', help='Name of the event')
     font_parser.add_argument('--output', help='Output FCPXML file path')
     
+    # Animation command
+    animation_parser = subparsers.add_parser(
+        'animation',
+        help='Create keyframe animated video (Info.fcpxml pattern - 2 videos animating from center to corners)'
+    )
+    animation_parser.add_argument('input_files', nargs=2, help='Two video files (.mp4 or .mov)')
+    animation_parser.add_argument('--output', dest='output_path', required=True, help='Output FCPXML file path')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -107,6 +117,12 @@ Examples:
         stress_test_cmd(args)
     elif args.command == 'random-font':
         random_font_cmd(args)
+    elif args.command == 'animation':
+        animation_cmd(args)
+    else:
+        print(f"❌ Unknown command: {args.command}", file=sys.stderr)
+        parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

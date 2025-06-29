@@ -319,6 +319,61 @@ def serialize_to_xml(fcpxml) -> str:
                                     title_elem.set("name", element["name"])
                                 if "lane" in element:
                                     title_elem.set("lane", str(element["lane"]))
+                            
+                            elif element["type"] == "clip":
+                                # Handle complex clip elements (nested structure like Info.fcpxml)
+                                clip_elem = SubElement(spine_elem, "clip")
+                                if "offset" in element:
+                                    clip_elem.set("offset", element["offset"])
+                                if "name" in element:
+                                    clip_elem.set("name", element["name"])
+                                if "duration" in element:
+                                    clip_elem.set("duration", element["duration"])
+                                if "format" in element:
+                                    clip_elem.set("format", element["format"])
+                                if "tcFormat" in element:
+                                    clip_elem.set("tcFormat", element["tcFormat"])
+                                if "lane" in element:
+                                    clip_elem.set("lane", str(element["lane"]))
+                                
+                                # Handle nested elements (transforms, videos, nested clips)
+                                if "nested_elements" in element:
+                                    for nested in element["nested_elements"]:
+                                        if nested["type"] == "adjust_transform":
+                                            serialize_adjust_transform(clip_elem, nested)
+                                        elif nested["type"] == "video":
+                                            nested_video_elem = SubElement(clip_elem, "video")
+                                            nested_video_elem.set("ref", nested["ref"])
+                                            if "offset" in nested:
+                                                nested_video_elem.set("offset", nested["offset"])
+                                            if "duration" in nested:
+                                                nested_video_elem.set("duration", nested["duration"])
+                                        elif nested["type"] == "clip":
+                                            # Recursive nested clip handling
+                                            nested_clip_elem = SubElement(clip_elem, "clip")
+                                            if "lane" in nested:
+                                                nested_clip_elem.set("lane", str(nested["lane"]))
+                                            if "offset" in nested:
+                                                nested_clip_elem.set("offset", nested["offset"])
+                                            if "name" in nested:
+                                                nested_clip_elem.set("name", nested["name"])
+                                            if "duration" in nested:
+                                                nested_clip_elem.set("duration", nested["duration"])
+                                            if "tcFormat" in nested:
+                                                nested_clip_elem.set("tcFormat", nested["tcFormat"])
+                                            
+                                            # Handle nested clip's nested elements
+                                            if "nested_elements" in nested:
+                                                for nested_nested in nested["nested_elements"]:
+                                                    if nested_nested["type"] == "adjust_transform":
+                                                        serialize_adjust_transform(nested_clip_elem, nested_nested)
+                                                    elif nested_nested["type"] == "video":
+                                                        nn_video_elem = SubElement(nested_clip_elem, "video")
+                                                        nn_video_elem.set("ref", nested_nested["ref"])
+                                                        if "offset" in nested_nested:
+                                                            nn_video_elem.set("offset", nested_nested["offset"])
+                                                        if "duration" in nested_nested:
+                                                            nn_video_elem.set("duration", nested_nested["duration"])
                     else:
                         # Fallback to old method if ordered_elements not available
                         # Add asset-clips (for videos)
