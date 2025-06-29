@@ -11,6 +11,84 @@ if TYPE_CHECKING:
     from ..models.elements import FCPXML
 
 
+def add_adjust_transform(parent_elem, transform_data):
+    """
+    Add adjust-transform element with support for keyframe animations.
+    
+    Args:
+        parent_elem: Parent XML element to add transform to
+        transform_data: Dictionary containing transform information
+    """
+    transform_elem = SubElement(parent_elem, "adjust-transform")
+    
+    # Handle keyframe animations if present
+    if "animations" in transform_data:
+        animations = transform_data["animations"]
+        
+        # Position animation
+        if "position_animation" in animations:
+            param_elem = SubElement(transform_elem, "param")
+            param_elem.set("name", "position")
+            keyframe_anim_elem = SubElement(param_elem, "keyframeAnimation")
+            
+            for keyframe in animations["position_animation"].keyframes:
+                keyframe_elem = SubElement(keyframe_anim_elem, "keyframe")
+                keyframe_elem.set("time", keyframe.time)
+                keyframe_elem.set("value", keyframe.value)
+                if keyframe.curve:
+                    keyframe_elem.set("curve", keyframe.curve)
+        
+        # Scale animation
+        if "scale_animation" in animations:
+            param_elem = SubElement(transform_elem, "param")
+            param_elem.set("name", "scale")
+            keyframe_anim_elem = SubElement(param_elem, "keyframeAnimation")
+            
+            for keyframe in animations["scale_animation"].keyframes:
+                keyframe_elem = SubElement(keyframe_anim_elem, "keyframe")
+                keyframe_elem.set("time", keyframe.time)
+                keyframe_elem.set("value", keyframe.value)
+                if keyframe.curve:
+                    keyframe_elem.set("curve", keyframe.curve)
+        
+        # Rotation animation
+        if "rotation_animation" in animations:
+            param_elem = SubElement(transform_elem, "param")
+            param_elem.set("name", "rotation")
+            keyframe_anim_elem = SubElement(param_elem, "keyframeAnimation")
+            
+            for keyframe in animations["rotation_animation"].keyframes:
+                keyframe_elem = SubElement(keyframe_anim_elem, "keyframe")
+                keyframe_elem.set("time", keyframe.time)
+                keyframe_elem.set("value", keyframe.value)
+                if keyframe.curve:
+                    keyframe_elem.set("curve", keyframe.curve)
+        
+        # Anchor animation
+        if "anchor_animation" in animations:
+            param_elem = SubElement(transform_elem, "param")
+            param_elem.set("name", "anchor")
+            keyframe_anim_elem = SubElement(param_elem, "keyframeAnimation")
+            
+            for keyframe in animations["anchor_animation"].keyframes:
+                keyframe_elem = SubElement(keyframe_anim_elem, "keyframe")
+                keyframe_elem.set("time", keyframe.time)
+                keyframe_elem.set("value", keyframe.value)
+                if keyframe.curve:
+                    keyframe_elem.set("curve", keyframe.curve)
+    
+    # Handle static values (fallback for non-animated transforms)
+    else:
+        if "scale" in transform_data:
+            transform_elem.set("scale", transform_data["scale"])
+        if "position" in transform_data:
+            transform_elem.set("position", transform_data["position"])
+        if "rotation" in transform_data:
+            transform_elem.set("rotation", transform_data["rotation"])
+        if "anchor" in transform_data:
+            transform_elem.set("anchor", transform_data["anchor"])
+
+
 def serialize_to_xml(fcpxml) -> str:
     """
     Serialize FCPXML to XML string using structured approach.
@@ -135,9 +213,7 @@ def serialize_to_xml(fcpxml) -> str:
                                 
                                 # Add adjust-transform if present
                                 if "adjust_transform" in element:
-                                    transform_elem = SubElement(clip_elem, "adjust-transform")
-                                    if "scale" in element["adjust_transform"]:
-                                        transform_elem.set("scale", element["adjust_transform"]["scale"])
+                                    add_adjust_transform(clip_elem, element["adjust_transform"])
                                 
                                 # Add nested elements (for multi-lane structure) - CRITICAL for asset-clip
                                 if "nested_elements" in element:
@@ -157,11 +233,7 @@ def serialize_to_xml(fcpxml) -> str:
                                         
                                         # Add nested transforms
                                         if "adjust_transform" in nested:
-                                            nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
-                                            if "scale" in nested["adjust_transform"]:
-                                                nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
-                                            if "position" in nested["adjust_transform"]:
-                                                nested_transform_elem.set("position", nested["adjust_transform"]["position"])
+                                            add_adjust_transform(nested_video_elem, nested["adjust_transform"])
                             elif element["type"] == "video":
                                 video_elem = SubElement(spine_elem, "video")
                                 video_elem.set("ref", element["ref"])
@@ -178,11 +250,7 @@ def serialize_to_xml(fcpxml) -> str:
                                 
                                 # Add adjust-transform if present
                                 if "adjust_transform" in element:
-                                    transform_elem = SubElement(video_elem, "adjust-transform")
-                                    if "scale" in element["adjust_transform"]:
-                                        transform_elem.set("scale", element["adjust_transform"]["scale"])
-                                    if "position" in element["adjust_transform"]:
-                                        transform_elem.set("position", element["adjust_transform"]["position"])
+                                    add_adjust_transform(video_elem, element["adjust_transform"])
                                 
                                 # Add nested elements (for multi-lane structure)
                                 if "nested_elements" in element:
@@ -266,11 +334,7 @@ def serialize_to_xml(fcpxml) -> str:
                                             
                                             # Add nested transforms
                                             if "adjust_transform" in nested:
-                                                nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
-                                                if "scale" in nested["adjust_transform"]:
-                                                    nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
-                                                if "position" in nested["adjust_transform"]:
-                                                    nested_transform_elem.set("position", nested["adjust_transform"]["position"])
+                                                add_adjust_transform(nested_video_elem, nested["adjust_transform"])
                             
                             elif element["type"] == "title":
                                 title_elem = SubElement(spine_elem, "title")
@@ -301,9 +365,7 @@ def serialize_to_xml(fcpxml) -> str:
                             
                             # Add adjust-transform if present
                             if "adjust_transform" in asset_clip:
-                                transform_elem = SubElement(clip_elem, "adjust-transform")
-                                if "scale" in asset_clip["adjust_transform"]:
-                                    transform_elem.set("scale", asset_clip["adjust_transform"]["scale"])
+                                add_adjust_transform(clip_elem, asset_clip["adjust_transform"])
                         
                         # Add videos (for images)
                         for video in sequence.spine.videos:
@@ -322,11 +384,7 @@ def serialize_to_xml(fcpxml) -> str:
                             
                             # Add adjust-transform if present
                             if "adjust_transform" in video:
-                                transform_elem = SubElement(video_elem, "adjust-transform")
-                                if "scale" in video["adjust_transform"]:
-                                    transform_elem.set("scale", video["adjust_transform"]["scale"])
-                                if "position" in video["adjust_transform"]:
-                                    transform_elem.set("position", video["adjust_transform"]["position"])
+                                add_adjust_transform(video_elem, video["adjust_transform"])
                             
                             # Add nested elements (for multi-lane structure)
                             if "nested_elements" in video:
@@ -346,11 +404,7 @@ def serialize_to_xml(fcpxml) -> str:
                                     
                                     # Add nested transforms
                                     if "adjust_transform" in nested:
-                                        nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
-                                        if "scale" in nested["adjust_transform"]:
-                                            nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
-                                        if "position" in nested["adjust_transform"]:
-                                            nested_transform_elem.set("position", nested["adjust_transform"]["position"])
+                                        add_adjust_transform(nested_video_elem, nested["adjust_transform"])
                     
                     # Add gaps (if any)
                     for gap in sequence.spine.gaps:

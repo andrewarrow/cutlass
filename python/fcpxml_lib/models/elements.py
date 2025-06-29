@@ -83,26 +83,69 @@ class Resources:
 
 
 @dataclass
+class Keyframe:
+    """Individual keyframe for animation"""
+    time: str
+    value: str
+    curve: Optional[str] = None
+    
+    def __post_init__(self):
+        if not validate_frame_alignment(self.time):
+            raise ValidationError(f"Keyframe time not frame-aligned: {self.time}")
+
+
+@dataclass
+class KeyframeAnimation:
+    """Keyframe animation for transform parameters"""
+    keyframes: List[Keyframe] = field(default_factory=list)
+    
+    def add_keyframe(self, time: str, value: str, curve: Optional[str] = None):
+        """Add a keyframe to the animation"""
+        self.keyframes.append(Keyframe(time=time, value=value, curve=curve))
+
+
+@dataclass
 class AdjustTransform:
-    """Transform adjustments for video/image elements"""
+    """Transform adjustments for video/image elements with keyframe animation support"""
     scale: Optional[str] = None
     rotation: Optional[str] = None
-    position_x: Optional[str] = None
-    position_y: Optional[str] = None
+    position: Optional[str] = None
+    anchor: Optional[str] = None
+    
+    # Keyframe animation support
+    scale_animation: Optional[KeyframeAnimation] = None
+    rotation_animation: Optional[KeyframeAnimation] = None
+    position_animation: Optional[KeyframeAnimation] = None
+    anchor_animation: Optional[KeyframeAnimation] = None
     
     def to_dict(self) -> Dict:
         """Convert to dictionary for XML serialization"""
         result = {}
+        
+        # Handle static values
         if self.scale:
             result["scale"] = self.scale
         if self.rotation:
             result["rotation"] = self.rotation
-        if self.position_x or self.position_y:
-            result["position"] = {}
-            if self.position_x:
-                result["position"]["X"] = self.position_x
-            if self.position_y:
-                result["position"]["Y"] = self.position_y
+        if self.position:
+            result["position"] = self.position
+        if self.anchor:
+            result["anchor"] = self.anchor
+            
+        # Handle keyframe animations
+        animations = {}
+        if self.scale_animation:
+            animations["scale_animation"] = self.scale_animation
+        if self.rotation_animation:
+            animations["rotation_animation"] = self.rotation_animation
+        if self.position_animation:
+            animations["position_animation"] = self.position_animation
+        if self.anchor_animation:
+            animations["anchor_animation"] = self.anchor_animation
+            
+        if animations:
+            result["animations"] = animations
+            
         return result
 
 
