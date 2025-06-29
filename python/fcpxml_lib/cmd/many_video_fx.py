@@ -14,10 +14,11 @@ from pathlib import Path
 from fcpxml_lib import create_empty_project, save_fcpxml
 from fcpxml_lib.core.fcpxml import create_media_asset
 from fcpxml_lib.models.elements import (
-    Clip, Video, AdjustTransform, KeyframeAnimation, Keyframe, Param
+    Clip, Video, AdjustTransform, KeyframeAnimation, Keyframe, Param,
+    Asset, Format, MediaRep
 )
 from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
-from fcpxml_lib.utils.ids import generate_resource_id
+from fcpxml_lib.utils.ids import generate_resource_id, generate_uid
 from fcpxml_lib.constants import (
     SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT, SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM,
     SCREEN_WIDTH, SCREEN_HEIGHT
@@ -86,8 +87,9 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration):
     animation_duration_fcp = "144144/24000s"  # ~6 seconds (same as Info.fcpxml)
     overlap_time_fcp = "36036/24000s"         # ~1.5 seconds delay
     
-    # Calculate scale factor for tiling (smaller videos to fit grid)
-    base_scale = 0.3  # Base scale for tiling
+    # Use exact scale values from Info.fcpxml pattern
+    # First video uses negative X scale (flip), others use positive
+    info_scales = ["-0.356424 0.356424", "0.313976 0.313976"]
     
     # Get sequence and set it up like animation.py
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
@@ -108,11 +110,37 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration):
         asset_id = generate_resource_id()
         format_id = generate_resource_id()
         
-        # Create asset for this video (with actual video duration)
+        # Create asset for this video (video-only, no audio to match Info.fcpxml pattern)
         try:
             from fcpxml_lib.core.fcpxml import detect_video_properties
             video_props = detect_video_properties(str(video_file))
-            asset, format_obj = create_media_asset(str(video_file), asset_id, format_id)
+            
+            # Create video-only asset (strip audio properties like animation.py does)
+            abs_path = video_file.resolve()
+            uid = generate_uid(f"VIDEO_{abs_path.name}")
+            media_rep = MediaRep(src=str(abs_path))
+            
+            # Create video-only asset (no hasAudio, audioSources, etc.)
+            asset = Asset(
+                id=asset_id,
+                name=abs_path.stem,
+                uid=uid,
+                duration=convert_seconds_to_fcp_duration(video_props['duration_seconds']),
+                has_video="1",
+                format=format_id,
+                video_sources="1",
+                media_rep=media_rep
+            )
+            
+            # Create format 
+            format_obj = Format(
+                id=format_id,
+                frame_duration="1001/24000s",
+                width=str(video_props['width']),
+                height=str(video_props['height']),
+                color_space="1-1-1 (Rec. 709)"
+            )
+            
             video_assets.append((asset, format_obj, video_props, video_file))
         except Exception as e:
             print(f"❌ Failed to process {video_file.name}: {e}")
@@ -138,7 +166,7 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration):
     ])
     
     first_scale_keyframes = KeyframeAnimation(keyframes=[
-        Keyframe(time=animation_duration_fcp, value=f"{base_scale} {base_scale}", curve="linear")
+        Keyframe(time=animation_duration_fcp, value=info_scales[0], curve="linear")
     ])
     
     first_anchor_keyframes = KeyframeAnimation(keyframes=[
@@ -175,8 +203,10 @@ def create_tiled_video_timeline(fcpxml, video_files, total_duration):
             Keyframe(time=animation_duration_fcp, value=f"{final_x:.4f} {final_y:.4f}")  # End at tile position
         ])
         
+        # Use Info.fcpxml scale pattern - alternate between the two scale values
+        scale_value = info_scales[1] if i < len(info_scales) else info_scales[1]  # Use second scale for all others
         scale_keyframes = KeyframeAnimation(keyframes=[
-            Keyframe(time=animation_duration_fcp, value=f"{base_scale} {base_scale}", curve="linear")
+            Keyframe(time=animation_duration_fcp, value=scale_value, curve="linear")
         ])
         
         anchor_keyframes = KeyframeAnimation(keyframes=[
