@@ -13,7 +13,7 @@ from unittest.mock import patch, MagicMock
 
 from fcpxml_lib import create_empty_project, save_fcpxml
 from fcpxml_lib.serialization.xml_serializer import serialize_to_xml
-from main import create_edge_tiled_timeline
+from fcpxml_lib.generators.timeline_generators import create_edge_tiled_timeline
 
 
 class TestVideoAtEdge:
