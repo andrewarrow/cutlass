@@ -460,6 +460,346 @@ def create_edge_tiled_timeline(fcpxml, image_files, background_video, duration, 
     print(f"   Original request: {num_lanes} lanes × {tiles_per_lane} tiles = {total_tiles} total image lanes")
 
 
+def stress_test_cmd(args):
+    """Create an extremely complex 9-minute stress test video to validate library robustness"""
+    print("🔥 Creating FCPXML STRESS TEST - 9 minutes of maximum complexity...")
+    print("   Testing all library features, validation, and edge cases")
+    print("   Format: 1080x1920 vertical")
+    print("   Duration: 9 minutes (540 seconds)")
+    print("   Goal: Generate invalid FCPXML or prove validation system integrity")
+    print()
+    
+    # Get all available assets
+    assets_dir = Path(__file__).parent.parent / "assets"
+    if not assets_dir.exists():
+        print(f"❌ Assets directory not found: {assets_dir}")
+        sys.exit(1)
+    
+    # Find all media files
+    image_files = []
+    video_files = []
+    
+    for pattern in ['*.png', '*.PNG', '*.jpg', '*.JPG', '*.jpeg', '*.JPEG']:
+        image_files.extend(assets_dir.glob(pattern))
+    
+    for pattern in ['*.mov', '*.MOV', '*.mp4', '*.MP4']:
+        video_files.extend(assets_dir.glob(pattern))
+    
+    print(f"   Found {len(image_files)} images: {[f.name for f in image_files]}")
+    print(f"   Found {len(video_files)} videos: {[f.name for f in video_files]}")
+    
+    if not image_files and not video_files:
+        print(f"❌ No media files found in {assets_dir}")
+        sys.exit(1)
+    
+    # Create base project
+    fcpxml = create_empty_project(
+        project_name="FCPXML Stress Test - Maximum Complexity",
+        event_name="Stress Test Validation",
+        use_horizontal=False  # Always vertical 1080x1920 as requested
+    )
+    
+    try:
+        create_stress_test_timeline(fcpxml, image_files, video_files)
+        print("✅ Stress test timeline created successfully")
+    except Exception as e:
+        print(f"❌ Error creating stress test timeline: {e}")
+        print("   This indicates a potential library issue or validation gap")
+        raise
+    
+    # Save with validation
+    output_path = Path(args.output) if args.output else Path(__file__).parent / "stress_test.fcpxml"
+    validation_passed = save_fcpxml(fcpxml, str(output_path))
+    
+    if validation_passed:
+        print(f"✅ Stress test saved to: {output_path}")
+        print("🎯 VALIDATION SUCCESS: Library generated valid FCPXML under extreme conditions")
+        print("   Next steps:")
+        print("   1. Validate XML with: xmllint --noout stress_test.fcpxml")
+        print("   2. Import into Final Cut Pro to test import stability")
+        print("   3. Play timeline to test performance with complex content")
+    else:
+        print("❌ VALIDATION FAILED: Library rejected its own output")
+        print("   This indicates validation system is working correctly")
+        sys.exit(1)
+
+
+def create_stress_test_timeline(fcpxml, image_files, video_files):
+    """
+    Create an extremely complex timeline to stress test all library features.
+    
+    Stress Test Strategy:
+    1. Multiple overlapping background videos (5 segments)
+    2. 50+ lanes of content with complex transforms
+    3. Mix Pattern A (nested) and Pattern B (separate) elements
+    4. Random timing, positions, scales, rotations
+    5. All available media files used multiple times
+    6. Maximum resource utilization
+    7. Edge case validation testing
+    """
+    project = fcpxml.library.events[0].projects[0]
+    sequence = project.sequences[0]
+    
+    total_duration = 540.0  # 9 minutes
+    segment_duration = 108.0  # Each background segment is ~1.8 minutes
+    resource_counter = len(fcpxml.resources.assets) + len(fcpxml.resources.formats) + 1
+    
+    print(f"   Creating timeline with {total_duration}s total duration")
+    print(f"   Background segments: 5 segments of {segment_duration}s each")
+    
+    # Create shared formats for efficiency
+    image_format_id = f"r{resource_counter}"
+    resource_counter += 1
+    
+    from fcpxml_lib.models.elements import Format
+    from fcpxml_lib.constants import IMAGE_FORMAT_NAME, DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT, IMAGE_COLOR_SPACE
+    
+    shared_image_format = Format(
+        id=image_format_id,
+        name=IMAGE_FORMAT_NAME,
+        width=DEFAULT_IMAGE_WIDTH,
+        height=DEFAULT_IMAGE_HEIGHT,
+        color_space=IMAGE_COLOR_SPACE
+    )
+    fcpxml.resources.formats.append(shared_image_format)
+    
+    # Phase 1: Create multiple overlapping background video segments
+    print("   Phase 1: Creating 5 overlapping background video segments...")
+    
+    if video_files:
+        for segment_idx in range(5):
+            video_file = video_files[segment_idx % len(video_files)]  # Cycle through videos
+            segment_offset = segment_idx * (segment_duration * 0.8)  # 20% overlap between segments
+            
+            print(f"     Segment {segment_idx + 1}: {video_file.name} at offset {segment_offset:.1f}s")
+            
+            # Create background asset
+            asset_id = f"r{resource_counter}"
+            format_id = f"r{resource_counter + 1}"
+            resource_counter += 2
+            
+            asset, format_obj = create_media_asset(str(video_file), asset_id, format_id, segment_duration)
+            fcpxml.resources.assets.append(asset)
+            fcpxml.resources.formats.append(format_obj)
+            
+            # Determine scaling needs
+            from fcpxml_lib.core.fcpxml import needs_vertical_scaling
+            needs_scaling = needs_vertical_scaling(str(video_file), is_image=False)
+            
+            # Create background element
+            bg_duration = convert_seconds_to_fcp_duration(segment_duration)
+            bg_offset = convert_seconds_to_fcp_duration(segment_offset)
+            
+            bg_element = {
+                "type": "asset-clip",
+                "ref": asset_id,
+                "duration": bg_duration,
+                "offset": bg_offset,
+                "name": f"bg_segment_{segment_idx + 1}_{video_file.stem}"
+            }
+            
+            # Add scaling and complex transforms
+            if needs_scaling:
+                from fcpxml_lib.constants import VERTICAL_SCALE_FACTOR
+                # Add complex layered transforms for stress testing
+                bg_element["adjust_transform"] = {
+                    "scale": VERTICAL_SCALE_FACTOR,
+                    "rotation": str(random.uniform(-5.0, 5.0)),  # Slight rotation
+                    "position": f"{random.uniform(-5.0, 5.0)} {random.uniform(-5.0, 5.0)}"  # Slight position offset
+                }
+            
+            # Add to spine
+            sequence.spine.ordered_elements.append(bg_element)
+            sequence.spine.asset_clips.append(bg_element)
+            
+            # Phase 2: Add nested content to this background (Pattern A)
+            nested_count = random.randint(8, 15)  # 8-15 nested elements per background
+            bg_element["nested_elements"] = []
+            
+            print(f"       Adding {nested_count} nested elements to segment {segment_idx + 1}")
+            
+            for nested_idx in range(nested_count):
+                # Alternate between images and videos for nested content
+                if nested_idx % 2 == 0 and image_files:
+                    # Use image
+                    media_file = random.choice(image_files)
+                    is_image = True
+                elif video_files:
+                    # Use video
+                    media_file = random.choice(video_files)
+                    is_image = False
+                else:
+                    # Fallback to image if no videos
+                    media_file = random.choice(image_files)
+                    is_image = True
+                
+                # Create nested asset
+                nested_asset_id = f"r{resource_counter}"
+                resource_counter += 1
+                
+                if is_image:
+                    # Use shared format for images
+                    from fcpxml_lib.models.elements import Asset, MediaRep
+                    from fcpxml_lib.utils.ids import generate_uid
+                    from fcpxml_lib.constants import IMAGE_DURATION
+                    
+                    abs_path = Path(media_file).resolve()
+                    uid = generate_uid(f"NESTED_IMG_{abs_path.name}_{segment_idx}_{nested_idx}")
+                    media_rep = MediaRep(src=str(abs_path))
+                    
+                    asset = Asset(
+                        id=nested_asset_id,
+                        name=f"{abs_path.stem}_nested_s{segment_idx}_n{nested_idx}",
+                        uid=uid,
+                        duration=IMAGE_DURATION,
+                        has_video="1",
+                        format=image_format_id,
+                        video_sources="1",
+                        media_rep=media_rep
+                    )
+                    fcpxml.resources.assets.append(asset)
+                    
+                    element_type = "video"
+                    element_start = "3600s"  # Standard image timing
+                else:
+                    # Create video asset
+                    nested_format_id = f"r{resource_counter}"
+                    resource_counter += 1
+                    
+                    asset, format_obj = create_media_asset(str(media_file), nested_asset_id, nested_format_id, segment_duration * 0.5)
+                    fcpxml.resources.assets.append(asset)
+                    fcpxml.resources.formats.append(format_obj)
+                    
+                    element_type = "asset-clip"
+                    element_start = None  # Videos don't have start attribute
+                
+                # Create complex nested element with extreme transforms
+                lane_number = (segment_idx * 15) + nested_idx + 1  # Unique lane numbers across segments
+                
+                nested_element = {
+                    "type": element_type,
+                    "ref": nested_asset_id,
+                    "lane": lane_number,
+                    "duration": convert_seconds_to_fcp_duration(segment_duration * random.uniform(0.3, 0.9)),
+                    "offset": convert_seconds_to_fcp_duration(random.uniform(0, segment_duration * 0.5)),
+                    "name": f"{media_file.stem}_L{lane_number}_S{segment_idx}"
+                }
+                
+                if element_start:
+                    nested_element["start"] = element_start
+                
+                # Add extreme transforms for stress testing
+                nested_element["adjust_transform"] = {
+                    "position": f"{random.uniform(-100.0, 100.0)} {random.uniform(-150.0, 150.0)}",
+                    "scale": f"{random.uniform(0.05, 2.0)} {random.uniform(0.05, 2.0)}",
+                    "rotation": str(random.uniform(-180.0, 180.0))
+                }
+                
+                bg_element["nested_elements"].append(nested_element)
+    
+    # Phase 3: Add separate spine elements (Pattern B) for additional stress
+    print("   Phase 3: Adding separate spine elements for additional complexity...")
+    
+    separate_elements_count = 25  # 25 additional separate elements
+    for sep_idx in range(separate_elements_count):
+        # Choose random media
+        if sep_idx % 3 == 0 and image_files:
+            media_file = random.choice(image_files)
+            is_image = True
+        elif video_files:
+            media_file = random.choice(video_files)
+            is_image = False
+        else:
+            media_file = random.choice(image_files) if image_files else random.choice(video_files)
+            is_image = media_file.suffix.lower() in {'.png', '.jpg', '.jpeg'}
+        
+        # Create asset
+        sep_asset_id = f"r{resource_counter}"
+        resource_counter += 1
+        
+        if is_image:
+            # Use shared format for images
+            from fcpxml_lib.models.elements import Asset, MediaRep
+            from fcpxml_lib.utils.ids import generate_uid
+            from fcpxml_lib.constants import IMAGE_DURATION
+            
+            abs_path = Path(media_file).resolve()
+            uid = generate_uid(f"SEP_IMG_{abs_path.name}_{sep_idx}")
+            media_rep = MediaRep(src=str(abs_path))
+            
+            asset = Asset(
+                id=sep_asset_id,
+                name=f"{abs_path.stem}_separate_{sep_idx}",
+                uid=uid,
+                duration=IMAGE_DURATION,
+                has_video="1",
+                format=image_format_id,
+                video_sources="1",
+                media_rep=media_rep
+            )
+            fcpxml.resources.assets.append(asset)
+            
+            element_type = "video"
+            element_start = "0s"  # Separate elements use different timing
+        else:
+            # Create video asset
+            sep_format_id = f"r{resource_counter}"
+            resource_counter += 1
+            
+            duration = random.uniform(30.0, 120.0)  # Variable durations
+            asset, format_obj = create_media_asset(str(media_file), sep_asset_id, sep_format_id, duration)
+            fcpxml.resources.assets.append(asset)
+            fcpxml.resources.formats.append(format_obj)
+            
+            element_type = "asset-clip"
+            element_start = None
+        
+        # Create separate element with complex timing
+        lane_number = 100 + sep_idx  # Lane numbers 100+
+        element_offset = random.uniform(0, total_duration * 0.8)
+        element_duration = random.uniform(20.0, 180.0)
+        
+        separate_element = {
+            "type": element_type,
+            "ref": sep_asset_id,
+            "lane": lane_number,
+            "duration": convert_seconds_to_fcp_duration(element_duration),
+            "offset": convert_seconds_to_fcp_duration(element_offset),
+            "name": f"{media_file.stem}_separate_L{lane_number}"
+        }
+        
+        if element_start is not None:
+            separate_element["start"] = element_start
+        
+        # Add extreme transforms and effects
+        separate_element["adjust_transform"] = {
+            "position": f"{random.uniform(-200.0, 200.0)} {random.uniform(-300.0, 300.0)}",
+            "scale": f"{random.uniform(0.01, 5.0)} {random.uniform(0.01, 5.0)}",
+            "rotation": str(random.uniform(-360.0, 360.0))
+        }
+        
+        # Add to spine
+        if element_type == "video":
+            sequence.spine.videos.append(separate_element)
+        else:
+            sequence.spine.asset_clips.append(separate_element)
+        sequence.spine.ordered_elements.append(separate_element)
+    
+    # Update sequence duration to total
+    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
+    
+    total_elements = len(sequence.spine.ordered_elements)
+    nested_elements = sum(len(elem.get("nested_elements", [])) for elem in sequence.spine.ordered_elements)
+    
+    print(f"   STRESS TEST COMPLETE:")
+    print(f"     Total spine elements: {total_elements}")
+    print(f"     Total nested elements: {nested_elements}")
+    print(f"     Total resources created: {resource_counter}")
+    print(f"     Maximum lane number: {100 + separate_elements_count}")
+    print(f"     Timeline duration: {total_duration}s ({total_duration/60:.1f} minutes)")
+    print(f"     Complexity level: EXTREME - Testing validation system limits")
+
+
 def main():
     """CLI entry point with command options"""
     parser = argparse.ArgumentParser(
@@ -470,6 +810,7 @@ Examples:
   %(prog)s create-empty-project --output my_project.fcpxml
   %(prog)s create-random-video /path/to/media/folder --output random.fcpxml
   %(prog)s video-at-edge /path/to/image/folder --output edge_video.fcpxml --background-video bg.mp4
+  %(prog)s stress-test --output stress_test.fcpxml
         """
     )
     
@@ -509,6 +850,13 @@ Examples:
     edge_parser.add_argument('--tiles-per-lane', type=int, default=8, help='Number of image tiles per lane (default: 8)')
     edge_parser.add_argument('--num-lanes', type=int, default=10, help='Number of lanes with image tiles (default: 10)')
     
+    # Stress test command
+    stress_parser = subparsers.add_parser(
+        'stress-test',
+        help='Create an extremely complex 9-minute stress test video to validate library robustness'
+    )
+    stress_parser.add_argument('--output', help='Output FCPXML file path (default: stress_test.fcpxml)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -521,6 +869,8 @@ Examples:
         create_random_video_cmd(args)
     elif args.command == 'video-at-edge':
         video_at_edge_cmd(args)
+    elif args.command == 'stress-test':
+        stress_test_cmd(args)
 
 
 if __name__ == "__main__":
