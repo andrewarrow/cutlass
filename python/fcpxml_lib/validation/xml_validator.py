@@ -129,6 +129,11 @@ def validate_fcpxml_semantics(xml_file_path: str) -> tuple[bool, str]:
         if frame_error:
             return False, frame_error
         
+        # 🚨 CRITICAL: Check for FCP-specific media validation issues
+        media_error = validate_media_clip_association(root)
+        if media_error:
+            return False, media_error
+        
         return True, ""
         
     except ET.ParseError as e:
@@ -271,6 +276,106 @@ def validate_frame_boundaries(root_element) -> str:
         return errors
     
     errors = check_timing_attributes(root_element, root_element)
+    if errors:
+        return "; ".join(errors)
+    
+    return ""
+
+
+def validate_media_clip_association(root_element) -> str:
+    """
+    Validate clip-to-media associations to prevent "Invalid edit with no respective media" errors.
+    
+    🚨 CRITICAL: FCP requires specific patterns for clip elements to be valid:
+    - Clip elements must have format attributes that reference valid format resources
+    - Video elements within clips must reference valid asset resources  
+    - Assets must have media-rep elements with valid file URLs
+    - Clip elements should have conform-rate elements
+    
+    Returns:
+        str: Error message if problem found, empty string if valid
+    """
+    
+    def find_element_path(element, root, current_path=""):
+        """Build XPath-like path for error reporting."""
+        def build_path(current_elem, target_elem, path_parts):
+            if current_elem == target_elem:
+                return "/fcpxml[1]" + "".join(path_parts)
+            
+            for i, child in enumerate(current_elem):
+                siblings_of_same_tag = [c for c in current_elem if c.tag == child.tag]
+                position = siblings_of_same_tag.index(child) + 1 if child in siblings_of_same_tag else 1
+                child_path = f"/{child.tag}[{position}]"
+                result = build_path(child, target_elem, path_parts + [child_path])
+                if result:
+                    return result
+            return None
+        
+        return build_path(root, element, [])
+    
+    # Collect all resources for lookup
+    resources = root_element.find('resources')
+    if not resources:
+        return "Invalid edit with no respective media: No resources section found"
+    
+    assets = {}
+    formats = {}
+    
+    for child in resources:
+        if child.tag == 'asset' and 'id' in child.attrib:
+            assets[child.attrib['id']] = child
+        elif child.tag == 'format' and 'id' in child.attrib:
+            formats[child.attrib['id']] = child
+    
+    errors = []
+    
+    def check_clip_validity(element, path=""):
+        """Check if clip elements are properly structured for FCP."""
+        
+        if element.tag == 'clip':
+            clip_path = find_element_path(element, root_element)
+            
+            # Check 1: Clip should have format attribute
+            if 'format' not in element.attrib:
+                errors.append(f"Invalid edit with no respective media: Clip missing format attribute ({clip_path})")
+            else:
+                format_id = element.attrib['format']
+                if format_id not in formats:
+                    errors.append(f"Invalid edit with no respective media: Clip references unknown format '{format_id}' ({clip_path})")
+            
+            # Check 2: Clip should have conform-rate element
+            conform_rate = element.find('conform-rate')
+            if conform_rate is None:
+                errors.append(f"Invalid edit with no respective media: Clip missing conform-rate element ({clip_path})")
+            
+            # Check 3: Video elements within clip should reference valid assets
+            for video in element.findall('.//video'):
+                if 'ref' not in video.attrib:
+                    video_path = find_element_path(video, root_element)
+                    errors.append(f"Invalid edit with no respective media: Video element missing ref attribute ({video_path})")
+                else:
+                    asset_id = video.attrib['ref']
+                    if asset_id not in assets:
+                        video_path = find_element_path(video, root_element)
+                        errors.append(f"Invalid edit with no respective media: Video references unknown asset '{asset_id}' ({video_path})")
+                    else:
+                        # Check 4: Asset should have media-rep with valid src
+                        asset = assets[asset_id]
+                        media_rep = asset.find('media-rep')
+                        if media_rep is None:
+                            errors.append(f"Invalid edit with no respective media: Asset '{asset_id}' missing media-rep element")
+                        elif 'src' not in media_rep.attrib:
+                            errors.append(f"Invalid edit with no respective media: Asset '{asset_id}' media-rep missing src attribute")
+                        elif not media_rep.attrib['src'].startswith('file://'):
+                            src = media_rep.attrib['src']
+                            errors.append(f"Invalid edit with no respective media: Asset '{asset_id}' media-rep src should start with 'file://' (got: {src})")
+        
+        # Recursively check children
+        for child in element:
+            check_clip_validity(child, path)
+    
+    check_clip_validity(root_element)
+    
     if errors:
         return "; ".join(errors)
     

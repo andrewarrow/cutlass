@@ -336,6 +336,10 @@ def serialize_to_xml(fcpxml) -> str:
                                 if "lane" in element:
                                     clip_elem.set("lane", str(element["lane"]))
                                 
+                                # Add conform-rate element (required for clip media validation)
+                                conform_rate_elem = SubElement(clip_elem, "conform-rate")
+                                conform_rate_elem.set("scaleEnabled", "0")
+                                
                                 # Handle nested elements (transforms, videos, nested clips)
                                 if "nested_elements" in element:
                                     for nested in element["nested_elements"]:
@@ -359,8 +363,14 @@ def serialize_to_xml(fcpxml) -> str:
                                                 nested_clip_elem.set("name", nested["name"])
                                             if "duration" in nested:
                                                 nested_clip_elem.set("duration", nested["duration"])
+                                            if "format" in nested:
+                                                nested_clip_elem.set("format", nested["format"])
                                             if "tcFormat" in nested:
                                                 nested_clip_elem.set("tcFormat", nested["tcFormat"])
+                                            
+                                            # Add conform-rate element (required for nested clip media validation)
+                                            nested_conform_rate_elem = SubElement(nested_clip_elem, "conform-rate")
+                                            nested_conform_rate_elem.set("scaleEnabled", "0")
                                             
                                             # Handle nested clip's nested elements
                                             if "nested_elements" in nested:
