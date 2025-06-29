@@ -202,6 +202,14 @@ def serialize_to_xml(fcpxml) -> str:
                                             if "name" in nested:
                                                 nested_title_elem.set("name", nested["name"])
                                             
+                                            # Add param elements if available
+                                            if "params" in nested:
+                                                for param in nested["params"]:
+                                                    param_elem = SubElement(nested_title_elem, "param")
+                                                    param_elem.set("name", param["name"])
+                                                    param_elem.set("key", param["key"])
+                                                    param_elem.set("value", param["value"])
+                                            
                                             # Add text content if available
                                             if "text_content" in nested:
                                                 # Generate unique text style ID
@@ -219,17 +227,28 @@ def serialize_to_xml(fcpxml) -> str:
                                                 text_style = SubElement(text_style_def, "text-style")
                                                 if "font_name" in nested:
                                                     text_style.set("font", nested["font_name"])
+                                                # 🚨 CRITICAL: Always add fontFace="Regular" to ensure face checkbox is checked
+                                                # This matches the working Go implementation pattern
+                                                text_style.set("fontFace", nested.get("font_face", "Regular"))
                                                 # Use font size from nested data or default to 290
                                                 font_size = nested.get("font_size", "290")
                                                 text_style.set("fontSize", str(font_size))
                                                 # Apply face color only if face is enabled (default True)
                                                 if nested.get("face_enabled", True) and "face_color" in nested:
                                                     text_style.set("fontColor", nested["face_color"])
+                                                # 🚨 CRITICAL: NO bold attribute - Go version doesn't include it
+                                                # Bold attribute actually breaks the face checkbox
+                                                if nested.get("italic", False):
+                                                    text_style.set("italic", "1")
+                                                # 🚨 CRITICAL: Add alignment and lineSpacing to match Go exactly
+                                                text_style.set("alignment", "center")
+                                                text_style.set("lineSpacing", "-19")
                                                 # Apply outline only if outline is enabled (default True)
                                                 if nested.get("outline_enabled", True) and "outline_color" in nested:
                                                     text_style.set("strokeColor", nested["outline_color"])
+                                                    # 🚨 CRITICAL: Use negative stroke width like Go version
                                                     stroke_width = nested.get("stroke_width", "15")
-                                                    text_style.set("strokeWidth", str(stroke_width))
+                                                    text_style.set("strokeWidth", f"-{stroke_width}")
                                         else:
                                             # Handle nested video elements
                                             nested_video_elem = SubElement(video_elem, "video")

@@ -152,12 +152,25 @@ def create_title_element(effect_id, text_content, font_name, face_color, outline
         "lane": "1",
         "text_content": text_content,
         "font_name": font_name,
+        "font_face": "Regular",  # Add fontFace attribute
         "font_size": 900,  # Increased font size
         "face_color": face_color,
         "face_enabled": True,  # Face is enabled (boolean true)
         "outline_color": outline_color,
         "outline_enabled": True,  # Outline is enabled (boolean true)
-        "stroke_width": 15
+        "stroke_width": 15,
+        "bold": False,  # 🚨 CRITICAL: Bold=False - Go version doesn't use bold
+        "italic": False,  # Add italic styling
+        # Add essential param elements that FCP expects for proper text rendering
+        "params": [
+            {"name": "Layout Method", "key": "9999/10003/13260/3296672360/2/314", "value": "1 (Paragraph)"},
+            {"name": "Left Margin", "key": "9999/10003/13260/3296672360/2/323", "value": "-1210"},
+            {"name": "Right Margin", "key": "9999/10003/13260/3296672360/2/324", "value": "1210"},
+            {"name": "Top Margin", "key": "9999/10003/13260/3296672360/2/325", "value": "2160"},
+            {"name": "Bottom Margin", "key": "9999/10003/13260/3296672360/2/326", "value": "-2160"},
+            {"name": "Auto-Shrink", "key": "9999/10003/13260/3296672360/2/370", "value": "3 (To All Margins)"},
+            {"name": "Alignment", "key": "9999/10003/13260/3296672360/2/373", "value": "1 (Center) 1 (Middle)"}
+        ]
     }
 
 
@@ -179,9 +192,13 @@ def random_font_cmd(args):
     
     # Calculate duration for each font to showcase ALL fonts in 9 minutes (540 seconds)
     # We have 262 fonts, so each font gets ~2.06 seconds
+    # 🚨 CRITICAL: Use frame-aligned duration to prevent "not on edit frame boundary" errors
     total_duration = 9 * 60  # 9 minutes in seconds
     num_titles = len(fonts)  # Use all fonts
-    title_duration = total_duration / num_titles  # ~2.06 seconds per font
+    
+    # Use 2.0 seconds per title (frame-aligned) instead of 2.06
+    title_duration = 2.0  # Frame-aligned duration
+    actual_total_duration = num_titles * title_duration  # Will be longer than 9 minutes
     
     print(f"🎬 Creating 9-minute video showcasing ALL {num_titles} fonts...")
     print(f"   Each font duration: {title_duration:.2f}s")
@@ -240,7 +257,7 @@ def random_font_cmd(args):
     fcpxml.resources.title_effects.append(title_effect)
     
     # Create the main video element that will contain all titles
-    video_duration_fcp = convert_seconds_to_fcp_duration(total_duration)
+    video_duration_fcp = convert_seconds_to_fcp_duration(actual_total_duration)
     
     video_element = {
         "type": "video",
@@ -283,11 +300,11 @@ def random_font_cmd(args):
     sequence.spine.ordered_elements.append(video_element)
     
     # Update sequence duration
-    total_duration_fcp = convert_seconds_to_fcp_duration(total_duration)
+    total_duration_fcp = convert_seconds_to_fcp_duration(actual_total_duration)
     sequence.duration = total_duration_fcp
     
     print(f"✅ Created {num_titles} titles with random fonts and colors")
-    print(f"   Total duration: {total_duration/60:.1f} minutes")
+    print(f"   Total duration: {actual_total_duration/60:.1f} minutes")
     
     # Save to file with validation
     output_path = Path(args.output) if args.output else Path("random_font_video.fcpxml")
