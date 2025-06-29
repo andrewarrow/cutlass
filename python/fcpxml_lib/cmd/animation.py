@@ -81,14 +81,16 @@ def animation_cmd(args):
     second_anim_duration = "108108/24000s" # ~4.5 seconds  
     second_clip_offset = "36036/24000s"    # ~1.5 seconds delay
     
-    # Total clip duration should accommodate both animations
-    total_duration = convert_seconds_to_fcp_duration(8.0)  # 8 seconds total
+    # Clip durations MUST match or exceed video durations to prevent "Invalid edit" errors
+    # Use actual video durations from Info.fcpxml pattern
+    first_clip_duration = convert_seconds_to_fcp_duration(video1_props['duration_seconds'])
+    second_clip_duration = convert_seconds_to_fcp_duration(video2_props['duration_seconds'])
     
     # Create first video clip with keyframe animation
     first_clip = Clip(
         offset="0s",
         name=video1_path.stem,
-        duration=total_duration,
+        duration=first_clip_duration,
         format=video1_format_id,
         tc_format="NDF",
         nested_elements=[]
@@ -133,7 +135,7 @@ def animation_cmd(args):
         lane="1",
         offset=second_clip_offset,  # 1.5s delay
         name=video2_path.stem,
-        duration=convert_seconds_to_fcp_duration(6.0),  # Enough for animation
+        duration=second_clip_duration,
         tc_format="NDF",
         nested_elements=[]
     )
@@ -184,7 +186,7 @@ def animation_cmd(args):
         "type": "clip",
         "offset": "0s",
         "name": video1_path.stem,
-        "duration": total_duration,
+        "duration": first_clip_duration,
         "format": video1_format_id,
         "tcFormat": "NDF",
         "nested_elements": [
@@ -203,7 +205,7 @@ def animation_cmd(args):
                 "lane": "1",
                 "offset": second_clip_offset,
                 "name": video2_path.stem,
-                "duration": convert_seconds_to_fcp_duration(6.0),
+                "duration": second_clip_duration,
                 "format": video2_format_id,
                 "tcFormat": "NDF",
                 "nested_elements": [
