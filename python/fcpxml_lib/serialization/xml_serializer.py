@@ -339,6 +339,8 @@ def serialize_to_xml(fcpxml) -> str:
                                 # Add conform-rate element (required for clip media validation)
                                 conform_rate_elem = SubElement(clip_elem, "conform-rate")
                                 conform_rate_elem.set("scaleEnabled", "0")
+                                # Add srcFrameRate to match media properties (may resolve FCP import warnings)
+                                conform_rate_elem.set("srcFrameRate", "24")
                                 
                                 # Handle nested elements (transforms, videos, nested clips)
                                 if "nested_elements" in element:
@@ -371,6 +373,8 @@ def serialize_to_xml(fcpxml) -> str:
                                             # Add conform-rate element (required for nested clip media validation)
                                             nested_conform_rate_elem = SubElement(nested_clip_elem, "conform-rate")
                                             nested_conform_rate_elem.set("scaleEnabled", "0")
+                                            # Add srcFrameRate to match media properties (may resolve FCP import warnings)
+                                            nested_conform_rate_elem.set("srcFrameRate", "24")
                                             
                                             # Handle nested clip's nested elements
                                             if "nested_elements" in nested:

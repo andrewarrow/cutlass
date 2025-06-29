@@ -1,5 +1,7 @@
 # Project Context for AI Assistance - Python FCPXML Library
 
+read ../FCPXMLv1_13.dtd
+
 ## 🚨 CRITICAL: ALL CODE MUST USE VALIDATION 🚨
 **There are extensive validation checks in `fcpxml_lib/validation/`. Never bypass these. Better to let an error stop generation because validation failed than to ever produce invalid FCPXML.**
 
