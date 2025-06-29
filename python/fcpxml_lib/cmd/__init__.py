@@ -24,7 +24,6 @@ Modules:
 - random_font: Create video with random font title elements
 - animation: Create keyframe animated videos (Info.fcpxml pattern)
 - many_video_fx: Create tiled video animation effect
-- many_video_fx2: Create step-by-step video animation (copy of animation.py logic)
 """
 
 from .create_empty_project import create_empty_project_cmd
@@ -34,7 +33,6 @@ from .stress_test import stress_test_cmd
 from .random_font import random_font_cmd
 from .animation import animation_cmd
 from .many_video_fx import many_video_fx_cmd
-from .many_video_fx2 import many_video_fx2_cmd
 
 __all__ = [
     'create_empty_project_cmd',
@@ -43,6 +41,5 @@ __all__ = [
     'stress_test_cmd',
     'random_font_cmd',
     'animation_cmd',
-    'many_video_fx_cmd',
-    'many_video_fx2_cmd'
+    'many_video_fx_cmd'
 ]

@@ -21,8 +21,7 @@ from fcpxml_lib.cmd import (
     stress_test_cmd,
     random_font_cmd,
     animation_cmd,
-    many_video_fx_cmd,
-    many_video_fx2_cmd
+    many_video_fx_cmd
 )
 
 
@@ -40,7 +39,6 @@ Examples:
   %(prog)s random-font --output random_font.fcpxml
   %(prog)s animation video1.mp4 video2.mp4 --output animated.fcpxml
   %(prog)s many-video-fx /path/to/video/folder --output tiled_videos.fcpxml
-  %(prog)s many-video-fx2 /path/to/video/folder --output fx2_videos.fcpxml --steps 2
         """
     )
     
@@ -114,15 +112,6 @@ Examples:
     many_fx_parser.add_argument('--duration', type=float, default=60.0, help='Total timeline duration in seconds (default: 60.0)')
     many_fx_parser.add_argument('--steps', type=int, help='Number of videos to animate step-by-step (2=Info.fcpxml pattern, 4=continue with more). If omitted, tiles all videos simultaneously.')
     
-    # Many video FX 2 command (copy of animation.py)
-    many_fx2_parser = subparsers.add_parser(
-        'many-video-fx2',
-        help='Create step-by-step video animation (copy of animation.py logic) with --steps parameter'
-    )
-    many_fx2_parser.add_argument('input_dir', help='Directory containing .mov video files')
-    many_fx2_parser.add_argument('--output', required=True, help='Output FCPXML file path')
-    many_fx2_parser.add_argument('--steps', type=int, default=2, help='Number of videos to animate step-by-step (default: 2)')
-    
     args = parser.parse_args()
     
     if not args.command:
@@ -144,8 +133,6 @@ Examples:
         animation_cmd(args)
     elif args.command == 'many-video-fx':
         many_video_fx_cmd(args)
-    elif args.command == 'many-video-fx2':
-        many_video_fx2_cmd(args)
     else:
         print(f"❌ Unknown command: {args.command}", file=sys.stderr)
         parser.print_help()
