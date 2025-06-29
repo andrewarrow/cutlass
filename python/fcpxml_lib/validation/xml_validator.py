@@ -72,7 +72,8 @@ def validate_fcpxml_semantics(xml_file_path: str) -> tuple[bool, str]:
         used_refs = set()
         
         def collect_refs(element):
-            if 'ref' in element.attrib:
+            # Skip text-style refs - they are locally scoped within title elements
+            if 'ref' in element.attrib and element.tag != 'text-style':
                 used_refs.add(element.attrib['ref'])
             if 'format' in element.attrib:
                 used_refs.add(element.attrib['format'])

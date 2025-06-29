@@ -79,6 +79,7 @@ class Resources:
     formats: List[Format] = field(default_factory=list)
     effects: List[Dict] = field(default_factory=list)
     media: List[Dict] = field(default_factory=list)
+    title_effects: List[Dict] = field(default_factory=list)
 
 
 @dataclass
@@ -103,6 +104,27 @@ class AdjustTransform:
             if self.position_y:
                 result["position"]["Y"] = self.position_y
         return result
+
+
+@dataclass
+class Title:
+    """Title element for text overlays in FCPXML"""
+    ref: str
+    offset: str = "0s"
+    duration: str = "300s"
+    start: str = "0s"
+    name: Optional[str] = None
+    lane: Optional[str] = None
+    
+    def __post_init__(self):
+        if not validate_resource_id(self.ref):
+            raise ValidationError(f"Invalid title ref: {self.ref}")
+        if not validate_frame_alignment(self.offset):
+            raise ValidationError(f"Title offset not frame-aligned: {self.offset}")
+        if not validate_frame_alignment(self.duration):
+            raise ValidationError(f"Title duration not frame-aligned: {self.duration}")
+        if not validate_frame_alignment(self.start):
+            raise ValidationError(f"Title start not frame-aligned: {self.start}")
 
 
 @dataclass

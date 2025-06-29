@@ -73,6 +73,15 @@ def serialize_to_xml(fcpxml) -> str:
                 if asset.media_rep.sig:
                     media_rep_elem.set("sig", asset.media_rep.sig)
                 media_rep_elem.set("src", asset.media_rep.src)
+        
+        # Add title effects (if any)
+        for title_effect in fcpxml.resources.title_effects:
+            effect_elem = SubElement(resources_elem, "effect")
+            effect_elem.set("id", title_effect["id"])
+            effect_elem.set("name", title_effect["name"])
+            effect_elem.set("uid", title_effect["uid"])
+            if "src" in title_effect:
+                effect_elem.set("src", title_effect["src"])
 
     # Add library
     if fcpxml.library:
@@ -178,26 +187,80 @@ def serialize_to_xml(fcpxml) -> str:
                                 # Add nested elements (for multi-lane structure)
                                 if "nested_elements" in element:
                                     for nested in element["nested_elements"]:
-                                        nested_video_elem = SubElement(video_elem, "video")
-                                        nested_video_elem.set("ref", nested["ref"])
-                                        if "lane" in nested:
-                                            nested_video_elem.set("lane", str(nested["lane"]))
-                                        if "duration" in nested:
-                                            nested_video_elem.set("duration", nested["duration"])
-                                        if "offset" in nested:
-                                            nested_video_elem.set("offset", nested["offset"])
-                                        if "start" in nested:
-                                            nested_video_elem.set("start", nested["start"])
-                                        if "name" in nested:
-                                            nested_video_elem.set("name", nested["name"])
-                                        
-                                        # Add nested transforms
-                                        if "adjust_transform" in nested:
-                                            nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
-                                            if "scale" in nested["adjust_transform"]:
-                                                nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
-                                            if "position" in nested["adjust_transform"]:
-                                                nested_transform_elem.set("position", nested["adjust_transform"]["position"])
+                                        if nested.get("type") == "title":
+                                            # Handle nested title elements within video
+                                            nested_title_elem = SubElement(video_elem, "title")
+                                            nested_title_elem.set("ref", nested["ref"])
+                                            if "lane" in nested:
+                                                nested_title_elem.set("lane", str(nested["lane"]))
+                                            if "duration" in nested:
+                                                nested_title_elem.set("duration", nested["duration"])
+                                            if "offset" in nested:
+                                                nested_title_elem.set("offset", nested["offset"])
+                                            if "start" in nested:
+                                                nested_title_elem.set("start", nested["start"])
+                                            if "name" in nested:
+                                                nested_title_elem.set("name", nested["name"])
+                                            
+                                            # Add text content if available
+                                            if "text_content" in nested:
+                                                # Generate unique text style ID
+                                                from fcpxml_lib.utils.ids import generate_text_style_id
+                                                text_style_id = generate_text_style_id()
+                                                
+                                                text_elem = SubElement(nested_title_elem, "text")
+                                                text_style_elem = SubElement(text_elem, "text-style")
+                                                text_style_elem.set("ref", text_style_id)
+                                                text_style_elem.text = nested["text_content"]
+                                                
+                                                # Add text style definition
+                                                text_style_def = SubElement(nested_title_elem, "text-style-def")
+                                                text_style_def.set("id", text_style_id)
+                                                text_style = SubElement(text_style_def, "text-style")
+                                                if "font_name" in nested:
+                                                    text_style.set("font", nested["font_name"])
+                                                text_style.set("fontSize", "290")
+                                                if "face_color" in nested:
+                                                    text_style.set("fontColor", nested["face_color"])
+                                                if "outline_color" in nested:
+                                                    text_style.set("strokeColor", nested["outline_color"])
+                                                    text_style.set("strokeWidth", "15")
+                                        else:
+                                            # Handle nested video elements
+                                            nested_video_elem = SubElement(video_elem, "video")
+                                            nested_video_elem.set("ref", nested["ref"])
+                                            if "lane" in nested:
+                                                nested_video_elem.set("lane", str(nested["lane"]))
+                                            if "duration" in nested:
+                                                nested_video_elem.set("duration", nested["duration"])
+                                            if "offset" in nested:
+                                                nested_video_elem.set("offset", nested["offset"])
+                                            if "start" in nested:
+                                                nested_video_elem.set("start", nested["start"])
+                                            if "name" in nested:
+                                                nested_video_elem.set("name", nested["name"])
+                                            
+                                            # Add nested transforms
+                                            if "adjust_transform" in nested:
+                                                nested_transform_elem = SubElement(nested_video_elem, "adjust-transform")
+                                                if "scale" in nested["adjust_transform"]:
+                                                    nested_transform_elem.set("scale", nested["adjust_transform"]["scale"])
+                                                if "position" in nested["adjust_transform"]:
+                                                    nested_transform_elem.set("position", nested["adjust_transform"]["position"])
+                            
+                            elif element["type"] == "title":
+                                title_elem = SubElement(spine_elem, "title")
+                                title_elem.set("ref", element["ref"])
+                                if "duration" in element:
+                                    title_elem.set("duration", element["duration"])
+                                if "start" in element:
+                                    title_elem.set("start", element["start"])
+                                if "offset" in element:
+                                    title_elem.set("offset", element["offset"])
+                                if "name" in element:
+                                    title_elem.set("name", element["name"])
+                                if "lane" in element:
+                                    title_elem.set("lane", str(element["lane"]))
                     else:
                         # Fallback to old method if ordered_elements not available
                         # Add asset-clips (for videos)
@@ -282,6 +345,12 @@ def serialize_to_xml(fcpxml) -> str:
                             title_elem.set("duration", title["duration"])
                         if "start" in title:
                             title_elem.set("start", title["start"])
+                        if "offset" in title:
+                            title_elem.set("offset", title["offset"])
+                        if "name" in title:
+                            title_elem.set("name", title["name"])
+                        if "lane" in title:
+                            title_elem.set("lane", str(title["lane"]))
         
         # Add smart collections (required by FCP)
         for smart_collection in fcpxml.library.smart_collections:

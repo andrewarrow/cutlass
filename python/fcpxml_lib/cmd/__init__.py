@@ -21,16 +21,19 @@ Modules:
 - create_random_video: Generate random video from media files  
 - video_at_edge: Create multi-lane edge-tiled video
 - stress_test: Generate complex stress test timeline
+- random_font: Create video with random font title elements
 """
 
 from .create_empty_project import create_empty_project_cmd
 from .create_random_video import create_random_video_cmd
 from .video_at_edge import video_at_edge_cmd
 from .stress_test import stress_test_cmd
+from .random_font import random_font_cmd
 
 __all__ = [
     'create_empty_project_cmd',
     'create_random_video_cmd', 
     'video_at_edge_cmd',
-    'stress_test_cmd'
+    'stress_test_cmd',
+    'random_font_cmd'
 ]

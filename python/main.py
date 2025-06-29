@@ -18,7 +18,8 @@ from fcpxml_lib.cmd import (
     create_empty_project_cmd,
     create_random_video_cmd,
     video_at_edge_cmd,
-    stress_test_cmd
+    stress_test_cmd,
+    random_font_cmd
 )
 
 
@@ -33,6 +34,7 @@ Examples:
   %(prog)s create-random-video /path/to/media/folder --output random.fcpxml
   %(prog)s video-at-edge /path/to/image/folder --output edge_video.fcpxml --background-video bg.mp4
   %(prog)s stress-test --output stress_test.fcpxml
+  %(prog)s random-font --output random_font.fcpxml
         """
     )
     
@@ -79,6 +81,15 @@ Examples:
     )
     stress_parser.add_argument('--output', help='Output FCPXML file path (default: stress_test.fcpxml)')
     
+    # Random font command
+    font_parser = subparsers.add_parser(
+        'random-font',
+        help='Create 9-minute 1080x1920 video with random font title elements'
+    )
+    font_parser.add_argument('--project-name', help='Name of the project')
+    font_parser.add_argument('--event-name', help='Name of the event')
+    font_parser.add_argument('--output', help='Output FCPXML file path')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -94,6 +105,8 @@ Examples:
         video_at_edge_cmd(args)
     elif args.command == 'stress-test':
         stress_test_cmd(args)
+    elif args.command == 'random-font':
+        random_font_cmd(args)
 
 
 if __name__ == "__main__":
