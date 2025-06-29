@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 
 from fcpxml_lib import create_empty_project, save_fcpxml
-from fcpxml_lib.core.fcpxml import create_media_asset
+from fcpxml_lib.core.fcpxml import create_media_asset, detect_video_properties
 from fcpxml_lib.models.elements import (
     Clip, Video, AdjustTransform, KeyframeAnimation, Keyframe, Param,
     Asset, Format, MediaRep
@@ -108,6 +108,199 @@ def calculate_step_positions(num_steps):
             positions.append((x, y))
         
         return positions
+
+
+def create_step_animation_timeline(fcpxml, video_files, total_duration, steps):
+    """
+    Create step-by-step animation timeline using exact animation.py logic.
+    
+    For steps=2: Uses identical structure to animation command
+    For other steps: Creates similar nested structure  
+    """
+    if not video_files or steps < 1:
+        print("❌ No video files or invalid steps")
+        return
+    
+    # Limit to available videos
+    videos_to_use = video_files[:steps]
+    step_positions = calculate_step_positions(steps)
+    
+    print(f"   Step-by-step animation: {len(videos_to_use)} videos")
+    print(f"   Using animation.py logic for proper dataclass handling")
+    
+    # Set ID counter to start from r2 since r1 is already used by project format
+    from fcpxml_lib.utils.ids import set_resource_id_counter
+    set_resource_id_counter(1)
+    
+    # Create media assets using create_media_asset (like animation.py)
+    video_assets = []
+    for i, video_file in enumerate(videos_to_use):
+        print(f"   Processing video {i+1}/{len(videos_to_use)}: {video_file.name}")
+        
+        asset_id = generate_resource_id()
+        format_id = generate_resource_id()
+        
+        try:
+            asset, format_obj = create_media_asset(
+                str(video_file), asset_id, format_id
+            )
+            video_props = detect_video_properties(str(video_file))
+            video_assets.append((asset, format_obj, video_props, video_file))
+        except Exception as e:
+            print(f"❌ Failed to process {video_file.name}: {e}")
+            continue
+    
+    if not video_assets:
+        print("❌ No valid video assets created")
+        return
+    
+    # Add assets and formats to resources
+    for asset, format_obj, _, _ in video_assets:
+        fcpxml.resources.assets.append(asset)
+        fcpxml.resources.formats.append(format_obj)
+    
+    # Get sequence
+    sequence = fcpxml.library.events[0].projects[0].sequences[0]
+    sequence.format = "r1"  # Use the existing vertical format
+    
+    # Animation timing (matching Info.fcpxml)
+    first_anim_duration = "144144/24000s"  # ~6 seconds
+    second_anim_duration = "108108/24000s" # ~4.5 seconds
+    clip_offset = "36036/24000s"           # ~1.5 seconds delay between clips
+    
+    # Create first video (main container)
+    first_asset, first_format, first_props, first_file = video_assets[0]
+    first_position = step_positions[0]
+    
+    # First clip duration
+    first_clip_duration = convert_seconds_to_fcp_duration(first_props['duration_seconds'])
+    
+    # First video keyframe animation
+    first_position_keyframes = KeyframeAnimation(keyframes=[
+        Keyframe(time="0s", value="0 0"),  # Start at center
+        Keyframe(time=first_anim_duration, value=f"{first_position[0]} {first_position[1]}")  # End position
+    ])
+    
+    first_scale_keyframes = KeyframeAnimation(keyframes=[
+        Keyframe(time=first_anim_duration, value="-0.356424 0.356424", curve="linear")
+    ])
+    
+    first_anchor_keyframes = KeyframeAnimation(keyframes=[
+        Keyframe(time=first_anim_duration, value="0 0", curve="linear")
+    ])
+    
+    first_rotation_keyframes = KeyframeAnimation(keyframes=[
+        Keyframe(time=first_anim_duration, value="0", curve="linear")
+    ])
+    
+    first_transform = AdjustTransform(
+        params=[
+            Param(name="anchor", keyframe_animation=first_anchor_keyframes),
+            Param(name="position", keyframe_animation=first_position_keyframes),
+            Param(name="rotation", keyframe_animation=first_rotation_keyframes),
+            Param(name="scale", keyframe_animation=first_scale_keyframes)
+        ]
+    )
+    
+    # Create first video element
+    first_video = Video(
+        ref=first_asset.id,
+        offset="0s",
+        duration=convert_seconds_to_fcp_duration(first_props['duration_seconds'])
+    )
+    
+    # Build nested elements list (like animation.py)
+    nested_elements = []
+    
+    # Add remaining videos as nested clips
+    for i in range(1, len(video_assets)):
+        asset, format_obj, video_props, video_file = video_assets[i]
+        position = step_positions[i]
+        
+        # Calculate offset for this video
+        video_offset = f"{36036 * i}/24000s"  # Stagger timing
+        clip_duration = convert_seconds_to_fcp_duration(video_props['duration_seconds'])
+        
+        # Animation keyframes for this video
+        position_keyframes = KeyframeAnimation(keyframes=[
+            Keyframe(time="0s", value="0 0"),  # Start at center
+            Keyframe(time=second_anim_duration, value=f"{position[0]} {position[1]}")  # End position
+        ])
+        
+        scale_keyframes = KeyframeAnimation(keyframes=[
+            Keyframe(time=second_anim_duration, value="0.313976 0.313976", curve="linear")
+        ])
+        
+        anchor_keyframes = KeyframeAnimation(keyframes=[
+            Keyframe(time=second_anim_duration, value="0 0", curve="linear")
+        ])
+        
+        rotation_keyframes = KeyframeAnimation(keyframes=[
+            Keyframe(time=second_anim_duration, value="0", curve="linear")
+        ])
+        
+        transform = AdjustTransform(
+            params=[
+                Param(name="anchor", keyframe_animation=anchor_keyframes),
+                Param(name="position", keyframe_animation=position_keyframes),
+                Param(name="rotation", keyframe_animation=rotation_keyframes),
+                Param(name="scale", keyframe_animation=scale_keyframes)
+            ]
+        )
+        
+        # Create nested clip (using dictionary format for serializer)
+        nested_clip_dict = {
+            "type": "clip",
+            "lane": str(i),
+            "offset": video_offset,
+            "name": video_file.stem,
+            "duration": clip_duration,
+            "format": format_obj.id,
+            "tcFormat": "NDF",
+            "nested_elements": [
+                # Transform
+                {"type": "adjust_transform", **transform.to_dict()},
+                # Video element
+                {
+                    "type": "video",
+                    "ref": asset.id,
+                    "offset": "0s",
+                    "duration": convert_seconds_to_fcp_duration(video_props['duration_seconds'])
+                }
+            ]
+        }
+        
+        nested_elements.append(nested_clip_dict)
+    
+    # Create main clip using dictionary format (like animation.py)
+    main_clip_dict = {
+        "type": "clip",
+        "offset": "0s",
+        "name": f"Step Animation - {len(video_assets)} videos",
+        "duration": first_clip_duration,
+        "format": first_format.id,
+        "tcFormat": "NDF",
+        "nested_elements": [
+            # Transform for main clip
+            {"type": "adjust_transform", **first_transform.to_dict()},
+            # First video element
+            {
+                "type": "video",
+                "ref": first_asset.id,
+                "offset": "0s",
+                "duration": convert_seconds_to_fcp_duration(first_props['duration_seconds'])
+            }
+        ] + nested_elements  # Add all nested clips
+    }
+    
+    # Add to spine
+    sequence.spine.ordered_elements = [main_clip_dict]
+    
+    # Update sequence duration
+    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
+    
+    print(f"   Created {len(video_assets)} step-by-step animated videos")
+    print(f"   Using exact animation.py structure for XML compatibility")
 
 
 def create_tiled_video_timeline(fcpxml, video_files, total_duration, steps=None):
@@ -383,12 +576,23 @@ def many_video_fx_cmd(args):
     
     # Generate the tiled video timeline
     try:
-        create_tiled_video_timeline(
-            fcpxml, 
-            video_files, 
-            args.duration,
-            steps=getattr(args, 'steps', None)
-        )
+        steps = getattr(args, 'steps', None)
+        if steps is not None:
+            # Use step-by-step animation (animation.py logic)
+            create_step_animation_timeline(
+                fcpxml,
+                video_files,
+                args.duration,
+                steps
+            )
+        else:
+            # Use original tiling logic
+            create_tiled_video_timeline(
+                fcpxml, 
+                video_files, 
+                args.duration,
+                steps=None
+            )
         
         steps_used = getattr(args, 'steps', None)
         if steps_used:
