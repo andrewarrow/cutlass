@@ -197,6 +197,34 @@ def random_font_cmd(args):
     # Get the main sequence
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     
+    # Pick a random background asset from ../assets/
+    assets_dir = Path(__file__).parent.parent.parent.parent / "assets"
+    from fcpxml_lib.utils.media import discover_all_media_files
+    
+    # Find all media files in assets directory
+    image_files, video_files = discover_all_media_files(assets_dir)
+    all_media_files = image_files + video_files
+    
+    if not all_media_files:
+        print("❌ No media files found in ../assets/")
+        sys.exit(1)
+    
+    # Pick a random background file
+    background_file = random.choice(all_media_files)
+    print(f"   Using background: {background_file.name}")
+    
+    # Create background asset and add to resources
+    from fcpxml_lib.core.fcpxml import create_media_asset
+    background_asset_id = generate_resource_id()
+    background_format_id = generate_resource_id()
+    
+    background_asset, background_format = create_media_asset(
+        str(background_file), background_asset_id, background_format_id
+    )
+    
+    fcpxml.resources.assets.append(background_asset)
+    fcpxml.resources.formats.append(background_format)
+    
     # Create a single title effect in resources that all titles will reference
     title_effect_id = generate_resource_id()
     title_effect = {
@@ -206,18 +234,16 @@ def random_font_cmd(args):
     }
     fcpxml.resources.title_effects.append(title_effect)
     
-    # Create a simple background video element to hold all the titles
-    # For a title-only video, we'll create a single long video element
+    # Create the main video element that will contain all titles
     video_duration_fcp = convert_seconds_to_fcp_duration(total_duration)
     
-    # Create the main video element that will contain all titles
     video_element = {
         "type": "video",
-        "ref": "r1",  # Reference the format as a placeholder
+        "ref": background_asset_id,  # Reference the background asset
         "offset": "0s",
         "duration": video_duration_fcp,
         "start": "0s",
-        "name": "Title Background",
+        "name": f"Background: {background_file.name}",
         "nested_elements": []  # Will contain all title elements
     }
     
