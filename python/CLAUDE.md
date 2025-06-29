@@ -49,6 +49,81 @@
 2. **frameDuration on image formats** → `performAudioPreflightCheckForObject` crash  
 3. **Complex effects on images** → Various import crashes
 
+## 🚨 CRITICAL: Title Elements and Resource References 🚨
+
+**The #2 cause of DTD validation failures: Incorrect title structure and invalid resource references**
+
+### ✅ CORRECT Title Structure:
+```xml
+<!-- Resources: Title effect (NOT title asset) -->
+<effect id="r4" name="Text" uid=".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"/>
+
+<!-- Spine: Video element references ASSET (NOT format) -->
+<video ref="r2" duration="240240/24000s">  <!-- r2 = asset ID -->
+    <title ref="r4" lane="1" duration="120120/24000s" offset="0s" start="0s" name="My Text">
+        <text>
+            <text-style ref="ts1">Hello World</text-style>
+        </text>
+        <text-style-def id="ts1">
+            <text-style font="Helvetica" fontSize="290" fontColor="1 1 1 1"/>
+        </text-style-def>
+    </title>
+</video>
+```
+
+### ❌ INVALID Title Patterns:
+1. **Title assets in resources** → DTD validation failure (assets need media-rep)
+   ```xml
+   ❌ <asset id="r2" name="Title: Hello" duration="300s"/> <!-- NO media-rep = DTD error -->
+   ```
+
+2. **Video refs pointing to formats** → "Resource format element invalid" error
+   ```xml
+   ❌ <video ref="r1" ...>  <!-- r1 = format ID, should be asset ID -->
+   ```
+
+3. **Standalone title elements on spine** → Missing parent structure
+   ```xml
+   ❌ <spine>
+   ❌     <title ref="r4" ...>  <!-- Titles must be NESTED in video/asset-clip -->
+   ```
+
+### ✅ CRITICAL Rules for Titles:
+1. **Titles are NESTED elements** within video/asset-clip elements, not standalone spine elements
+2. **Title effects go in resources** (not title assets)
+3. **Video elements MUST reference assets** (with media-rep), never formats
+4. **Text-style IDs are locally scoped** within each title, not global resources
+5. **Always use real media files** from ../assets/ as backgrounds
+
+### ✅ Title Implementation Pattern:
+```python
+# 1. Create background asset from real media file
+background_asset, background_format = create_media_asset(
+    str(media_file), asset_id, format_id
+)
+
+# 2. Create title effect in resources
+title_effect = {
+    "id": effect_id,
+    "name": "Text", 
+    "uid": ".../Titles.localized/Basic Text.localized/Text.localized/Text.moti"
+}
+
+# 3. Create video element referencing the ASSET
+video_element = {
+    "type": "video",
+    "ref": asset_id,  # ✅ References asset, not format
+    "nested_elements": [title_elements]  # ✅ Titles nested inside
+}
+```
+
+### 🚨 DTD Validation Checklist:
+- [ ] All video/@ref point to asset IDs (not format IDs)
+- [ ] All assets have media-rep elements with file:// URLs
+- [ ] Titles are nested within video/asset-clip elements
+- [ ] Text-style definitions exist for all text-style references
+- [ ] No title assets in resources (only title effects)
+
 ## 🚨 CRITICAL: Python Dataclass Usage 🚨
 
 **Use dataclasses from `fcpxml_lib/models/elements.py`:**
