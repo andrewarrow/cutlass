@@ -124,6 +124,11 @@ def validate_fcpxml_semantics(xml_file_path: str) -> tuple[bool, str]:
         if video_nesting_error:
             return False, video_nesting_error
         
+        # 🚨 CRITICAL: Check frame boundary alignment
+        frame_error = validate_frame_boundaries(root)
+        if frame_error:
+            return False, frame_error
+        
         return True, ""
         
     except ET.ParseError as e:
@@ -181,5 +186,92 @@ def validate_video_nesting(root_element) -> str:
     problems = find_problematic_nesting(root_element)
     if problems:
         return "Problematic video nesting detected: " + "; ".join(problems)
+    
+    return ""
+
+
+def validate_frame_boundaries(root_element) -> str:
+    """
+    Validate that all timing attributes are on frame boundaries.
+    
+    🚨 CRITICAL: Frame boundary violations cause "The item is not on an edit frame boundary" errors
+    
+    FCP requires all timing values (offset, duration, start) to be aligned to frame boundaries
+    using the standard 23.976fps timebase (1001/24000s per frame).
+    
+    Returns:
+        str: Error message if frame boundary violation found, empty string if valid
+    """
+    from ..constants import STANDARD_TIMEBASE
+    
+    def is_frame_aligned(time_str: str) -> bool:
+        """Check if a time string like '49049/24000s' is frame-aligned."""
+        if not time_str or time_str == "0s":
+            return True
+            
+        # Parse rational format: "numerator/denominator s"
+        if time_str.endswith('s'):
+            time_str = time_str[:-1]  # Remove 's'
+            
+        if '/' in time_str:
+            try:
+                numerator, denominator = map(int, time_str.split('/'))
+                # For frame alignment, numerator must be divisible by 1001
+                # and denominator must be STANDARD_TIMEBASE (24000)
+                if denominator != STANDARD_TIMEBASE:
+                    return False
+                # Frame-aligned if numerator is multiple of 1001
+                return numerator % 1001 == 0
+            except ValueError:
+                return False
+        else:
+            # Simple format like "2s" - always frame aligned for integer seconds
+            try:
+                float(time_str)
+                return True
+            except ValueError:
+                return False
+    
+    def find_element_path(element, root, current_path=""):
+        """Build XPath-like path by traversing from root to find element."""
+        def build_path(current_elem, target_elem, path_parts):
+            if current_elem == target_elem:
+                return "/fcpxml[1]" + "".join(path_parts)
+            
+            for i, child in enumerate(current_elem):
+                # Count siblings of same tag for position
+                siblings_of_same_tag = [c for c in current_elem if c.tag == child.tag]
+                position = siblings_of_same_tag.index(child) + 1 if child in siblings_of_same_tag else 1
+                
+                child_path = f"/{child.tag}[{position}]"
+                result = build_path(child, target_elem, path_parts + [child_path])
+                if result:
+                    return result
+            return None
+        
+        return build_path(root, element, [])
+    
+    def check_timing_attributes(element, root, path=""):
+        """Recursively check all timing attributes in the tree."""
+        errors = []
+        
+        # Check timing attributes
+        timing_attrs = ['offset', 'duration', 'start']
+        for attr in timing_attrs:
+            if attr in element.attrib:
+                value = element.attrib[attr]
+                if not is_frame_aligned(value):
+                    element_path = find_element_path(element, root)
+                    errors.append(f'The item is not on an edit frame boundary ({attr}="{value}": {element_path}/@{attr})')
+        
+        # Recursively check children
+        for child in element:
+            errors.extend(check_timing_attributes(child, root, path))
+            
+        return errors
+    
+    errors = check_timing_attributes(root_element, root_element)
+    if errors:
+        return "; ".join(errors)
     
     return ""

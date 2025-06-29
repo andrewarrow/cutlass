@@ -498,6 +498,7 @@ def save_fcpxml(fcpxml: FCPXML, output_path: str) -> bool:
         print("   ✓ Well-formedness: OK")
         print("   ✓ Reference integrity: OK")
         print("   ✓ Required elements: OK")
+        print("   ✓ Frame boundary alignment: OK")
         print("⚠️  Note: For full DTD validation, test import in Final Cut Pro")
         return True
     else:
