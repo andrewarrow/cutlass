@@ -219,12 +219,17 @@ def serialize_to_xml(fcpxml) -> str:
                                                 text_style = SubElement(text_style_def, "text-style")
                                                 if "font_name" in nested:
                                                     text_style.set("font", nested["font_name"])
-                                                text_style.set("fontSize", "290")
-                                                if "face_color" in nested:
+                                                # Use font size from nested data or default to 290
+                                                font_size = nested.get("font_size", "290")
+                                                text_style.set("fontSize", str(font_size))
+                                                # Apply face color only if face is enabled (default True)
+                                                if nested.get("face_enabled", True) and "face_color" in nested:
                                                     text_style.set("fontColor", nested["face_color"])
-                                                if "outline_color" in nested:
+                                                # Apply outline only if outline is enabled (default True)
+                                                if nested.get("outline_enabled", True) and "outline_color" in nested:
                                                     text_style.set("strokeColor", nested["outline_color"])
-                                                    text_style.set("strokeWidth", "15")
+                                                    stroke_width = nested.get("stroke_width", "15")
+                                                    text_style.set("strokeWidth", str(stroke_width))
                                         else:
                                             # Handle nested video elements
                                             nested_video_elem = SubElement(video_elem, "video")

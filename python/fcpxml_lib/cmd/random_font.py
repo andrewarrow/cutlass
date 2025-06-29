@@ -121,7 +121,7 @@ def create_title_effect(effect_id, font_name, face_color, outline_color):
                 },
                 {
                     "name": "FontSize",
-                    "value": "290"
+                    "value": "900"
                 },
                 {
                     "name": "FaceColor",
@@ -152,8 +152,12 @@ def create_title_element(effect_id, text_content, font_name, face_color, outline
         "lane": "1",
         "text_content": text_content,
         "font_name": font_name,
+        "font_size": 900,  # Increased font size
         "face_color": face_color,
-        "outline_color": outline_color
+        "face_enabled": True,  # Face is enabled (boolean true)
+        "outline_color": outline_color,
+        "outline_enabled": True,  # Outline is enabled (boolean true)
+        "stroke_width": 15
     }
 
 
@@ -173,15 +177,16 @@ def random_font_cmd(args):
     # Get positive messages
     messages = get_positive_messages()
     
-    # Calculate number of titles needed for 9 minutes (540 seconds)
-    # Each title will be 5 seconds long, so we need 108 titles
-    title_duration = 5.0
+    # Calculate duration for each font to showcase ALL fonts in 9 minutes (540 seconds)
+    # We have 262 fonts, so each font gets ~2.06 seconds
     total_duration = 9 * 60  # 9 minutes in seconds
-    num_titles = int(total_duration / title_duration)
+    num_titles = len(fonts)  # Use all fonts
+    title_duration = total_duration / num_titles  # ~2.06 seconds per font
     
-    print(f"🎬 Creating 9-minute video with {num_titles} title elements...")
-    print(f"   Each title duration: {title_duration}s")
+    print(f"🎬 Creating 9-minute video showcasing ALL {num_titles} fonts...")
+    print(f"   Each font duration: {title_duration:.2f}s")
     print(f"   Format: 1080x1920 vertical")
+    print(f"   Font size: 900 (increased from 290)")
     
     # Create empty project (vertical format)
     fcpxml = create_empty_project(
@@ -247,10 +252,10 @@ def random_font_cmd(args):
         "nested_elements": []  # Will contain all title elements
     }
     
-    # Generate titles as nested elements
+    # Generate titles as nested elements - showcase ALL fonts
     for i in range(num_titles):
-        # Pick random font and message
-        font_name = random.choice(fonts)
+        # Use each font exactly once (no random selection)
+        font_name = fonts[i]
         message = random.choice(messages)
         
         # Generate contrasting colors
