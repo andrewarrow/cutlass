@@ -109,225 +109,231 @@ def animation_cmd(args):
     for duration in video_durations:
         nested_durations.append(duration)
     
-    # Create the nested clip structure exactly like Info.fcpxml
-    # Main clip contains nested clips in lanes 1, 2, 3
-    main_clip_dict = {
-        "type": "clip",
-        "offset": "0s",
-        "name": selected_videos[0].stem,
-        "duration": clip_duration,
-        "format": format_ids[0],  # Use first video's format
-        "tcFormat": "NDF",
-        "nested_elements": [
-            # Conform rate element for main clip
-            {
-                "type": "conform_rate",
-                "scaleEnabled": "0"
-            },
-            # Main clip transform - first animation
-            {
-                "type": "adjust_transform",
-                "params": [
-                    {
-                        "name": "anchor",
-                        "keyframe_animation": {
-                            "keyframes": [{"time": first_anim_time, "value": "0 0", "curve": "linear"}]
-                        }
-                    },
-                    {
-                        "name": "position", 
-                        "keyframe_animation": {
-                            "keyframes": [
-                                {"time": "0s", "value": "0 0"},
-                                {"time": first_anim_time, "value": "-17.2101 43.0307"}
-                            ]
-                        }
-                    },
-                    {
-                        "name": "rotation",
-                        "keyframe_animation": {
-                            "keyframes": [{"time": first_anim_time, "value": "0", "curve": "linear"}]
-                        }
-                    },
-                    {
-                        "name": "scale",
-                        "keyframe_animation": {
-                            "keyframes": [{"time": first_anim_time, "value": "-0.356424 0.356424", "curve": "linear"}]
-                        }
-                    }
-                ]
-            },
-            # First video element
-            {
-                "type": "video",
-                "ref": asset_ids[0],
-                "offset": "0s",
-                "duration": video_durations[0]  # Use actual video duration
-            },
-            # Second nested clip (lane 1)
-            {
-                "type": "clip",
-                "lane": "1",
-                "offset": second_offset,
-                "name": selected_videos[1].stem,
-                "duration": nested_durations[1],
-                "format": format_ids[1],
-                "tcFormat": "NDF",
-                "nested_elements": [
-                    {
-                        "type": "conform_rate",
-                        "scaleEnabled": "0"
-                    },
-                    {
-                        "type": "adjust_transform",
-                        "params": [
-                            {
-                                "name": "anchor",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": second_anim_time, "value": "0 0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "position",
-                                "keyframe_animation": {
-                                    "keyframes": [
-                                        {"time": "0s", "value": "0 0"},
-                                        {"time": second_anim_time, "value": "2.38541 43.2326"}
-                                    ]
-                                }
-                            },
-                            {
-                                "name": "rotation",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": second_anim_time, "value": "0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "scale",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": second_anim_time, "value": "0.313976 0.313976", "curve": "linear"}]
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "type": "video",
-                        "ref": asset_ids[1],
-                        "offset": "0s",
-                        "duration": video_durations[1]
-                    }
-                ]
-            },
-            # Third nested clip (lane 2)
-            {
-                "type": "clip",
-                "lane": "2",
-                "offset": third_offset,
-                "name": selected_videos[2].stem,
-                "duration": nested_durations[2],
-                "format": format_ids[2],
-                "tcFormat": "NDF",
-                "nested_elements": [
-                    {
-                        "type": "conform_rate",
-                        "scaleEnabled": "0"
-                    },
-                    {
-                        "type": "adjust_transform",
-                        "params": [
-                            {
-                                "name": "anchor",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": third_anim_time, "value": "0 0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "position",
-                                "keyframe_animation": {
-                                    "keyframes": [
-                                        {"time": "3003/24000s", "value": "0 0"},
-                                        {"time": third_anim_time, "value": "22.2446 42.4814"}
-                                    ]
-                                }
-                            },
-                            {
-                                "name": "rotation",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": third_anim_time, "value": "0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "scale",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": third_anim_time, "value": "0.362066 0.362066", "curve": "linear"}]
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "type": "video",
-                        "ref": asset_ids[2],
-                        "offset": "0s",
-                        "duration": video_durations[2]
-                    }
-                ]
-            },
-            # Fourth nested clip (lane 3)
-            {
-                "type": "clip",
-                "lane": "3",
-                "offset": fourth_offset,
-                "name": selected_videos[3].stem,
-                "duration": nested_durations[3],
-                "format": format_ids[3],
-                "tcFormat": "NDF",
-                "nested_elements": [
-                    {
-                        "type": "conform_rate",
-                        "scaleEnabled": "0"
-                    },
-                    {
-                        "type": "adjust_transform",
-                        "params": [
-                            {
-                                "name": "anchor",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": fourth_anim_time, "value": "0 0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "position",
-                                "keyframe_animation": {
-                                    "keyframes": [
-                                        {"time": "150150/720000s", "value": "0 0"},
-                                        {"time": fourth_anim_time, "value": "-19.2439 31.344"}
-                                    ]
-                                }
-                            },
-                            {
-                                "name": "rotation",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": fourth_anim_time, "value": "0", "curve": "linear"}]
-                                }
-                            },
-                            {
-                                "name": "scale",
-                                "keyframe_animation": {
-                                    "keyframes": [{"time": fourth_anim_time, "value": "0.265712 0.265712", "curve": "linear"}]
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        "type": "video",
-                        "ref": asset_ids[3],
-                        "offset": "0s",
-                        "duration": video_durations[3]
-                    }
-                ]
-            }
+    # Create keyframe animations for each clip using dataclasses
+    first_transform = AdjustTransform(
+        params=[
+            Param(
+                name="anchor",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=first_anim_time, value="0 0", curve="linear")
+                ])
+            ),
+            Param(
+                name="position", 
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time="0s", value="0 0"),
+                    Keyframe(time=first_anim_time, value="-17.2101 43.0307")
+                ])
+            ),
+            Param(
+                name="rotation",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=first_anim_time, value="0", curve="linear")
+                ])
+            ),
+            Param(
+                name="scale",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=first_anim_time, value="-0.356424 0.356424", curve="linear")
+                ])
+            )
         ]
-    }
+    )
+    
+    second_transform = AdjustTransform(
+        params=[
+            Param(
+                name="anchor",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=second_anim_time, value="0 0", curve="linear")
+                ])
+            ),
+            Param(
+                name="position",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time="0s", value="0 0"),
+                    Keyframe(time=second_anim_time, value="2.38541 43.2326")
+                ])
+            ),
+            Param(
+                name="rotation",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=second_anim_time, value="0", curve="linear")
+                ])
+            ),
+            Param(
+                name="scale",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=second_anim_time, value="0.313976 0.313976", curve="linear")
+                ])
+            )
+        ]
+    )
+    
+    third_transform = AdjustTransform(
+        params=[
+            Param(
+                name="anchor",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=third_anim_time, value="0 0", curve="linear")
+                ])
+            ),
+            Param(
+                name="position",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time="72072/24000s", value="0 0"),
+                    Keyframe(time=third_anim_time, value="22.2446 42.4814")
+                ])
+            ),
+            Param(
+                name="rotation",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=third_anim_time, value="0", curve="linear")
+                ])
+            ),
+            Param(
+                name="scale",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=third_anim_time, value="0.362066 0.362066", curve="linear")
+                ])
+            )
+        ]
+    )
+    
+    fourth_transform = AdjustTransform(
+        params=[
+            Param(
+                name="anchor",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=fourth_anim_time, value="0 0", curve="linear")
+                ])
+            ),
+            Param(
+                name="position",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time="125125/24000s", value="0 0"),
+                    Keyframe(time=fourth_anim_time, value="-19.2439 31.344")
+                ])
+            ),
+            Param(
+                name="rotation",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=fourth_anim_time, value="0", curve="linear")
+                ])
+            ),
+            Param(
+                name="scale",
+                keyframe_animation=KeyframeAnimation(keyframes=[
+                    Keyframe(time=fourth_anim_time, value="0.265712 0.265712", curve="linear")
+                ])
+            )
+        ]
+    )
+
+    # Create nested clips using dataclasses
+    nested_clip_2 = Clip(
+        lane="1",
+        offset=second_offset,
+        name=selected_videos[1].stem,
+        duration=nested_durations[1],
+        format=format_ids[1],
+        tc_format="NDF",
+        nested_elements=[
+            second_transform,
+            Video(ref=asset_ids[1], offset="0s", duration=video_durations[1])
+        ]
+    )
+    
+    nested_clip_3 = Clip(
+        lane="2", 
+        offset=third_offset,
+        name=selected_videos[2].stem,
+        duration=nested_durations[2],
+        format=format_ids[2],
+        tc_format="NDF",
+        nested_elements=[
+            third_transform,
+            Video(ref=asset_ids[2], offset="0s", duration=video_durations[2])
+        ]
+    )
+    
+    nested_clip_4 = Clip(
+        lane="3",
+        offset=fourth_offset,
+        name=selected_videos[3].stem,
+        duration=nested_durations[3],
+        format=format_ids[3],
+        tc_format="NDF",
+        nested_elements=[
+            fourth_transform,
+            Video(ref=asset_ids[3], offset="0s", duration=video_durations[3])
+        ]
+    )
+
+    # Create main clip with all nested elements
+    main_clip = Clip(
+        offset="0s",
+        name=selected_videos[0].stem,
+        duration=clip_duration,
+        format=format_ids[0],
+        tc_format="NDF",
+        nested_elements=[
+            first_transform,
+            Video(ref=asset_ids[0], offset="0s", duration=video_durations[0]),
+            nested_clip_2,
+            nested_clip_3,
+            nested_clip_4
+        ]
+    )
+    
+    # Convert to dictionary format for spine (serializer expects this format)
+    # The dataclasses validate the structure, then we convert to dict for serialization
+    def clip_to_dict(clip):
+        """Convert Clip dataclass to dictionary format for serializer"""
+        clip_dict = {
+            "type": "clip",
+            "offset": clip.offset,
+            "name": clip.name,
+            "duration": clip.duration,
+            "format": clip.format,
+            "tcFormat": clip.tc_format
+        }
+        if hasattr(clip, 'lane') and clip.lane:
+            clip_dict["lane"] = clip.lane
+            
+        nested_elements = []
+        for element in clip.nested_elements:
+            if isinstance(element, AdjustTransform):
+                # Convert transform to serializer-expected format
+                transform_dict = {"type": "adjust_transform"}
+                if element.params:
+                    # Extract keyframe data in the format the serializer expects
+                    for param in element.params:
+                        if param.keyframe_animation and param.keyframe_animation.keyframes:
+                            keyframes = []
+                            for kf in param.keyframe_animation.keyframes:
+                                kf_dict = {"time": kf.time, "value": kf.value}
+                                if kf.curve:
+                                    kf_dict["curve"] = kf.curve
+                                keyframes.append(kf_dict)
+                            transform_dict[param.name] = {"keyframes": keyframes}
+                nested_elements.append(transform_dict)
+            elif isinstance(element, Video):
+                # Convert video to dictionary
+                nested_elements.append({
+                    "type": "video",
+                    "ref": element.ref,
+                    "offset": element.offset,
+                    "duration": element.duration
+                })
+            elif isinstance(element, Clip):
+                # Recursively convert nested clips
+                nested_elements.append(clip_to_dict(element))
+        
+        clip_dict["nested_elements"] = nested_elements
+        return clip_dict
+    
+    main_clip_dict = clip_to_dict(main_clip)
     
     # Add to spine
     sequence.spine.ordered_elements = [main_clip_dict]
