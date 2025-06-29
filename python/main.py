@@ -19,9 +19,7 @@ from fcpxml_lib.cmd import (
     create_random_video_cmd,
     video_at_edge_cmd,
     stress_test_cmd,
-    random_font_cmd,
-    assemble_cmd,
-    many_video_fx_cmd
+    random_font_cmd
 )
 
 
@@ -37,8 +35,6 @@ Examples:
   %(prog)s video-at-edge /path/to/image/folder --output edge_video.fcpxml --background-video bg.mp4
   %(prog)s stress-test --output stress_test.fcpxml
   %(prog)s random-font --output random_font.fcpxml
-  %(prog)s assemble ~/dir1/house*.png --output assembled.fcpxml
-  %(prog)s many-video-fx /path/to/video/folder --output tiling_animation.fcpxml
         """
     )
     
@@ -94,26 +90,6 @@ Examples:
     font_parser.add_argument('--event-name', help='Name of the event')
     font_parser.add_argument('--output', help='Output FCPXML file path')
     
-    # Assemble command
-    assemble_parser = subparsers.add_parser(
-        'assemble',
-        help='Assemble media files matching a pattern into timeline in filename order'
-    )
-    assemble_parser.add_argument('pattern', help='File pattern to match (e.g. ~/dir1/house*.png or just house*.png)')
-    assemble_parser.add_argument('--directory', help='Directory to search in (if pattern doesn\'t include path)')
-    assemble_parser.add_argument('--output', help='Output FCPXML file path')
-    assemble_parser.add_argument('--clip-duration', type=float, default=3.0, help='Duration in seconds for each clip (default: 3.0)')
-    assemble_parser.add_argument('--horizontal', action='store_true', help='Use 1280x720 horizontal format instead of default 1080x1920 vertical')
-    
-    # Many video FX command
-    many_fx_parser = subparsers.add_parser(
-        'many-video-fx',
-        help='Create tiling animation effect where videos start at center and move to grid positions'
-    )
-    many_fx_parser.add_argument('input_dir', help='Directory containing video files (MOV, MP4, etc.)')
-    many_fx_parser.add_argument('--output', help='Output FCPXML file path')
-    many_fx_parser.add_argument('--duration', type=float, default=30.0, help='Minimum duration in seconds (default: 30.0)')
-    
     args = parser.parse_args()
     
     if not args.command:
@@ -131,10 +107,6 @@ Examples:
         stress_test_cmd(args)
     elif args.command == 'random-font':
         random_font_cmd(args)
-    elif args.command == 'assemble':
-        assemble_cmd(args)
-    elif args.command == 'many-video-fx':
-        many_video_fx_cmd(args)
 
 
 if __name__ == "__main__":

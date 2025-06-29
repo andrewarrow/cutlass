@@ -22,8 +22,6 @@ Modules:
 - video_at_edge: Create multi-lane edge-tiled video
 - stress_test: Generate complex stress test timeline
 - random_font: Create video with random font title elements
-- assemble: Assemble media files matching a pattern into timeline
-- many_video_fx: Create tiling animation effect with videos moving from center to grid positions
 """
 
 from .create_empty_project import create_empty_project_cmd
@@ -31,15 +29,11 @@ from .create_random_video import create_random_video_cmd
 from .video_at_edge import video_at_edge_cmd
 from .stress_test import stress_test_cmd
 from .random_font import random_font_cmd
-from .assemble import assemble_cmd
-from .many_video_fx import many_video_fx_cmd
 
 __all__ = [
     'create_empty_project_cmd',
     'create_random_video_cmd', 
     'video_at_edge_cmd',
     'stress_test_cmd',
-    'random_font_cmd',
-    'assemble_cmd',
-    'many_video_fx_cmd'
+    'random_font_cmd'
 ]
