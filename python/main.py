@@ -110,6 +110,7 @@ Examples:
     many_fx_parser.add_argument('input_dir', help='Directory containing .mov video files')
     many_fx_parser.add_argument('--output', help='Output FCPXML file path')
     many_fx_parser.add_argument('--duration', type=float, default=60.0, help='Total timeline duration in seconds (default: 60.0)')
+    many_fx_parser.add_argument('--steps', type=int, help='Number of videos to animate step-by-step (2=Info.fcpxml pattern, 4=continue with more). If omitted, tiles all videos simultaneously.')
     
     args = parser.parse_args()
     
