@@ -46,6 +46,73 @@ Encountered an unexpected value. (conform-rate: /fcpxml[1]/library[1]/event[1]/p
 
 **CRITICAL: Always include srcFrameRate attribute matching media frame rate (24, 25, 29.97, 30, etc.)**
 
+## 🚨 CRITICAL: Multi-Lane Video Audio Implementation 🚨
+
+**The #1 cause of silent videos: Missing audio elements and asset properties**
+
+### ✅ CORRECT Audio Implementation for Complex Clips:
+
+For multi-lane video effects with audio, you need **BOTH** asset-level audio properties AND timeline audio elements:
+
+```xml
+<!-- 1. Assets MUST have audio properties -->
+<asset id="r2" name="video" hasVideo="1" hasAudio="1" audioSources="1" audioChannels="2" audioRate="48000">
+    <media-rep kind="original-media" src="file:///path/to/video.mov"/>
+</asset>
+
+<!-- 2. Timeline MUST have both video AND audio elements -->
+<clip offset="0s" name="Video Clip" duration="240240/24000s" format="r3" tcFormat="NDF">
+    <conform-rate scaleEnabled="0" srcFrameRate="24"/>
+    <adjust-transform><!-- keyframe animations --></adjust-transform>
+    <video ref="r2" offset="0s" duration="240240/24000s"/>
+    <audio ref="r2" offset="0s" duration="240240/24000s" role="dialogue"/>
+</clip>
+```
+
+### ❌ INCORRECT Audio Implementation (silent in FCP):
+
+```xml
+<!-- Missing audio properties on asset -->
+<asset id="r2" name="video" hasVideo="1" videoSources="1">  <!-- NO hasAudio! -->
+    <media-rep kind="original-media" src="file:///path/to/video.mov"/>
+</asset>
+
+<!-- Missing audio element on timeline -->
+<clip offset="0s" name="Video Clip" duration="240240/24000s" format="r3" tcFormat="NDF">
+    <conform-rate scaleEnabled="0" srcFrameRate="24"/>
+    <video ref="r2" offset="0s" duration="240240/24000s"/>  <!-- Only video, no audio! -->
+</clip>
+```
+
+### 🚨 CRITICAL Audio Implementation Rules:
+
+1. **Asset Audio Properties Required**: Assets MUST have `hasAudio="1"`, `audioSources="1"`, `audioChannels="2"`, `audioRate="48000"`
+2. **Timeline Audio Elements Required**: Complex clips need separate `<audio ref="...">` elements alongside `<video ref="...">` elements
+3. **DTD Compliance**: Use `role="dialogue"` on `<audio>` elements, NOT `audioRole` on `<clip>` elements
+4. **Both Required**: You need BOTH asset properties AND timeline elements for audio to work
+
+### ✅ Implementation Pattern:
+
+```python
+# 1. Create assets with audio properties when include_audio=True
+asset, format_obj = create_media_asset(
+    video_path, asset_id, format_id, include_audio=True
+)
+
+# 2. Add both video and audio elements to timeline
+clip_elements = [
+    {"type": "video", "ref": asset_id, "duration": duration},
+    {"type": "audio", "ref": asset_id, "duration": duration, "role": "dialogue"}
+]
+```
+
+### 🚨 Common Audio Failures:
+
+- **Asset without audio properties**: `hasAudio` missing → silent video
+- **Timeline without audio elements**: Only `<video>` elements → silent video  
+- **Wrong DTD attributes**: `audioRole` on clips → validation failure
+- **Missing role attribute**: Audio elements without `role="dialogue"` → routing issues
+
 ## 🚨 CRITICAL: Images vs Videos Architecture 🚨
 
 **The #2 cause of crashes: Using wrong element types for images vs videos**
@@ -616,6 +683,7 @@ def command_name_cmd(args):
 - **Validation**: `fcpxml_lib/validation/validators.py`
 - **Testing Patterns**: `tests/test_crash_prevention.py`
 - **Multi-Lane Testing**: `tests/test_video_at_edge.py`
+- **Multi-Lane Audio Testing**: `tests/test_multilane_audio.py`
 - **FCP Import Testing**: `tests/test_conform_rate_validation.py`
 - **Info.fcpxml Recreation**: `tests/test_info_recreation.py`
 - **Timeline Generators**: `fcpxml_lib/generators/timeline_generators.py`
