@@ -212,7 +212,7 @@ def detect_image_properties(file_path: str) -> dict:
     }
 
 
-def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_duration_seconds: float = 5.0) -> tuple[Asset, Format]:
+def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_duration_seconds: float = 5.0, include_audio: bool = False) -> tuple[Asset, Format]:
     """
     Create media asset and format following CLAUDE.md validation rules.
     
@@ -265,19 +265,29 @@ def create_media_asset(file_path: str, asset_id: str, format_id: str, clip_durat
         props = detect_video_properties(file_path)
         actual_duration = convert_seconds_to_fcp_duration(props["duration_seconds"])
         
-        # Videos: Use ACTUAL properties but NO audio properties (per Go patterns)
-        # 🚨 CRITICAL: Videos NEVER have hasAudio/audioSources in Go implementation
-        asset = Asset(
-            id=asset_id,
-            name=abs_path.stem,
-            uid=uid,
-            duration=actual_duration,  # Use actual video duration
-            has_video="1",
-            # 🚨 REMOVED: NO audio properties on video assets (prevents crashes)
-            format=format_id,
-            video_sources="1",
-            media_rep=media_rep
-        )
+        # Videos: Use ACTUAL properties 
+        # Audio properties conditionally included based on include_audio parameter
+        asset_kwargs = {
+            "id": asset_id,
+            "name": abs_path.stem,
+            "uid": uid,
+            "duration": actual_duration,  # Use actual video duration
+            "has_video": "1",
+            "format": format_id,
+            "video_sources": "1",
+            "media_rep": media_rep
+        }
+        
+        # Add audio properties if requested and video has audio
+        if include_audio and props.get("has_audio", False):
+            asset_kwargs.update({
+                "has_audio": "1",
+                "audio_sources": "1",
+                "audio_channels": "2",  # Assume stereo
+                "audio_rate": "48000"   # Standard rate
+            })
+            
+        asset = Asset(**asset_kwargs)
         
         # Format: Use ACTUAL properties but NO name attribute (per Go patterns)
         # 🚨 CRITICAL: Video formats in Go have NO name attribute

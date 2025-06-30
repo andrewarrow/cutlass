@@ -127,6 +127,9 @@ def many_video_fx_cmd(args):
     print(f"🎯 Screen-filling grid: {cols} columns × {rows} rows = {num_videos} total videos")
     print(f"🔄 Repeating {len(available_videos)} source videos to fill {num_videos} positions")
     
+    # Determine if audio should be included (needed early for asset creation)
+    include_audio = hasattr(args, 'include_sound') and args.include_sound
+    
     # Create base project (vertical format like animation command)
     fcpxml = create_empty_project(use_horizontal=False)
     
@@ -148,7 +151,7 @@ def many_video_fx_cmd(args):
         
         for i, video_path in enumerate(selected_videos):
             asset, format_obj = create_media_asset(
-                str(video_path), asset_ids[i], format_ids[i]
+                str(video_path), asset_ids[i], format_ids[i], include_audio=include_audio
             )
             props = detect_video_properties(str(video_path))
             
@@ -243,9 +246,6 @@ def many_video_fx_cmd(args):
     main_video_duration = convert_seconds_to_fcp_duration(
         get_video_duration(video_properties[0], min_video_duration_needed)
     )
-    
-    # Determine if audio should be included
-    include_audio = hasattr(args, 'include_sound') and args.include_sound
     
     main_clip = Clip(
         offset="0s",
