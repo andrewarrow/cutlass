@@ -335,6 +335,7 @@ def serialize_to_xml(fcpxml) -> str:
                                     clip_elem.set("tcFormat", element["tcFormat"])
                                 if "lane" in element:
                                     clip_elem.set("lane", str(element["lane"]))
+                                # Note: audioRole not supported on clip elements per DTD
                                 
                                 # Add conform-rate element (required for clip media validation)
                                 conform_rate_elem = SubElement(clip_elem, "conform-rate")
@@ -354,6 +355,12 @@ def serialize_to_xml(fcpxml) -> str:
                                                 nested_video_elem.set("offset", nested["offset"])
                                             if "duration" in nested:
                                                 nested_video_elem.set("duration", nested["duration"])
+                                        elif nested["type"] == "audio-channel-source":
+                                            audio_ch_elem = SubElement(clip_elem, "audio-channel-source")
+                                            if "srcCh" in nested:
+                                                audio_ch_elem.set("srcCh", nested["srcCh"])
+                                            if "role" in nested:
+                                                audio_ch_elem.set("role", nested["role"])
                                         elif nested["type"] == "clip":
                                             # Recursive nested clip handling
                                             nested_clip_elem = SubElement(clip_elem, "clip")
@@ -369,6 +376,7 @@ def serialize_to_xml(fcpxml) -> str:
                                                 nested_clip_elem.set("format", nested["format"])
                                             if "tcFormat" in nested:
                                                 nested_clip_elem.set("tcFormat", nested["tcFormat"])
+                                            # Note: audioRole not supported on clip elements per DTD
                                             
                                             # Add conform-rate element (required for nested clip media validation)
                                             nested_conform_rate_elem = SubElement(nested_clip_elem, "conform-rate")
@@ -388,6 +396,12 @@ def serialize_to_xml(fcpxml) -> str:
                                                             nn_video_elem.set("offset", nested_nested["offset"])
                                                         if "duration" in nested_nested:
                                                             nn_video_elem.set("duration", nested_nested["duration"])
+                                                    elif nested_nested["type"] == "audio-channel-source":
+                                                        nn_audio_ch_elem = SubElement(nested_clip_elem, "audio-channel-source")
+                                                        if "srcCh" in nested_nested:
+                                                            nn_audio_ch_elem.set("srcCh", nested_nested["srcCh"])
+                                                        if "role" in nested_nested:
+                                                            nn_audio_ch_elem.set("role", nested_nested["role"])
                     else:
                         # Fallback to old method if ordered_elements not available
                         # Add asset-clips (for videos)

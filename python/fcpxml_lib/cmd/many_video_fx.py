@@ -244,6 +244,9 @@ def many_video_fx_cmd(args):
         get_video_duration(video_properties[0], min_video_duration_needed)
     )
     
+    # Determine if audio should be included
+    include_audio = hasattr(args, 'include_sound') and args.include_sound
+    
     main_clip = Clip(
         offset="0s",
         name=f"Many Video FX - {num_videos} videos",
@@ -251,6 +254,10 @@ def many_video_fx_cmd(args):
         format=format_ids[0],
         tc_format="NDF"
     )
+    
+    # Add audio role if include_sound is enabled
+    if include_audio:
+        main_clip.audio_role = "dialogue"
     
     # Create main clip's video element
     main_video = Video(
@@ -277,7 +284,8 @@ def many_video_fx_cmd(args):
             "duration": video_duration,
             "ref": asset_ids[i],
             "video_duration": video_duration,
-            "transform": transforms[i]
+            "transform": transforms[i],
+            "audio_role": "dialogue" if include_audio else None
         }
         nested_clips.append(nested_clip_info)
     
@@ -292,6 +300,11 @@ def many_video_fx_cmd(args):
             format=format_ids[i+1],
             tc_format="NDF"
         )
+        
+        # Add audio role if specified
+        if clip_info["audio_role"]:
+            nested_clip.audio_role = clip_info["audio_role"]
+            
         nested_clip.adjust_transform = clip_info["transform"]
         
         # Add video element
@@ -319,6 +332,9 @@ def many_video_fx_cmd(args):
         "nested_elements": []
     }
     
+    # Note: clip elements don't support audioRole attribute per DTD
+    # Audio will be handled through audio-channel-source elements if needed
+    
     # Add adjust-transform as nested element
     transform_dict = main_clip.adjust_transform.to_dict()
     transform_dict["type"] = "adjust_transform"
@@ -345,6 +361,9 @@ def many_video_fx_cmd(args):
             "nested_elements": []
         }
         
+        # Note: clip elements don't support audioRole attribute per DTD
+        # Audio will be handled through audio-channel-source elements if needed
+        
         # Add adjust-transform as nested element
         nested_transform_dict = nested_clip.adjust_transform.to_dict()
         nested_transform_dict["type"] = "adjust_transform"
@@ -358,7 +377,24 @@ def many_video_fx_cmd(args):
                 "offset": video.offset,
                 "duration": video.duration
             })
+        
+        # Add audio-channel-source to this nested clip if include_sound is enabled
+        if include_audio:
+            nested_dict["nested_elements"].append({
+                "type": "audio-channel-source",
+                "srcCh": "1,2",  # stereo channels
+                "role": "dialogue"
+            })
+            
         main_clip_dict["nested_elements"].append(nested_dict)
+    
+    # Add audio-channel-source for main clip AFTER all nested clips (DTD order requirement)
+    if include_audio:
+        main_clip_dict["nested_elements"].append({
+            "type": "audio-channel-source",
+            "srcCh": "1,2",  # stereo channels
+            "role": "dialogue"
+        })
     
     # Add to spine
     sequence.spine.ordered_elements = [main_clip_dict]
@@ -379,6 +415,8 @@ def many_video_fx_cmd(args):
         print(f"   🎯 Screen bounds: X(-30 to +30), Y(-50 to +50)")
         print(f"   ⏱️  Total timeline: {total_timeline_duration:.1f}s")
         print(f"   🎞️  Videos play {post_animation_duration}s after animations end")
+        if include_audio:
+            print(f"   🔊 Audio included from all {num_videos} videos")
         
     except Exception as e:
         print(f"❌ Error saving FCPXML: {e}", file=sys.stderr)
