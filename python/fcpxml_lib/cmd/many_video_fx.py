@@ -18,12 +18,12 @@ from fcpxml_lib.utils.ids import generate_resource_id, set_resource_id_counter
 from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
 
 
-def calculate_screen_filling_grid(available_videos, video_scale=0.25):
+def calculate_screen_filling_grid(available_videos, video_scale=0.2):
     """
-    Calculate how many videos can fit on screen with tight packing and no gaps.
+    Calculate maximum video density with overlapping rows to eliminate all black space.
     
     Screen bounds: X(-30 to +30), Y(-50 to +50)
-    Video scale: determines the size of each video tile
+    Strategy: Pack videos so densely that rows slightly overlap, ensuring zero gaps.
     
     Returns: (total_videos_needed, cols, rows, positions, video_list)
     """
@@ -31,21 +31,32 @@ def calculate_screen_filling_grid(available_videos, video_scale=0.25):
     screen_width = 60.0   # -30 to +30
     screen_height = 100.0  # -50 to +50
     
-    # Calculate video tile dimensions based on scale
-    # Assume original video is roughly 16:9 aspect ratio
-    # In FCP coordinate space, a scale of 0.25 means the video takes up 
-    # roughly 25% of the screen width/height
-    tile_width = screen_width * video_scale   # ~15 units wide
-    tile_height = screen_height * video_scale * 0.6  # ~15 units tall (adjusted for aspect ratio)
+    # Calculate video tile dimensions for dense packing
+    # Use smaller scale and calculate exact dimensions
+    tile_width = screen_width * video_scale   # ~12 units wide
+    tile_height = screen_height * video_scale * 0.5  # ~10 units tall (more compact)
     
-    # Calculate how many videos fit horizontally and vertically
+    # Calculate columns (no overlap horizontally)
     cols = max(1, int(screen_width / tile_width))
-    rows = max(1, int(screen_height / tile_height))
+    
+    # Calculate rows with overlap factor to eliminate gaps
+    # Use smaller effective row height to create overlap
+    overlap_factor = 0.85  # Rows overlap by 15% to eliminate gaps
+    effective_row_height = tile_height * overlap_factor
+    
+    # Calculate how many overlapping rows fit
+    rows = max(1, int(screen_height / effective_row_height))
+    
+    # Add extra rows to ensure complete fill (some will extend beyond screen)
+    extra_rows = 2  # Add 2 extra rows to guarantee no black space
+    rows += extra_rows
     
     total_videos_needed = cols * rows
     
-    print(f"   📐 Calculated grid: {cols} cols × {rows} rows = {total_videos_needed} total positions")
+    print(f"   📐 Dense grid: {cols} cols × {rows} rows = {total_videos_needed} total positions")
     print(f"   📏 Tile size: {tile_width:.1f} × {tile_height:.1f} units")
+    print(f"   🔄 Row overlap: {(1-overlap_factor)*100:.0f}% (rows overlap to eliminate gaps)")
+    print(f"   ➕ Extra rows: {extra_rows} (guarantees full screen coverage)")
     
     # Create video list by repeating available videos to fill all positions
     video_list = []
@@ -53,10 +64,10 @@ def calculate_screen_filling_grid(available_videos, video_scale=0.25):
         video_index = i % len(available_videos)
         video_list.append(available_videos[video_index])
     
-    # Calculate tight-packed positions with no gaps
+    # Calculate overlapping positions to eliminate all gaps
     positions = []
     
-    # Calculate starting position (top-left corner)
+    # Calculate starting position (top-left corner, accounting for overlap)
     start_x = -screen_width / 2 + (tile_width / 2)
     start_y = -screen_height / 2 + (tile_height / 2)
     
@@ -64,8 +75,11 @@ def calculate_screen_filling_grid(available_videos, video_scale=0.25):
         row = i // cols
         col = i % cols
         
+        # Horizontal spacing (no overlap)
         x = start_x + (col * tile_width)
-        y = start_y + (row * tile_height)
+        
+        # Vertical spacing (with overlap to eliminate gaps)
+        y = start_y + (row * effective_row_height)
         
         positions.append((x, y))
     
@@ -171,8 +185,8 @@ def many_video_fx_cmd(args):
     
     sequence.duration = convert_seconds_to_fcp_duration(total_timeline_duration)
     
-    # Use consistent scale for tight packing (matches calculate_screen_filling_grid)
-    base_scale = 0.25
+    # Use consistent scale for dense packing (matches calculate_screen_filling_grid)
+    base_scale = 0.2  # Smaller scale for denser packing
     scale_values = [f"{base_scale} {base_scale}"] * num_videos
     # Make first video flipped like animation pattern
     scale_values[0] = f"-{base_scale} {base_scale}"
