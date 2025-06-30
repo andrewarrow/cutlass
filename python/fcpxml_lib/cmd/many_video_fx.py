@@ -18,75 +18,67 @@ from fcpxml_lib.utils.ids import generate_resource_id, set_resource_id_counter
 from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
 
 
-def calculate_grid_layout(num_videos):
+def calculate_screen_filling_grid(available_videos, video_scale=0.25):
     """
-    Calculate optimal grid layout for tiling videos.
-    Returns (cols, rows) tuple.
+    Calculate how many videos can fit on screen with tight packing and no gaps.
+    
+    Screen bounds: X(-30 to +30), Y(-50 to +50)
+    Video scale: determines the size of each video tile
+    
+    Returns: (total_videos_needed, cols, rows, positions, video_list)
     """
-    if num_videos <= 4:
-        # For 4 or fewer videos, use 2x2 grid like animation command
-        return 2, 2
-    else:
-        # For more videos, calculate square-ish grid
-        cols = math.ceil(math.sqrt(num_videos))
-        rows = math.ceil(num_videos / cols)
-        return cols, rows
+    # Screen dimensions
+    screen_width = 60.0   # -30 to +30
+    screen_height = 100.0  # -50 to +50
+    
+    # Calculate video tile dimensions based on scale
+    # Assume original video is roughly 16:9 aspect ratio
+    # In FCP coordinate space, a scale of 0.25 means the video takes up 
+    # roughly 25% of the screen width/height
+    tile_width = screen_width * video_scale   # ~15 units wide
+    tile_height = screen_height * video_scale * 0.6  # ~15 units tall (adjusted for aspect ratio)
+    
+    # Calculate how many videos fit horizontally and vertically
+    cols = max(1, int(screen_width / tile_width))
+    rows = max(1, int(screen_height / tile_height))
+    
+    total_videos_needed = cols * rows
+    
+    print(f"   📐 Calculated grid: {cols} cols × {rows} rows = {total_videos_needed} total positions")
+    print(f"   📏 Tile size: {tile_width:.1f} × {tile_height:.1f} units")
+    
+    # Create video list by repeating available videos to fill all positions
+    video_list = []
+    for i in range(total_videos_needed):
+        video_index = i % len(available_videos)
+        video_list.append(available_videos[video_index])
+    
+    # Calculate tight-packed positions with no gaps
+    positions = []
+    
+    # Calculate starting position (top-left corner)
+    start_x = -screen_width / 2 + (tile_width / 2)
+    start_y = -screen_height / 2 + (tile_height / 2)
+    
+    for i in range(total_videos_needed):
+        row = i // cols
+        col = i % cols
+        
+        x = start_x + (col * tile_width)
+        y = start_y + (row * tile_height)
+        
+        positions.append((x, y))
+    
+    return total_videos_needed, cols, rows, positions, video_list
 
 
 def calculate_tile_positions(num_videos):
     """
-    Calculate grid positions for videos within proper screen edge bounds.
-    
-    Based on test_video_at_edge.py screen bounds:
-    - Center is at (0, 0)
-    - X range: -30.0 to +30.0 (60 units total)
-    - Y range: -50.0 to +50.0 (100 units total)
-    
-    Returns list of (x, y) positions for each video.
+    Legacy function for backward compatibility.
+    Now delegates to calculate_screen_filling_grid.
     """
-    cols, rows = calculate_grid_layout(num_videos)
-    
-    # Screen edge bounds from test_video_at_edge.py
-    screen_x_min, screen_x_max = -30.0, 30.0
-    screen_y_min, screen_y_max = -50.0, 50.0
-    
-    # Calculate grid spacing to fit within screen bounds
-    x_range = screen_x_max - screen_x_min  # 60 units
-    y_range = screen_y_max - screen_y_min  # 100 units
-    
-    # Leave some margin from edges
-    margin_factor = 0.9  # Use 90% of available space
-    x_spacing = (x_range * margin_factor) / max(cols - 1, 1)
-    y_spacing = (y_range * margin_factor) / max(rows - 1, 1)
-    
-    # Calculate starting position (center the grid)
-    start_x = screen_x_min + (x_range * (1 - margin_factor) / 2)
-    start_y = screen_y_min + (y_range * (1 - margin_factor) / 2)
-    
-    positions = []
-    for i in range(num_videos):
-        row = i // cols
-        col = i % cols
-        
-        if cols == 1:
-            # Single column - center horizontally
-            x = 0.0
-        else:
-            x = start_x + (col * x_spacing)
-        
-        if rows == 1:
-            # Single row - center vertically
-            y = 0.0
-        else:
-            y = start_y + (row * y_spacing)
-        
-        # Ensure positions stay within bounds
-        x = max(screen_x_min, min(screen_x_max, x))
-        y = max(screen_y_min, min(screen_y_max, y))
-        
-        positions.append((x, y))
-    
-    return positions
+    # This will be replaced by the new screen-filling logic in the main function
+    return []
 
 
 def many_video_fx_cmd(args):
@@ -110,14 +102,16 @@ def many_video_fx_cmd(args):
         sys.exit(1)
     
     # Sort files for consistent ordering
-    selected_videos = sorted(mov_files)
-    num_videos = len(selected_videos)
+    available_videos = sorted(mov_files)
     
-    print(f"📁 Processing {num_videos} videos from {input_dir.name}")
+    print(f"📁 Found {len(available_videos)} videos in {input_dir.name}")
     
-    # Calculate grid layout
-    cols, rows = calculate_grid_layout(num_videos)
-    print(f"🎯 Grid layout: {cols} columns × {rows} rows")
+    # Calculate screen-filling grid (will repeat videos to fill entire screen)
+    total_videos_needed, cols, rows, tile_positions, selected_videos = calculate_screen_filling_grid(available_videos)
+    num_videos = total_videos_needed
+    
+    print(f"🎯 Screen-filling grid: {cols} columns × {rows} rows = {num_videos} total videos")
+    print(f"🔄 Repeating {len(available_videos)} source videos to fill {num_videos} positions")
     
     # Create base project (vertical format like animation command)
     fcpxml = create_empty_project(use_horizontal=False)
@@ -177,19 +171,11 @@ def many_video_fx_cmd(args):
     
     sequence.duration = convert_seconds_to_fcp_duration(total_timeline_duration)
     
-    # Calculate tile positions
-    tile_positions = calculate_tile_positions(num_videos)
-    
-    # Scale values for tiling (make videos smaller to fit in grid)
-    if num_videos <= 4:
-        # Use animation.py scale values for 4 or fewer videos
-        scale_values = ["-0.356424 0.356424", "0.313976 0.313976", "0.362066 0.362066", "0.265712 0.265712"]
-    else:
-        # For more videos, use smaller scale to fit more on screen
-        base_scale = 0.25
-        scale_values = [f"{base_scale} {base_scale}"] * num_videos
-        # Make first video flipped like animation pattern
-        scale_values[0] = f"-{base_scale} {base_scale}"
+    # Use consistent scale for tight packing (matches calculate_screen_filling_grid)
+    base_scale = 0.25
+    scale_values = [f"{base_scale} {base_scale}"] * num_videos
+    # Make first video flipped like animation pattern
+    scale_values[0] = f"-{base_scale} {base_scale}"
     
     # Create keyframe animations for each video
     transforms = []
