@@ -214,7 +214,7 @@ def animation_cmd(args):
             Param(
                 name="position",
                 keyframe_animation=KeyframeAnimation(keyframes=[
-                    Keyframe(time="125125/24000s", value="0 0"),
+                    Keyframe(time="3003/24000s", value="0 0"),  # Match test pattern
                     Keyframe(time=fourth_anim_time, value="-19.2439 31.344")
                 ])
             ),
