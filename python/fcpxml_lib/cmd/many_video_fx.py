@@ -167,17 +167,17 @@ def many_video_fx_cmd(args):
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     sequence.format = "r1"  # Use the existing vertical format
     
-    # Animation timing constants (based on animation.py successful pattern)
-    base_animation_duration = 6.0   # 6 seconds animation time
-    stagger_delay = 1.5            # 1.5 seconds between video starts
+    # Animation timing constants (2x speed for faster animation)
+    base_animation_duration = 3.0   # 3 seconds animation time (2x faster)
+    stagger_delay = 0.75           # 0.75 seconds between video starts (2x faster)
     
     # Calculate durations to ensure videos keep playing after reaching final positions
     max_video_duration = max(props['duration_seconds'] for props in video_properties)
     last_video_start_time = (num_videos - 1) * stagger_delay  # When last video starts animating
     animation_end_time = last_video_start_time + base_animation_duration  # When last animation ends
     
-    # Timeline should continue for a while after all animations complete
-    post_animation_duration = 10.0  # Keep playing 10 seconds after animations end
+    # Timeline should continue for a while after all animations complete (2x faster)
+    post_animation_duration = 5.0  # Keep playing 5 seconds after animations end (2x faster)
     total_timeline_duration = animation_end_time + post_animation_duration
     
     # Each video needs to play long enough to cover its animation + post duration
