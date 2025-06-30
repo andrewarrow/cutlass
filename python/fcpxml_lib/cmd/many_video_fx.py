@@ -1,55 +1,61 @@
-#!/usr/bin/env python3
 """
-Many Video FX Command
+Many Video FX Command Implementation
 
-Creates tiled video animation effect where videos start in center and animate to tile positions.
-Each video is scaled down and follows keyframe animation from center to final position.
-Pattern recreates Info.fcpxml timing where next video starts as previous one clears center.
+Creates FCPXML with dynamic tiled video animation effect. Videos start in center and animate to grid positions.
+Based on the successful animation.py pattern but extended to handle any number of videos.
+Uses proper keyframe animations and nested clip structure for multi-lane visibility.
 """
 
 import sys
 import math
 from pathlib import Path
 
-from fcpxml_lib import create_empty_project, save_fcpxml
-from fcpxml_lib.core.fcpxml import create_media_asset
+from fcpxml_lib.core.fcpxml import create_empty_project, save_fcpxml, create_media_asset, detect_video_properties
 from fcpxml_lib.models.elements import (
-    Clip, Video, AdjustTransform, KeyframeAnimation, Keyframe, Param,
-    Asset, Format, MediaRep
+    Clip, Video, AdjustTransform, KeyframeAnimation, Keyframe, Param
 )
+from fcpxml_lib.utils.ids import generate_resource_id, set_resource_id_counter
 from fcpxml_lib.utils.timing import convert_seconds_to_fcp_duration
-from fcpxml_lib.utils.ids import generate_resource_id, generate_uid
-from fcpxml_lib.constants import (
-    SCREEN_EDGE_LEFT, SCREEN_EDGE_RIGHT, SCREEN_EDGE_TOP, SCREEN_EDGE_BOTTOM,
-    SCREEN_WIDTH, SCREEN_HEIGHT
-)
+
+
+def calculate_grid_layout(num_videos):
+    """
+    Calculate optimal grid layout for tiling videos.
+    Returns (cols, rows) tuple.
+    """
+    if num_videos <= 4:
+        # For 4 or fewer videos, use 2x2 grid like animation command
+        return 2, 2
+    else:
+        # For more videos, calculate square-ish grid
+        cols = math.ceil(math.sqrt(num_videos))
+        rows = math.ceil(num_videos / cols)
+        return cols, rows
 
 
 def calculate_tile_positions(num_videos):
     """
-    Calculate positions to tile videos across 1080x1920 screen.
+    Calculate grid positions for videos in Final Cut Pro coordinate space.
     
-    Based on screen constants:
-    - Width: -46.875 to 46.875 (93.75 total)
-    - Height: -93.75 to 93.75 (187.5 total)
+    Based on 1080x1920 vertical screen (Info.fcpxml pattern):
+    - Center is at (0, 0)
+    - X range: approximately -50 to +50
+    - Y range: approximately -90 to +90
     
     Returns list of (x, y) positions for each video.
     """
+    cols, rows = calculate_grid_layout(num_videos)
+    
+    # Grid spacing based on animation.py successful positions
+    # These values are derived from the working Info.fcpxml pattern
+    x_spacing = 40.0  # Horizontal spacing between tiles
+    y_spacing = 45.0  # Vertical spacing between tiles
+    
+    # Calculate starting position (top-left of grid)
+    start_x = -(cols - 1) * x_spacing / 2
+    start_y = -(rows - 1) * y_spacing / 2
+    
     positions = []
-    
-    # Calculate grid dimensions (try to make it roughly square)
-    cols = math.ceil(math.sqrt(num_videos))
-    rows = math.ceil(num_videos / cols)
-    
-    # Calculate spacing between tiles
-    x_spacing = SCREEN_WIDTH / cols
-    y_spacing = SCREEN_HEIGHT / rows
-    
-    # Calculate starting positions (top-left of grid)
-    start_x = SCREEN_EDGE_LEFT + (x_spacing / 2)
-    start_y = SCREEN_EDGE_TOP + (y_spacing / 2)
-    
-    # Generate positions
     for i in range(num_videos):
         row = i // cols
         col = i % cols
@@ -62,275 +68,272 @@ def calculate_tile_positions(num_videos):
     return positions
 
 
-def create_tiled_video_timeline(fcpxml, video_files, total_duration):
-    """
-    Create timeline with videos that animate from center to tile positions.
+def many_video_fx_cmd(args):
+    """CLI implementation for many-video-fx command"""
     
-    Animation pattern (based on Info.fcpxml):
-    - Each video starts at center (0, 0) and animates to final position
-    - Videos are scaled down for tiling
-    - Next video starts as soon as previous one clears center
-    - Uses proven structure from animation.py command
-    """
-    if not video_files:
-        print("❌ No video files provided")
-        return
+    # Get input directory from args
+    input_dir = Path(args.input_dir)
     
-    # Calculate tile positions
-    num_videos = len(video_files)
-    tile_positions = calculate_tile_positions(num_videos)
+    if not input_dir.exists():
+        print(f"❌ Directory not found: {input_dir}", file=sys.stderr)
+        sys.exit(1)
     
-    print(f"   Tiling {num_videos} videos in {math.ceil(math.sqrt(num_videos))} columns")
-    print(f"   Screen bounds: X({SCREEN_EDGE_LEFT} to {SCREEN_EDGE_RIGHT}), Y({SCREEN_EDGE_TOP} to {SCREEN_EDGE_BOTTOM})")
+    if not input_dir.is_dir():
+        print(f"❌ Path is not a directory: {input_dir}", file=sys.stderr)
+        sys.exit(1)
     
-    # Animation timing (based on Info.fcpxml pattern)
-    animation_duration_fcp = "144144/24000s"  # ~6 seconds (same as Info.fcpxml)
-    overlap_time_fcp = "36036/24000s"         # ~1.5 seconds delay
+    # Find MOV files in directory
+    mov_files = list(input_dir.glob("*.mov"))
+    if len(mov_files) < 1:
+        print(f"❌ Directory must contain at least 1 MOV file, found {len(mov_files)}", file=sys.stderr)
+        sys.exit(1)
     
-    # Use exact scale values from Info.fcpxml pattern
-    # First video uses negative X scale (flip), others use positive
-    info_scales = ["-0.356424 0.356424", "0.313976 0.313976"]
+    # Sort files for consistent ordering
+    selected_videos = sorted(mov_files)
+    num_videos = len(selected_videos)
     
-    # Get sequence and set it up like animation.py
+    print(f"📁 Processing {num_videos} videos from {input_dir.name}")
+    
+    # Calculate grid layout
+    cols, rows = calculate_grid_layout(num_videos)
+    print(f"🎯 Grid layout: {cols} columns × {rows} rows")
+    
+    # Create base project (vertical format like animation command)
+    fcpxml = create_empty_project(use_horizontal=False)
+    
+    # Set ID counter to start from r2 since r1 is already used by project format
+    set_resource_id_counter(1)
+    
+    # Generate resource IDs for media assets - each video gets its own format
+    asset_ids = []
+    format_ids = []
+    for i in range(num_videos):
+        asset_ids.append(generate_resource_id())
+        format_ids.append(generate_resource_id())
+    
+    # Create media assets for all videos
+    try:
+        assets = []
+        formats = []
+        video_properties = []
+        
+        for i, video_path in enumerate(selected_videos):
+            asset, format_obj = create_media_asset(
+                str(video_path), asset_ids[i], format_ids[i]
+            )
+            props = detect_video_properties(str(video_path))
+            
+            assets.append(asset)
+            formats.append(format_obj)
+            video_properties.append(props)
+        
+        fcpxml.resources.assets.extend(assets)
+        fcpxml.resources.formats.extend(formats)
+        
+    except Exception as e:
+        print(f"❌ Failed to process video files: {e}", file=sys.stderr)
+        sys.exit(1)
+    
+    # Create timeline sequence
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     sequence.format = "r1"  # Use the existing vertical format
     
-    # Set ID counter to start from r2 since r1 is already used by project format
-    from fcpxml_lib.utils.ids import set_resource_id_counter
-    set_resource_id_counter(1)
+    # Set proper sequence duration
+    max_duration = max(props['duration_seconds'] for props in video_properties)
+    total_duration = max_duration + (num_videos * 1.5)  # Base duration + staggered timing
+    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
     
-    # Create assets for all videos
-    video_assets = []
-    video_formats = []
+    # Calculate tile positions
+    tile_positions = calculate_tile_positions(num_videos)
     
-    for i, video_file in enumerate(video_files):
-        print(f"   Processing video {i+1}/{num_videos}: {video_file.name}")
-        
-        # Generate resource IDs
-        asset_id = generate_resource_id()
-        format_id = generate_resource_id()
-        
-        # Create asset for this video (video-only, no audio to match Info.fcpxml pattern)
-        try:
-            from fcpxml_lib.core.fcpxml import detect_video_properties
-            video_props = detect_video_properties(str(video_file))
-            
-            # Create video-only asset (strip audio properties like animation.py does)
-            abs_path = video_file.resolve()
-            uid = generate_uid(f"VIDEO_{abs_path.name}")
-            media_rep = MediaRep(src=str(abs_path))
-            
-            # Create video-only asset (no hasAudio, audioSources, etc.)
-            asset = Asset(
-                id=asset_id,
-                name=abs_path.stem,
-                uid=uid,
-                duration=convert_seconds_to_fcp_duration(video_props['duration_seconds']),
-                has_video="1",
-                format=format_id,
-                video_sources="1",
-                media_rep=media_rep
-            )
-            
-            # Create format 
-            format_obj = Format(
-                id=format_id,
-                frame_duration="1001/24000s",
-                width=str(video_props['width']),
-                height=str(video_props['height']),
-                color_space="1-1-1 (Rec. 709)"
-            )
-            
-            video_assets.append((asset, format_obj, video_props, video_file))
-        except Exception as e:
-            print(f"❌ Failed to process {video_file.name}: {e}")
-            continue
+    # Animation timing constants (based on animation.py successful pattern)
+    base_animation_duration = 6.0   # 6 seconds animation time
+    stagger_delay = 1.5            # 1.5 seconds between video starts
     
-    # Add all assets and formats to resources
-    for asset, format_obj, _, _ in video_assets:
-        fcpxml.resources.assets.append(asset)
-        fcpxml.resources.formats.append(format_obj)
+    # Scale values for tiling (make videos smaller to fit in grid)
+    if num_videos <= 4:
+        # Use animation.py scale values for 4 or fewer videos
+        scale_values = ["-0.356424 0.356424", "0.313976 0.313976", "0.362066 0.362066", "0.265712 0.265712"]
+    else:
+        # For more videos, use smaller scale to fit more on screen
+        base_scale = 0.25
+        scale_values = [f"{base_scale} {base_scale}"] * num_videos
+        # Make first video flipped like animation pattern
+        scale_values[0] = f"-{base_scale} {base_scale}"
     
-    # Create main clip structure (first video is the container, like Info.fcpxml)
-    if not video_assets:
-        print("❌ No valid video assets created")
-        return
+    # Create keyframe animations for each video
+    transforms = []
     
-    first_asset, first_format, first_props, first_file = video_assets[0]
-    final_x, final_y = tile_positions[0]
-    
-    # Create first video animation (container clip)
-    first_position_keyframes = KeyframeAnimation(keyframes=[
-        Keyframe(time="0s", value="0 0"),  # Start at center
-        Keyframe(time=animation_duration_fcp, value=f"{final_x:.4f} {final_y:.4f}")  # End at tile position
-    ])
-    
-    first_scale_keyframes = KeyframeAnimation(keyframes=[
-        Keyframe(time=animation_duration_fcp, value=info_scales[0], curve="linear")
-    ])
-    
-    first_anchor_keyframes = KeyframeAnimation(keyframes=[
-        Keyframe(time=animation_duration_fcp, value="0 0", curve="linear")
-    ])
-    
-    first_rotation_keyframes = KeyframeAnimation(keyframes=[
-        Keyframe(time=animation_duration_fcp, value="0", curve="linear")
-    ])
-    
-    first_transform = AdjustTransform(
-        params=[
-            Param(name="anchor", keyframe_animation=first_anchor_keyframes),
-            Param(name="position", keyframe_animation=first_position_keyframes),
-            Param(name="rotation", keyframe_animation=first_rotation_keyframes),
-            Param(name="scale", keyframe_animation=first_scale_keyframes)
-        ]
-    )
-    
-    # Build nested clips for remaining videos
-    nested_clips = []
-    
-    for i in range(1, len(video_assets)):
-        asset, format_obj, video_props, video_file = video_assets[i]
+    for i in range(num_videos):
         final_x, final_y = tile_positions[i]
-        
-        # Calculate offset for this video (staggered timing)
-        video_offset_multiplier = i
-        video_offset = f"{36036 * video_offset_multiplier}/24000s"  # Multiply base offset
-        
-        # Create animation for this video
-        position_keyframes = KeyframeAnimation(keyframes=[
-            Keyframe(time="0s", value="0 0"),  # Start at center
-            Keyframe(time=animation_duration_fcp, value=f"{final_x:.4f} {final_y:.4f}")  # End at tile position
-        ])
-        
-        # Use Info.fcpxml scale pattern - alternate between the two scale values
-        scale_value = info_scales[1] if i < len(info_scales) else info_scales[1]  # Use second scale for all others
-        scale_keyframes = KeyframeAnimation(keyframes=[
-            Keyframe(time=animation_duration_fcp, value=scale_value, curve="linear")
-        ])
-        
-        anchor_keyframes = KeyframeAnimation(keyframes=[
-            Keyframe(time=animation_duration_fcp, value="0 0", curve="linear")
-        ])
-        
-        rotation_keyframes = KeyframeAnimation(keyframes=[
-            Keyframe(time=animation_duration_fcp, value="0", curve="linear")
-        ])
+        animation_duration_fcp = convert_seconds_to_fcp_duration(base_animation_duration)
+        scale_value = scale_values[i] if i < len(scale_values) else scale_values[-1]
         
         transform = AdjustTransform(
             params=[
-                Param(name="anchor", keyframe_animation=anchor_keyframes),
-                Param(name="position", keyframe_animation=position_keyframes),
-                Param(name="rotation", keyframe_animation=rotation_keyframes),
-                Param(name="scale", keyframe_animation=scale_keyframes)
+                Param(
+                    name="anchor",
+                    keyframe_animation=KeyframeAnimation(keyframes=[
+                        Keyframe(time=animation_duration_fcp, value="0 0", curve="linear")
+                    ])
+                ),
+                Param(
+                    name="position", 
+                    keyframe_animation=KeyframeAnimation(keyframes=[
+                        Keyframe(time="0s", value="0 0"),
+                        Keyframe(time=animation_duration_fcp, value=f"{final_x:.4f} {final_y:.4f}")
+                    ])
+                ),
+                Param(
+                    name="rotation",
+                    keyframe_animation=KeyframeAnimation(keyframes=[
+                        Keyframe(time=animation_duration_fcp, value="0", curve="linear")
+                    ])
+                ),
+                Param(
+                    name="scale",
+                    keyframe_animation=KeyframeAnimation(keyframes=[
+                        Keyframe(time=animation_duration_fcp, value=scale_value, curve="linear")
+                    ])
+                )
             ]
         )
-        
-        # Create nested clip dict (following animation.py pattern)
-        nested_clip_dict = {
-            "type": "clip",
-            "lane": str(i),  # Each video on its own lane
-            "offset": video_offset,
-            "name": video_file.stem,
-            "duration": convert_seconds_to_fcp_duration(video_props['duration_seconds']),
-            "format": format_obj.id,
-            "tcFormat": "NDF",
-            "nested_elements": [
-                # Transform for nested clip
-                {"type": "adjust_transform", **transform.to_dict()},
-                # Video element (no audio)
-                {
-                    "type": "video",
-                    "ref": asset.id,
-                    "offset": "0s",
-                    "duration": convert_seconds_to_fcp_duration(video_props['duration_seconds'])
-                }
-            ]
-        }
-        
-        nested_clips.append(nested_clip_dict)
+        transforms.append(transform)
     
-    # Create main clip dict (following animation.py pattern exactly)
-    first_clip_duration = convert_seconds_to_fcp_duration(first_props['duration_seconds'])
+    # Create main clip using first video as container (like animation.py)
+    main_clip_duration = convert_seconds_to_fcp_duration(total_duration)
+    main_video_duration = convert_seconds_to_fcp_duration(video_properties[0]['duration_seconds'])
     
-    main_clip_dict = {
-        "type": "clip",
-        "offset": "0s",
-        "name": f"Many Video FX - {len(video_assets)} videos",
-        "duration": first_clip_duration,
-        "format": first_format.id,
-        "tcFormat": "NDF",
-        "nested_elements": [
-            # Transform for main clip
-            {"type": "adjust_transform", **first_transform.to_dict()},
-            # First video element (no audio)
-            {
-                "type": "video",
-                "ref": first_asset.id,
-                "offset": "0s",
-                "duration": convert_seconds_to_fcp_duration(first_props['duration_seconds'])
-            }
-        ] + nested_clips  # Add all nested clips
-    }
-    
-    # Add to spine (like animation.py)
-    sequence.spine.ordered_elements = [main_clip_dict]
-    
-    # Update sequence duration
-    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
-    
-    print(f"   Created {len(video_assets)} animated video tiles")
-    print(f"   Animation duration: ~6s per video")
-    print(f"   Overlap timing: ~1.5s between starts")
-    print(f"   Total timeline duration: {total_duration}s")
-
-
-def many_video_fx_cmd(args):
-    """Create tiled video animation effect from directory of .mov files"""
-    input_dir = Path(args.input_dir)
-    if not input_dir.exists() or not input_dir.is_dir():
-        print(f"❌ Directory not found: {input_dir}")
-        sys.exit(1)
-    
-    # Find all .mov files
-    video_files = list(input_dir.glob("*.mov"))
-    
-    if not video_files:
-        print(f"❌ No .mov files found in {input_dir}")
-        sys.exit(1)
-    
-    print(f"🎬 Creating many-video-fx animation...")
-    print(f"   Input directory: {input_dir}")
-    print(f"   Video files found: {len(video_files)}")
-    print(f"   Duration: {args.duration}s")
-    
-    # Create empty project (always vertical for tiling)
-    fcpxml = create_empty_project(
-        project_name="Many Video FX",
-        event_name="Tiled Video Animation",
-        use_horizontal=False  # Always use vertical format
+    main_clip = Clip(
+        offset="0s",
+        name=f"Many Video FX - {num_videos} videos",
+        duration=main_clip_duration,
+        format=format_ids[0],
+        tc_format="NDF"
     )
     
-    # Generate the tiled video timeline
-    try:
-        create_tiled_video_timeline(
-            fcpxml, 
-            video_files, 
-            args.duration
-        )
+    # Create main clip's video element
+    main_video = Video(
+        ref=asset_ids[0],
+        offset="0s", 
+        duration=main_video_duration
+    )
+    
+    # Create nested clips for remaining videos (if any)
+    nested_clips = []
+    
+    for i in range(1, num_videos):
+        video_offset = convert_seconds_to_fcp_duration(i * stagger_delay)
+        video_duration = convert_seconds_to_fcp_duration(video_properties[i]['duration_seconds'])
         
-        print(f"✅ Timeline created with {len(video_files)} animated video tiles")
+        nested_clip_info = {
+            "lane": i,
+            "offset": video_offset,
+            "name": selected_videos[i].stem, 
+            "duration": video_duration,
+            "ref": asset_ids[i],
+            "video_duration": video_duration,
+            "transform": transforms[i]
+        }
+        nested_clips.append(nested_clip_info)
+    
+    # Create nested clip objects
+    nested_clip_objs = []
+    for i, clip_info in enumerate(nested_clips):
+        nested_clip = Clip(
+            lane=clip_info["lane"],
+            offset=clip_info["offset"],
+            name=clip_info["name"],
+            duration=clip_info["duration"],
+            format=format_ids[i+1],
+            tc_format="NDF"
+        )
+        nested_clip.adjust_transform = clip_info["transform"]
+        
+        # Add video element
+        nested_video = Video(
+            ref=clip_info["ref"],
+            offset="0s",
+            duration=clip_info["video_duration"]
+        )
+        nested_clip.videos = [nested_video]
+        nested_clip_objs.append(nested_clip)
+    
+    # Set main clip's transform and video
+    main_clip.adjust_transform = transforms[0]
+    main_clip.videos = [main_video]
+    main_clip.clips = nested_clip_objs
+    
+    # Convert to dictionary format exactly like animation.py
+    main_clip_dict = {
+        "type": "clip",
+        "offset": main_clip.offset,
+        "name": main_clip.name,
+        "duration": main_clip.duration,
+        "format": main_clip.format,
+        "tcFormat": main_clip.tc_format,
+        "nested_elements": []
+    }
+    
+    # Add adjust-transform as nested element
+    transform_dict = main_clip.adjust_transform.to_dict()
+    transform_dict["type"] = "adjust_transform"
+    main_clip_dict["nested_elements"].append(transform_dict)
+    
+    # Add video element to main clip nested_elements
+    main_clip_dict["nested_elements"].append({
+        "type": "video",
+        "ref": main_video.ref,
+        "offset": main_video.offset,
+        "duration": main_video.duration
+    })
+    
+    # Add nested clips to main clip
+    for nested_clip in main_clip.clips:
+        nested_dict = {
+            "type": "clip",
+            "lane": nested_clip.lane,
+            "offset": nested_clip.offset,
+            "name": nested_clip.name,
+            "duration": nested_clip.duration,
+            "format": nested_clip.format,
+            "tcFormat": nested_clip.tc_format,
+            "nested_elements": []
+        }
+        
+        # Add adjust-transform as nested element
+        nested_transform_dict = nested_clip.adjust_transform.to_dict()
+        nested_transform_dict["type"] = "adjust_transform"
+        nested_dict["nested_elements"].append(nested_transform_dict)
+        
+        # Add video elements to nested clip's nested_elements
+        for video in nested_clip.videos:
+            nested_dict["nested_elements"].append({
+                "type": "video",
+                "ref": video.ref,
+                "offset": video.offset,
+                "duration": video.duration
+            })
+        main_clip_dict["nested_elements"].append(nested_dict)
+    
+    # Add to spine
+    sequence.spine.ordered_elements = [main_clip_dict]
+    
+    # Save FCPXML
+    output_path = args.output if args.output else "many_video_fx.fcpxml"
+    try:
+        success = save_fcpxml(fcpxml, output_path)
+        if not success:
+            print(f"❌ Failed to save FCPXML to {output_path}", file=sys.stderr)
+            sys.exit(1)
+            
+        print(f"✅ Many Video FX FCPXML created: {output_path}")
+        print(f"   🎬 {num_videos} videos in {cols}×{rows} grid")
+        print(f"   🎭 Each video animates from center to tile position")
+        print(f"   ⏱️  Animation: {base_animation_duration}s per video")
+        print(f"   📏 Stagger delay: {stagger_delay}s between starts")
+        print(f"   ⏱️  Total duration: ~{total_duration:.1f} seconds")
         
     except Exception as e:
-        print(f"❌ Error creating tiled video timeline: {e}")
-        print("   Creating empty project instead")
-    
-    # Save to file with validation
-    output_path = Path(args.output) if args.output else Path(__file__).parent.parent.parent / "many_video_fx.fcpxml"
-    validation_passed = save_fcpxml(fcpxml, str(output_path))
-    
-    if validation_passed:
-        print(f"✅ Saved to: {output_path}")
-    else:
-        print("❌ Cannot proceed - fix validation errors first")
+        print(f"❌ Error saving FCPXML: {e}", file=sys.stderr)
         sys.exit(1)
