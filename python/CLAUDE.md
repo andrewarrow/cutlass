@@ -17,9 +17,38 @@ read ../FCPXMLv1_13.dtd
 
 **All FCPXML generation MUST use the dataclasses in `fcpxml_lib/models/elements.py`.**
 
+## 🚨 CRITICAL: Conform-Rate Elements Must Include srcFrameRate 🚨
+
+**The #1 cause of FCP import warnings: Missing srcFrameRate attribute on conform-rate elements**
+
+### ✅ CORRECT conform-rate Structure:
+```xml
+<clip offset="0s" name="VideoClip" duration="240240/24000s" format="r2" tcFormat="NDF">
+    <conform-rate scaleEnabled="0" srcFrameRate="24"/>
+    <adjust-transform><!-- keyframe animations --></adjust-transform>
+    <video ref="r3" offset="0s" duration="240240/24000s"/>
+</clip>
+```
+
+### ❌ INCORRECT conform-rate (causes FCP warnings):
+```xml
+<clip offset="0s" name="VideoClip" duration="240240/24000s" format="r2" tcFormat="NDF">
+    <conform-rate scaleEnabled="0"/>  <!-- Missing srcFrameRate! -->
+    <adjust-transform><!-- keyframe animations --></adjust-transform>
+    <video ref="r3" offset="0s" duration="240240/24000s"/>
+</clip>
+```
+
+### 🚨 FCP Import Error Without srcFrameRate:
+```
+Encountered an unexpected value. (conform-rate: /fcpxml[1]/library[1]/event[1]/project[1]/sequence[1]/spine[1]/clip[1])
+```
+
+**CRITICAL: Always include srcFrameRate attribute matching media frame rate (24, 25, 29.97, 30, etc.)**
+
 ## 🚨 CRITICAL: Images vs Videos Architecture 🚨
 
-**The #1 cause of crashes: Using wrong element types for images vs videos**
+**The #2 cause of crashes: Using wrong element types for images vs videos**
 
 ### ✅ IMAGES (PNG/JPG files):
 ```xml
@@ -53,7 +82,7 @@ read ../FCPXMLv1_13.dtd
 
 ## 🚨 CRITICAL: Title Elements and Resource References 🚨
 
-**The #2 cause of DTD validation failures: Incorrect title structure and invalid resource references**
+**The #3 cause of DTD validation failures: Incorrect title structure and invalid resource references**
 
 ### ✅ CORRECT Title Structure:
 ```xml
@@ -434,6 +463,7 @@ python -m pytest tests/test_crash_prevention.py -v
 python -m pytest tests/test_timeline_elements.py -v  
 python -m pytest tests/test_xml_structure.py -v
 python -m pytest tests/test_video_at_edge.py -v  # Pattern A vs B validation
+python -m pytest tests/test_conform_rate_validation.py -v  # FCP import warnings prevention
 
 # XML validation:
 xmllint output.fcpxml --noout
@@ -582,9 +612,12 @@ def command_name_cmd(args):
 **Critical File References:**
 - **Core Functions**: `fcpxml_lib/core/fcpxml.py`
 - **Data Models**: `fcpxml_lib/models/elements.py` 
+- **XML Serialization**: `fcpxml_lib/serialization/xml_serializer.py` (conform-rate fix)
 - **Validation**: `fcpxml_lib/validation/validators.py`
 - **Testing Patterns**: `tests/test_crash_prevention.py`
 - **Multi-Lane Testing**: `tests/test_video_at_edge.py`
+- **FCP Import Testing**: `tests/test_conform_rate_validation.py`
+- **Info.fcpxml Recreation**: `tests/test_info_recreation.py`
 - **Timeline Generators**: `fcpxml_lib/generators/timeline_generators.py`
 - **Command Implementations**: `fcpxml_lib/cmd/`
 - **Utilities**: `fcpxml_lib/utils/timing.py`, `fcpxml_lib/utils/ids.py`
