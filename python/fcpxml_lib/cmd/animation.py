@@ -230,110 +230,131 @@ def animation_cmd(args):
         ]
     )
 
-    # Create nested clips using dataclasses
-    nested_clip_2 = Clip(
-        lane="1",
-        offset=second_offset,
-        name=selected_videos[1].stem,
-        duration=nested_durations[1],
-        format=format_ids[1],
-        tc_format="NDF",
-        nested_elements=[
-            second_transform,
-            Video(ref=asset_ids[1], offset="0s", duration=video_durations[1])
-        ]
-    )
-    
-    nested_clip_3 = Clip(
-        lane="2", 
-        offset=third_offset,
-        name=selected_videos[2].stem,
-        duration=nested_durations[2],
-        format=format_ids[2],
-        tc_format="NDF",
-        nested_elements=[
-            third_transform,
-            Video(ref=asset_ids[2], offset="0s", duration=video_durations[2])
-        ]
-    )
-    
-    nested_clip_4 = Clip(
-        lane="3",
-        offset=fourth_offset,
-        name=selected_videos[3].stem,
-        duration=nested_durations[3],
-        format=format_ids[3],
-        tc_format="NDF",
-        nested_elements=[
-            fourth_transform,
-            Video(ref=asset_ids[3], offset="0s", duration=video_durations[3])
-        ]
-    )
-
-    # Create main clip with all nested elements
+    # Create main clip using dataclasses like test_info_recreation.py
     main_clip = Clip(
         offset="0s",
         name=selected_videos[0].stem,
         duration=clip_duration,
-        format=format_ids[0],
-        tc_format="NDF",
-        nested_elements=[
-            first_transform,
-            Video(ref=asset_ids[0], offset="0s", duration=video_durations[0]),
-            nested_clip_2,
-            nested_clip_3,
-            nested_clip_4
-        ]
+        format=format_ids[0],  # Only main clip has format
+        tc_format="NDF"
     )
     
-    # Convert to dictionary format for spine (serializer expects this format)
-    # The dataclasses validate the structure, then we convert to dict for serialization
-    def clip_to_dict(clip):
-        """Convert Clip dataclass to dictionary format for serializer"""
-        clip_dict = {
-            "type": "clip",
-            "offset": clip.offset,
-            "name": clip.name,
-            "duration": clip.duration,
-            "format": clip.format,
-            "tcFormat": clip.tc_format
-        }
-        if hasattr(clip, 'lane') and clip.lane:
-            clip_dict["lane"] = clip.lane
-            
-        nested_elements = []
-        for element in clip.nested_elements:
-            if isinstance(element, AdjustTransform):
-                # Convert transform to serializer-expected format
-                transform_dict = {"type": "adjust_transform"}
-                if element.params:
-                    # Extract keyframe data in the format the serializer expects
-                    for param in element.params:
-                        if param.keyframe_animation and param.keyframe_animation.keyframes:
-                            keyframes = []
-                            for kf in param.keyframe_animation.keyframes:
-                                kf_dict = {"time": kf.time, "value": kf.value}
-                                if kf.curve:
-                                    kf_dict["curve"] = kf.curve
-                                keyframes.append(kf_dict)
-                            transform_dict[param.name] = {"keyframes": keyframes}
-                nested_elements.append(transform_dict)
-            elif isinstance(element, Video):
-                # Convert video to dictionary
-                nested_elements.append({
-                    "type": "video",
-                    "ref": element.ref,
-                    "offset": element.offset,
-                    "duration": element.duration
-                })
-            elif isinstance(element, Clip):
-                # Recursively convert nested clips
-                nested_elements.append(clip_to_dict(element))
-        
-        clip_dict["nested_elements"] = nested_elements
-        return clip_dict
+    # Create main clip's video element
+    main_video = Video(
+        ref=asset_ids[0],
+        offset="0s", 
+        duration=video_durations[0]
+    )
     
-    main_clip_dict = clip_to_dict(main_clip)
+    # Create nested clips using exact pattern from test_info_recreation.py
+    nested_clips = [
+        {
+            "lane": 1,
+            "offset": second_offset,
+            "name": selected_videos[1].stem, 
+            "duration": nested_durations[1],
+            "ref": asset_ids[1],
+            "video_duration": video_durations[1],
+            "transform": second_transform
+        },
+        {
+            "lane": 2,
+            "offset": third_offset,
+            "name": selected_videos[2].stem,
+            "duration": nested_durations[2],
+            "ref": asset_ids[2],
+            "video_duration": video_durations[2],
+            "transform": third_transform
+        },
+        {
+            "lane": 3,
+            "offset": fourth_offset,
+            "name": selected_videos[3].stem,
+            "duration": nested_durations[3],
+            "ref": asset_ids[3],
+            "video_duration": video_durations[3],
+            "transform": fourth_transform
+        }
+    ]
+    
+    # Create nested clip objects
+    nested_clip_objs = []
+    for i, clip_info in enumerate(nested_clips):
+        nested_clip = Clip(
+            lane=clip_info["lane"],
+            offset=clip_info["offset"],
+            name=clip_info["name"],
+            duration=clip_info["duration"],
+            format=format_ids[i+1],  # Add format for validation (r7, r8, r9)
+            tc_format="NDF"
+        )
+        nested_clip.adjust_transform = clip_info["transform"]
+        
+        # Add video element
+        nested_video = Video(
+            ref=clip_info["ref"],
+            offset="0s",
+            duration=clip_info["video_duration"]
+        )
+        nested_clip.videos = [nested_video]
+        nested_clip_objs.append(nested_clip)
+    
+    # Set main clip's transform and video
+    main_clip.adjust_transform = first_transform
+    main_clip.videos = [main_video]
+    main_clip.clips = nested_clip_objs
+    
+    # Convert to dictionary format exactly like test_info_recreation.py
+    main_clip_dict = {
+        "type": "clip",
+        "offset": main_clip.offset,
+        "name": main_clip.name,
+        "duration": main_clip.duration,
+        "format": main_clip.format,
+        "tcFormat": main_clip.tc_format,
+        "nested_elements": []
+    }
+    
+    # Add adjust-transform as nested element (this is what serializer expects)
+    transform_dict = main_clip.adjust_transform.to_dict()
+    transform_dict["type"] = "adjust_transform"
+    main_clip_dict["nested_elements"].append(transform_dict)
+    
+    # Add video element to main clip nested_elements (required for "respective media")
+    main_clip_dict["nested_elements"].append({
+        "type": "video",
+        "ref": main_video.ref,
+        "offset": main_video.offset,
+        "duration": main_video.duration
+    })
+    
+    # Add nested clips to main clip
+    for nested_clip in main_clip.clips:
+        nested_dict = {
+            "type": "clip",
+            "lane": nested_clip.lane,
+            "offset": nested_clip.offset,
+            "name": nested_clip.name,
+            "duration": nested_clip.duration,
+            "format": nested_clip.format,  # Include format for validation
+            "tcFormat": nested_clip.tc_format,
+            "nested_elements": []
+        }
+        
+        # Add adjust-transform as nested element
+        nested_transform_dict = nested_clip.adjust_transform.to_dict()
+        nested_transform_dict["type"] = "adjust_transform"
+        nested_dict["nested_elements"].append(nested_transform_dict)
+        
+        # Add video elements to nested clip's nested_elements
+        for video in nested_clip.videos:
+            nested_dict["nested_elements"].append({
+                "type": "video",
+                "ref": video.ref,
+                "offset": video.offset,
+                "duration": video.duration
+            })
+        main_clip_dict["nested_elements"].append(nested_dict)
     
     # Add to spine
     sequence.spine.ordered_elements = [main_clip_dict]
