@@ -82,6 +82,9 @@ def animation_cmd(args):
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     sequence.format = "r1"  # Use the existing vertical format from create_empty_project
     
+    # Set proper sequence duration (like test_info_recreation.py)
+    sequence.duration = convert_seconds_to_fcp_duration(20.0)  # Match clip duration
+    
     # Use proper frame-aligned durations using video properties
     # Get actual video durations and convert to frame-aligned format
     video_durations = []
