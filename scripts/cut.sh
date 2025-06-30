@@ -1,10 +1,14 @@
 #!/bin/bash
 
 INPUT="house100.png"
+RESIZED_INPUT="house100_resized.png"
 OUTDIR="tiles"
 mkdir -p "$OUTDIR"
 
-# Image dimensions
+# Resize image to 1080x1920 filling entire area (crop to fit)
+magick "$INPUT" -resize 1080x1920^ -gravity center -extent 1080x1920 "$RESIZED_INPUT"
+
+# Image dimensions after resize
 IMG_WIDTH=1080
 IMG_HEIGHT=1920
 
@@ -12,22 +16,24 @@ IMG_HEIGHT=1920
 NUM_COLS=4
 TILE_SIZE=$((IMG_WIDTH / NUM_COLS))  # size of square tile
 
-# Compute number of rows based on square height (only complete tiles)
+# Compute number of rows that fit completely
 NUM_ROWS=$((IMG_HEIGHT / TILE_SIZE))
 
-# Crop tiles (only create tiles that fit completely within image bounds)
-for ((row = 0; row < NUM_ROWS; row++)); do
+# Crop tiles (create all possible rows, even partial ones)
+for ((row = 0; row <= 6; row++)); do
+  Y=$((row * TILE_SIZE))
+  
   for ((col = 0; col < NUM_COLS; col++)); do
     X=$((col * TILE_SIZE))
-    Y=$((row * TILE_SIZE))
-    
-    # Skip if tile would extend beyond image boundaries
-    if ((Y + TILE_SIZE > IMG_HEIGHT)); then
-      continue
-    fi
-    
     OUTFILE="${OUTDIR}/col${col}_row${row}.png"
-    magick "$INPUT" -crop "${TILE_SIZE}x${TILE_SIZE}+${X}+${Y}" +repage "$OUTFILE"
+    
+    # Calculate remaining height for last row
+    if ((row == 6)); then
+      REMAINING_HEIGHT=$((IMG_HEIGHT - Y))
+      magick "$RESIZED_INPUT" -crop "${TILE_SIZE}x${REMAINING_HEIGHT}+${X}+${Y}" +repage "$OUTFILE"
+    else
+      magick "$RESIZED_INPUT" -crop "${TILE_SIZE}x${TILE_SIZE}+${X}+${Y}" +repage "$OUTFILE"
+    fi
   done
 done
 
