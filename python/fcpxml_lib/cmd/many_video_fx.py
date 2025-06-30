@@ -35,33 +35,54 @@ def calculate_grid_layout(num_videos):
 
 def calculate_tile_positions(num_videos):
     """
-    Calculate grid positions for videos in Final Cut Pro coordinate space.
+    Calculate grid positions for videos within proper screen edge bounds.
     
-    Based on 1080x1920 vertical screen (Info.fcpxml pattern):
+    Based on test_video_at_edge.py screen bounds:
     - Center is at (0, 0)
-    - X range: approximately -50 to +50
-    - Y range: approximately -90 to +90
+    - X range: -30.0 to +30.0 (60 units total)
+    - Y range: -50.0 to +50.0 (100 units total)
     
     Returns list of (x, y) positions for each video.
     """
     cols, rows = calculate_grid_layout(num_videos)
     
-    # Grid spacing based on animation.py successful positions
-    # These values are derived from the working Info.fcpxml pattern
-    x_spacing = 40.0  # Horizontal spacing between tiles
-    y_spacing = 45.0  # Vertical spacing between tiles
+    # Screen edge bounds from test_video_at_edge.py
+    screen_x_min, screen_x_max = -30.0, 30.0
+    screen_y_min, screen_y_max = -50.0, 50.0
     
-    # Calculate starting position (top-left of grid)
-    start_x = -(cols - 1) * x_spacing / 2
-    start_y = -(rows - 1) * y_spacing / 2
+    # Calculate grid spacing to fit within screen bounds
+    x_range = screen_x_max - screen_x_min  # 60 units
+    y_range = screen_y_max - screen_y_min  # 100 units
+    
+    # Leave some margin from edges
+    margin_factor = 0.9  # Use 90% of available space
+    x_spacing = (x_range * margin_factor) / max(cols - 1, 1)
+    y_spacing = (y_range * margin_factor) / max(rows - 1, 1)
+    
+    # Calculate starting position (center the grid)
+    start_x = screen_x_min + (x_range * (1 - margin_factor) / 2)
+    start_y = screen_y_min + (y_range * (1 - margin_factor) / 2)
     
     positions = []
     for i in range(num_videos):
         row = i // cols
         col = i % cols
         
-        x = start_x + (col * x_spacing)
-        y = start_y + (row * y_spacing)
+        if cols == 1:
+            # Single column - center horizontally
+            x = 0.0
+        else:
+            x = start_x + (col * x_spacing)
+        
+        if rows == 1:
+            # Single row - center vertically
+            y = 0.0
+        else:
+            y = start_y + (row * y_spacing)
+        
+        # Ensure positions stay within bounds
+        x = max(screen_x_min, min(screen_x_max, x))
+        y = max(screen_y_min, min(screen_y_max, y))
         
         positions.append((x, y))
     
@@ -138,17 +159,26 @@ def many_video_fx_cmd(args):
     sequence = fcpxml.library.events[0].projects[0].sequences[0]
     sequence.format = "r1"  # Use the existing vertical format
     
-    # Set proper sequence duration
-    max_duration = max(props['duration_seconds'] for props in video_properties)
-    total_duration = max_duration + (num_videos * 1.5)  # Base duration + staggered timing
-    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
-    
-    # Calculate tile positions
-    tile_positions = calculate_tile_positions(num_videos)
-    
     # Animation timing constants (based on animation.py successful pattern)
     base_animation_duration = 6.0   # 6 seconds animation time
     stagger_delay = 1.5            # 1.5 seconds between video starts
+    
+    # Calculate durations to ensure videos keep playing after reaching final positions
+    max_video_duration = max(props['duration_seconds'] for props in video_properties)
+    last_video_start_time = (num_videos - 1) * stagger_delay  # When last video starts animating
+    animation_end_time = last_video_start_time + base_animation_duration  # When last animation ends
+    
+    # Timeline should continue for a while after all animations complete
+    post_animation_duration = 10.0  # Keep playing 10 seconds after animations end
+    total_timeline_duration = animation_end_time + post_animation_duration
+    
+    # Each video needs to play long enough to cover its animation + post duration
+    min_video_duration_needed = base_animation_duration + post_animation_duration
+    
+    sequence.duration = convert_seconds_to_fcp_duration(total_timeline_duration)
+    
+    # Calculate tile positions
+    tile_positions = calculate_tile_positions(num_videos)
     
     # Scale values for tiling (make videos smaller to fit in grid)
     if num_videos <= 4:
@@ -201,8 +231,18 @@ def many_video_fx_cmd(args):
         transforms.append(transform)
     
     # Create main clip using first video as container (like animation.py)
-    main_clip_duration = convert_seconds_to_fcp_duration(total_duration)
-    main_video_duration = convert_seconds_to_fcp_duration(video_properties[0]['duration_seconds'])
+    # Main clip duration should cover the entire timeline
+    main_clip_duration = convert_seconds_to_fcp_duration(total_timeline_duration)
+    
+    # Each video needs to play long enough to stay visible after animation
+    # Use the longer of: original video duration or minimum needed duration
+    def get_video_duration(video_props, needed_duration):
+        original_duration = video_props['duration_seconds']
+        return max(original_duration, needed_duration)
+    
+    main_video_duration = convert_seconds_to_fcp_duration(
+        get_video_duration(video_properties[0], min_video_duration_needed)
+    )
     
     main_clip = Clip(
         offset="0s",
@@ -224,7 +264,11 @@ def many_video_fx_cmd(args):
     
     for i in range(1, num_videos):
         video_offset = convert_seconds_to_fcp_duration(i * stagger_delay)
-        video_duration = convert_seconds_to_fcp_duration(video_properties[i]['duration_seconds'])
+        
+        # Each nested video also needs to play long enough to stay visible
+        video_duration = convert_seconds_to_fcp_duration(
+            get_video_duration(video_properties[i], min_video_duration_needed)
+        )
         
         nested_clip_info = {
             "lane": i,
@@ -332,7 +376,9 @@ def many_video_fx_cmd(args):
         print(f"   🎭 Each video animates from center to tile position")
         print(f"   ⏱️  Animation: {base_animation_duration}s per video")
         print(f"   📏 Stagger delay: {stagger_delay}s between starts")
-        print(f"   ⏱️  Total duration: ~{total_duration:.1f} seconds")
+        print(f"   🎯 Screen bounds: X(-30 to +30), Y(-50 to +50)")
+        print(f"   ⏱️  Total timeline: {total_timeline_duration:.1f}s")
+        print(f"   🎞️  Videos play {post_animation_duration}s after animations end")
         
     except Exception as e:
         print(f"❌ Error saving FCPXML: {e}", file=sys.stderr)
