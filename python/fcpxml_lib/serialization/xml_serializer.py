@@ -355,6 +355,15 @@ def serialize_to_xml(fcpxml) -> str:
                                                 nested_video_elem.set("offset", nested["offset"])
                                             if "duration" in nested:
                                                 nested_video_elem.set("duration", nested["duration"])
+                                        elif nested["type"] == "audio":
+                                            audio_elem = SubElement(clip_elem, "audio")
+                                            audio_elem.set("ref", nested["ref"])
+                                            if "offset" in nested:
+                                                audio_elem.set("offset", nested["offset"])
+                                            if "duration" in nested:
+                                                audio_elem.set("duration", nested["duration"])
+                                            if "role" in nested:
+                                                audio_elem.set("role", nested["role"])
                                         elif nested["type"] == "audio-channel-source":
                                             audio_ch_elem = SubElement(clip_elem, "audio-channel-source")
                                             if "srcCh" in nested:
@@ -396,6 +405,15 @@ def serialize_to_xml(fcpxml) -> str:
                                                             nn_video_elem.set("offset", nested_nested["offset"])
                                                         if "duration" in nested_nested:
                                                             nn_video_elem.set("duration", nested_nested["duration"])
+                                                    elif nested_nested["type"] == "audio":
+                                                        nn_audio_elem = SubElement(nested_clip_elem, "audio")
+                                                        nn_audio_elem.set("ref", nested_nested["ref"])
+                                                        if "offset" in nested_nested:
+                                                            nn_audio_elem.set("offset", nested_nested["offset"])
+                                                        if "duration" in nested_nested:
+                                                            nn_audio_elem.set("duration", nested_nested["duration"])
+                                                        if "role" in nested_nested:
+                                                            nn_audio_elem.set("role", nested_nested["role"])
                                                     elif nested_nested["type"] == "audio-channel-source":
                                                         nn_audio_ch_elem = SubElement(nested_clip_elem, "audio-channel-source")
                                                         if "srcCh" in nested_nested:

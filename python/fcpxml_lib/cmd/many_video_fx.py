@@ -348,6 +348,16 @@ def many_video_fx_cmd(args):
         "duration": main_video.duration
     })
     
+    # Add audio element if include_sound is enabled (required for audio to actually play)
+    if include_audio:
+        main_clip_dict["nested_elements"].append({
+            "type": "audio",
+            "ref": main_video.ref,
+            "offset": main_video.offset,
+            "duration": main_video.duration,
+            "role": "dialogue"
+        })
+    
     # Add nested clips to main clip
     for nested_clip in main_clip.clips:
         nested_dict = {
@@ -377,6 +387,16 @@ def many_video_fx_cmd(args):
                 "offset": video.offset,
                 "duration": video.duration
             })
+            
+            # Add audio element if include_sound is enabled (required for audio to actually play)
+            if include_audio:
+                nested_dict["nested_elements"].append({
+                    "type": "audio",
+                    "ref": video.ref,
+                    "offset": video.offset,
+                    "duration": video.duration,
+                    "role": "dialogue"
+                })
         
         # Add audio-channel-source to this nested clip if include_sound is enabled
         if include_audio:
