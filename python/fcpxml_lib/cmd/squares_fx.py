@@ -59,21 +59,19 @@ def squares_fx_cmd(args):
     # s2.fcpxml shows: col0 at X≈-22, col1 at X≈-7 (15 unit spacing)
     # Y goes from +43 to -40 (83 unit range for 7 rows ≈ 12 units spacing)
     
-    # X positions: 4 columns spread across screen width with spacing
-    # s2.fcpxml shows col0 at -22, col1 at -7 (15 unit spacing)
-    # Let's spread 4 columns across wider range with gaps
-    x_start = -30  
-    x_spacing = 17  # 17 units between columns gives good spacing
+    # X positions: 4 columns closer together to form continuous image
+    # Reduce spacing so tiles connect better horizontally
+    x_start = -22  
+    x_spacing = 14  # Smaller spacing so image tiles connect horizontally
     x_positions = []
     for i in range(cols):
         x_pos = x_start + i * x_spacing
         x_positions.append(x_pos)
     
-    # Y positions: 7 rows spread across screen height with spacing
-    # s2.fcpxml shows range from +43 to -40 (83 units for 7 rows)
-    # Use similar range but with even spacing
-    y_start = 45   
-    y_spacing = 13  # 13 units between rows for good spacing
+    # Y positions: 7 rows closer together to form continuous image
+    # Reduce spacing so tiles connect better to reconstruct the image
+    y_start = 40   
+    y_spacing = 11  # Smaller spacing so image tiles connect
     y_positions = []
     for i in range(rows):
         y_pos = y_start - i * y_spacing
