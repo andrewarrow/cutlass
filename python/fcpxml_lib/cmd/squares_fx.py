@@ -50,8 +50,8 @@ def squares_fx_cmd(args):
     cols = 4  # 4 columns (col0, col1, col2, col3)
     rows = 7  # 7 rows (row0, row1, row2, row3, row4, row5, row6)
     
-    # Use the scale from original squares.fcpxml (around 0.20) 
-    scale = 0.205
+    # Use slightly bigger scale to fill screen better
+    scale = 0.25
     
     print(f"Using scale: {scale:.6f}")
     
@@ -59,23 +59,10 @@ def squares_fx_cmd(args):
     # s2.fcpxml shows: col0 at X≈-22, col1 at X≈-7 (15 unit spacing)
     # Y goes from +43 to -40 (83 unit range for 7 rows ≈ 12 units spacing)
     
-    # X positions: 4 columns closer together to form continuous image
-    # Reduce spacing so tiles connect better horizontally
-    x_start = -22  
-    x_spacing = 14  # Smaller spacing so image tiles connect horizontally
-    x_positions = []
-    for i in range(cols):
-        x_pos = x_start + i * x_spacing
-        x_positions.append(x_pos)
-    
-    # Y positions: 7 rows closer together to form continuous image
-    # Reduce spacing so tiles connect better to reconstruct the image
-    y_start = 40   
-    y_spacing = 11  # Smaller spacing so image tiles connect
-    y_positions = []
-    for i in range(rows):
-        y_pos = y_start - i * y_spacing
-        y_positions.append(y_pos)
+    # Perfect spacing to fill entire screen with nice gaps
+    # Screen bounds from test_video_at_edge.py: X=(-30,+30), Y=(-50,+50)
+    x_positions = [-27.0, -9.0, 9.0, 27.0]  # 4 columns, 18-unit spacing
+    y_positions = [45.0, 30.0, 15.0, 0.0, -15.0, -30.0, -45.0]  # 7 rows, 15-unit spacing
     
     # Create FCPXML project
     try:
