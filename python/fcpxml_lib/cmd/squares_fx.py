@@ -59,9 +59,9 @@ def squares_fx_cmd(args):
     # s2.fcpxml shows: col0 at X≈-22, col1 at X≈-7 (15 unit spacing)
     # Y goes from +43 to -40 (83 unit range for 7 rows ≈ 12 units spacing)
     
-    # Perfect spacing to fill entire screen with nice gaps
+    # Perfect spacing with uniform gaps between rows and columns
     # Screen bounds from test_video_at_edge.py: X=(-30,+30), Y=(-50,+50)
-    x_positions = [-27.0, -9.0, 9.0, 27.0]  # 4 columns, 18-unit spacing
+    x_positions = [-22.5, -7.5, 7.5, 22.5]  # 4 columns, 15-unit spacing (same as rows)
     y_positions = [45.0, 30.0, 15.0, 0.0, -15.0, -30.0, -45.0]  # 7 rows, 15-unit spacing
     
     # Create FCPXML project
