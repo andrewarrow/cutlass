@@ -47,36 +47,34 @@ def squares_fx_cmd(args):
     canvas_width = 1080
     canvas_height = 1920
     tile_size = 270
-    cols = 7
-    rows = 4
+    cols = 4  # 4 columns (col0, col1, col2, col3)
+    rows = 7  # 7 rows (row0, row1, row2, row3, row4, row5, row6)
     
-    # Calculate optimal scale and positions
-    margin_pct = 0.05  # 5% margin on each side
-    spacing_pct = 0.02  # 2% spacing between tiles
-    
-    available_width = canvas_width * (1 - 2 * margin_pct)
-    tile_plus_spacing = available_width / cols
-    tile_width = tile_plus_spacing * (1 - spacing_pct)
-    spacing = tile_plus_spacing * spacing_pct
-    scale = tile_width / tile_size
+    # Use the scale from original squares.fcpxml (around 0.20) 
+    scale = 0.205
     
     print(f"Using scale: {scale:.6f}")
     
-    # Use realistic coordinates based on working s2.fcpxml (much smaller values)
-    # Pattern: 7 columns across, 4 rows down, similar to s2.fcpxml spacing
-    x_positions = []
-    y_positions = []
+    # Use coordinates based on s2.fcpxml pattern, expanded for full grid
+    # s2.fcpxml shows: col0 at X≈-22, col1 at X≈-7 (15 unit spacing)
+    # Y goes from +43 to -40 (83 unit range for 7 rows ≈ 12 units spacing)
     
-    # X positions: spread across about 30 units (-22 to +8 range)
-    x_start = -22
-    x_spacing = 4.3  # About 30 units / 7 tiles
+    # X positions: 4 columns spread across screen width with spacing
+    # s2.fcpxml shows col0 at -22, col1 at -7 (15 unit spacing)
+    # Let's spread 4 columns across wider range with gaps
+    x_start = -30  
+    x_spacing = 17  # 17 units between columns gives good spacing
+    x_positions = []
     for i in range(cols):
         x_pos = x_start + i * x_spacing
         x_positions.append(x_pos)
     
-    # Y positions: spread across about 80 units (43 to -40 range) 
-    y_start = 43
-    y_spacing = 20  # About 80 units / 4 rows
+    # Y positions: 7 rows spread across screen height with spacing
+    # s2.fcpxml shows range from +43 to -40 (83 units for 7 rows)
+    # Use similar range but with even spacing
+    y_start = 45   
+    y_spacing = 13  # 13 units between rows for good spacing
+    y_positions = []
     for i in range(rows):
         y_pos = y_start - i * y_spacing
         y_positions.append(y_pos)
@@ -133,9 +131,10 @@ def squares_fx_cmd(args):
             fcpxml.resources.assets.append(asset)
             fcpxml.resources.formats.append(format_obj)
             
-            # Calculate position for this tile
-            x_pos = x_positions[row_num]  # row_num maps to column position
-            y_pos = y_positions[col_num]  # col_num maps to row position
+            # Calculate position for this tile (fix the mapping!)
+            # colX_rowY: X=column position, Y=row position
+            x_pos = x_positions[col_num]  # col_num maps to X (column position) 
+            y_pos = y_positions[row_num]  # row_num maps to Y (row position)
             
             if i == 0:
                 # First tile becomes background element (like s2.fcpxml)
@@ -186,7 +185,7 @@ def squares_fx_cmd(args):
         
         if success:
             print(f"Generated: {output_file}")
-            print(f"Grid: {len(png_files)} tiles in {rows}x{cols} layout")
+            print(f"Grid: {len(png_files)} tiles in {cols}x{rows} layout")
             return True
         else:
             print("Error: Failed to save FCPXML")
