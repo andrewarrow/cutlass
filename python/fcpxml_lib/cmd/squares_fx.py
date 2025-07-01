@@ -111,8 +111,8 @@ def squares_fx_cmd(args):
                 print(f"Warning: Unexpected filename format: {filename}")
                 continue
             
-            # Skip if outside our 7x4 grid
-            if row_num >= cols or col_num >= rows:
+            # Skip if outside our 4x7 grid
+            if col_num >= cols or row_num >= rows:
                 continue
             
             # Generate IDs
