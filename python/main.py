@@ -22,7 +22,8 @@ from fcpxml_lib.cmd import (
     random_font_cmd,
     animation_cmd,
     many_video_fx_cmd,
-    squares_fx_cmd
+    squares_fx_cmd,
+    remove_sq_cmd
 )
 
 
@@ -41,6 +42,7 @@ Examples:
   %(prog)s animation /path/to/videos --output animated.fcpxml
   %(prog)s many-video-fx /path/to/video/folder --output tiled_videos.fcpxml
   %(prog)s squares-fx --output squares_fx.fcpxml
+  %(prog)s remove-sq /path/to/background.png /path/to/tiles/dir --output remove_squares.fcpxml
         """
     )
     
@@ -121,6 +123,18 @@ Examples:
     )
     squares_parser.add_argument('--output', help='Output FCPXML file path (default: squares_fx.fcpxml)')
     
+    # Remove squares command
+    remove_sq_parser = subparsers.add_parser(
+        'remove-sq',
+        help='Create staircase removal effect with uniform chunk timing'
+    )
+    remove_sq_parser.add_argument('background_image', help='Background image file (PNG/JPG)')
+    remove_sq_parser.add_argument('tiles_dir', help='Directory containing square tile PNG files')
+    remove_sq_parser.add_argument('--output', help='Output FCPXML file path (default: remove_sq.fcpxml)')
+    remove_sq_parser.add_argument('--chunk-duration', type=float, default=0.25, help='Duration of each removal chunk in seconds (default: 0.25)')
+    remove_sq_parser.add_argument('--total-duration', type=float, default=10.0, help='Total timeline duration in seconds (default: 10.0)')
+    remove_sq_parser.add_argument('--num-squares', type=int, default=28, help='Number of squares to remove (default: 28)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -144,6 +158,8 @@ Examples:
         many_video_fx_cmd(args)
     elif args.command == 'squares-fx':
         squares_fx_cmd(args)
+    elif args.command == 'remove-sq':
+        remove_sq_cmd(args)
     else:
         print(f"❌ Unknown command: {args.command}", file=sys.stderr)
         parser.print_help()

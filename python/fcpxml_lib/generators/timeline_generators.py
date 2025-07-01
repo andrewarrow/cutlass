@@ -507,3 +507,160 @@ def create_stress_test_timeline(fcpxml, image_files, video_files):
     print(f"     Maximum lane number: {100 + separate_elements_count}")
     print(f"     Timeline duration: {total_duration}s ({total_duration/60:.1f} minutes)")
     print(f"     Complexity level: EXTREME - Testing validation system limits")
+
+
+def create_staircase_removal_timeline(fcpxml, background_path, tiles_dir, chunk_duration, total_duration, num_squares):
+    """
+    Create staircase removal effect where squares are removed in uniform chunks.
+    
+    Based on the analysis of remove.fcpxml, this creates a timeline where:
+    1. Background image is on lane -1 (underneath)
+    2. Square tiles are on positive lanes (1, 2, 3, etc.)
+    3. Each "chunk" removes more squares progressively 
+    4. Uniform chunk duration (fixes the uneven timing in original)
+    5. Continues until all squares are removed
+    """
+    from pathlib import Path
+    import os
+    
+    project = fcpxml.library.events[0].projects[0]
+    sequence = project.sequences[0]
+    
+    resource_counter = len(fcpxml.resources.assets) + len(fcpxml.resources.formats) + 1
+    
+    # Create background asset
+    bg_asset_id = f"r{resource_counter}"
+    resource_counter += 1
+    bg_format_id = f"r{resource_counter}"  
+    resource_counter += 1
+    
+    background_asset, background_format = create_media_asset(
+        background_path, bg_asset_id, bg_format_id, include_audio=False
+    )
+    fcpxml.resources.assets.append(background_asset)
+    fcpxml.resources.formats.append(background_format)
+    
+    # Discover tile files
+    tiles_path = Path(tiles_dir)
+    tile_files = sorted([f for f in tiles_path.glob("*.png") if f.is_file()])
+    
+    if not tile_files:
+        raise ValueError(f"No PNG files found in {tiles_dir}")
+    
+    # Limit to requested number of squares
+    tile_files = tile_files[:num_squares]
+    
+    # Create assets for all tiles
+    tile_assets = {}
+    shared_tile_format_id = f"r{resource_counter}"
+    resource_counter += 1
+    
+    # Create shared format for all tiles (assuming they're same size)
+    shared_tile_format = Format(
+        id=shared_tile_format_id,
+        name=IMAGE_FORMAT_NAME,
+        width=DEFAULT_IMAGE_WIDTH,
+        height=DEFAULT_IMAGE_HEIGHT,
+        color_space=IMAGE_COLOR_SPACE
+    )
+    fcpxml.resources.formats.append(shared_tile_format)
+    
+    # Create assets for each tile
+    for tile_file in tile_files:
+        tile_asset_id = f"r{resource_counter}"
+        resource_counter += 1
+        
+        tile_asset = Asset(
+            id=tile_asset_id,
+            name=tile_file.stem,
+            uid=generate_uid(),
+            start="0s",
+            duration=IMAGE_DURATION,
+            has_video="1",
+            format=shared_tile_format_id,
+            video_sources="1"
+        )
+        tile_asset.media_rep = MediaRep(
+            kind="original-media",
+            sig=generate_uid(),
+            src=f"file://{tile_file.absolute()}"
+        )
+        fcpxml.resources.assets.append(tile_asset)
+        tile_assets[tile_file.stem] = tile_asset_id
+    
+    # Calculate chunk timing
+    num_chunks = int(total_duration / chunk_duration)
+    squares_per_chunk = max(1, len(tile_files) // (num_chunks - 1))  # Leave room for final reveal
+    
+    # Create timeline chunks
+    current_offset = 0.0
+    remaining_tiles = list(tile_files)
+    
+    for chunk_idx in range(num_chunks):
+        chunk_start_time = convert_seconds_to_fcp_duration(current_offset)
+        chunk_duration_fcp = convert_seconds_to_fcp_duration(chunk_duration)
+        
+        # Determine which tiles are visible in this chunk
+        tiles_to_remove = min(squares_per_chunk, len(remaining_tiles))
+        if chunk_idx == num_chunks - 1:  # Last chunk removes all remaining
+            tiles_to_remove = len(remaining_tiles)
+        
+        visible_tiles = remaining_tiles[tiles_to_remove:]  # Keep the ones not being removed
+        
+        # Create main video element with background
+        main_video = {
+            "type": "video",
+            "ref": bg_asset_id,
+            "offset": chunk_start_time,
+            "name": background_asset.name,
+            "start": chunk_start_time,
+            "duration": chunk_duration_fcp,
+            "nested_elements": []
+        }
+        
+        # Add background on lane -1
+        bg_nested = {
+            "type": "video", 
+            "ref": bg_asset_id,
+            "lane": -1,
+            "offset": chunk_start_time,
+            "name": background_asset.name,
+            "start": "3600s",  # Using timing pattern from Info.fcpxml
+            "duration": chunk_duration_fcp
+        }
+        main_video["nested_elements"].append(bg_nested)
+        
+        # Add visible tiles on positive lanes
+        for lane_idx, tile_file in enumerate(visible_tiles):
+            tile_asset_id = tile_assets[tile_file.stem]
+            
+            tile_nested = {
+                "type": "video",
+                "ref": tile_asset_id,
+                "lane": lane_idx + 1,
+                "offset": chunk_start_time,
+                "name": tile_file.stem,
+                "start": chunk_start_time,  
+                "duration": chunk_duration_fcp
+            }
+            main_video["nested_elements"].append(tile_nested)
+        
+        # Add this chunk to the timeline
+        sequence.spine.videos.append(main_video)
+        sequence.spine.ordered_elements.append(main_video)
+        
+        # Remove tiles for next chunk
+        remaining_tiles = remaining_tiles[tiles_to_remove:]
+        current_offset += chunk_duration
+        
+        # Stop if no tiles left
+        if not remaining_tiles:
+            break
+    
+    # Update sequence duration
+    sequence.duration = convert_seconds_to_fcp_duration(total_duration)
+    
+    print(f"   Created {len(sequence.spine.ordered_elements)} timeline chunks")
+    print(f"   Uniform chunk duration: {chunk_duration}s")
+    print(f"   Total tiles: {len(tile_files)}")
+    print(f"   Squares per chunk: {squares_per_chunk}")

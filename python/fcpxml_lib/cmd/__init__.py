@@ -34,6 +34,7 @@ from .random_font import random_font_cmd
 from .animation import animation_cmd
 from .many_video_fx import many_video_fx_cmd
 from .squares_fx import squares_fx_cmd
+from .remove_sq import remove_sq_cmd
 
 __all__ = [
     'create_empty_project_cmd',
@@ -43,5 +44,6 @@ __all__ = [
     'random_font_cmd',
     'animation_cmd',
     'many_video_fx_cmd',
-    'squares_fx_cmd'
+    'squares_fx_cmd',
+    'remove_sq_cmd'
 ]
