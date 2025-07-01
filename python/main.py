@@ -21,7 +21,8 @@ from fcpxml_lib.cmd import (
     stress_test_cmd,
     random_font_cmd,
     animation_cmd,
-    many_video_fx_cmd
+    many_video_fx_cmd,
+    squares_fx_cmd
 )
 
 
@@ -39,6 +40,7 @@ Examples:
   %(prog)s random-font --output random_font.fcpxml
   %(prog)s animation /path/to/videos --output animated.fcpxml
   %(prog)s many-video-fx /path/to/video/folder --output tiled_videos.fcpxml
+  %(prog)s squares-fx --output squares_fx.fcpxml
         """
     )
     
@@ -112,6 +114,13 @@ Examples:
     many_fx_parser.add_argument('--duration', type=float, default=60.0, help='Total timeline duration in seconds (default: 60.0)')
     many_fx_parser.add_argument('--include-sound', action='store_true', help='Include audio from all videos (default: false)')
     
+    # Squares FX command
+    squares_parser = subparsers.add_parser(
+        'squares-fx',
+        help='Create 7x4 grid layout of house tile PNGs with proper scaling and spacing'
+    )
+    squares_parser.add_argument('--output', help='Output FCPXML file path (default: squares_fx.fcpxml)')
+    
     args = parser.parse_args()
     
     if not args.command:
@@ -133,6 +142,8 @@ Examples:
         animation_cmd(args)
     elif args.command == 'many-video-fx':
         many_video_fx_cmd(args)
+    elif args.command == 'squares-fx':
+        squares_fx_cmd(args)
     else:
         print(f"❌ Unknown command: {args.command}", file=sys.stderr)
         parser.print_help()

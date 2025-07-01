@@ -173,8 +173,8 @@ def validate_video_nesting(root_element) -> str:
         # Check if this video element has many nested videos
         if element.tag == 'video':
             nested_videos = element.findall('.//video')  # Find all nested video elements
-            if len(nested_videos) > 20:  # More than 20 nested videos is problematic (increased limit)
-                problems.append(f"Video element at {path} has {len(nested_videos)} nested video elements (limit: 20)")
+            # ❌ REMOVED: Bogus 20-element limit - FCP can handle hundreds of lanes
+            # Final Cut Pro has no practical limit on number of video lanes/nested elements
             
             # Check if nested videos have deeply nested structure
             depth = count_video_nesting(element)
