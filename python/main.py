@@ -42,7 +42,7 @@ Examples:
   %(prog)s animation /path/to/videos --output animated.fcpxml
   %(prog)s many-video-fx /path/to/video/folder --output tiled_videos.fcpxml
   %(prog)s squares-fx --output squares_fx.fcpxml
-  %(prog)s remove-sq /path/to/background.png /path/to/tiles/dir --output remove_squares.fcpxml
+  %(prog)s remove-sq background.fcpxmld --output remove_squares.fcpxml
         """
     )
     
@@ -126,14 +126,10 @@ Examples:
     # Remove squares command
     remove_sq_parser = subparsers.add_parser(
         'remove-sq',
-        help='Create staircase removal effect with uniform chunk timing'
+        help='Create progressive square removal animation from existing FCPXML'
     )
-    remove_sq_parser.add_argument('background_image', help='Background image file (PNG/JPG)')
-    remove_sq_parser.add_argument('tiles_dir', help='Directory containing square tile PNG files')
-    remove_sq_parser.add_argument('--output', help='Output FCPXML file path (default: remove_sq.fcpxml)')
-    remove_sq_parser.add_argument('--chunk-duration', type=float, default=0.25, help='Duration of each removal chunk in seconds (default: 0.25)')
-    remove_sq_parser.add_argument('--total-duration', type=float, default=10.0, help='Total timeline duration in seconds (default: 10.0)')
-    remove_sq_parser.add_argument('--num-squares', type=int, default=28, help='Number of squares to remove (default: 28)')
+    remove_sq_parser.add_argument('input_fcpxml', help='Input FCPXML file (like background.fcpxmld)')
+    remove_sq_parser.add_argument('--output', help='Output FCPXML file path (default: remove_sq_progressive.fcpxml)')
     
     args = parser.parse_args()
     

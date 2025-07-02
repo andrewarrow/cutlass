@@ -209,6 +209,8 @@ def serialize_to_xml(fcpxml) -> str:
                                     video_elem.set("start", element["start"])  # Video elements need start attribute
                                 if "name" in element:
                                     video_elem.set("name", element["name"])
+                                if "enabled" in element:
+                                    video_elem.set("enabled", element["enabled"])
                                 
                                 # Add adjust-transform if present
                                 if "adjust_transform" in element:
@@ -297,6 +299,8 @@ def serialize_to_xml(fcpxml) -> str:
                                                 nested_video_elem.set("start", nested["start"])
                                             if "name" in nested:
                                                 nested_video_elem.set("name", nested["name"])
+                                            if "enabled" in nested:
+                                                nested_video_elem.set("enabled", nested["enabled"])
                                             
                                             # Add nested transforms
                                             if "adjust_transform" in nested:
@@ -454,6 +458,8 @@ def serialize_to_xml(fcpxml) -> str:
                                 video_elem.set("start", video["start"])  # Video elements need start attribute
                             if "name" in video:
                                 video_elem.set("name", video["name"])
+                            if "enabled" in video:
+                                video_elem.set("enabled", video["enabled"])
                             
                             # Add adjust-transform if present
                             if "adjust_transform" in video:
@@ -478,6 +484,8 @@ def serialize_to_xml(fcpxml) -> str:
                                         nested_video_elem.set("start", nested["start"])
                                     if "name" in nested:
                                         nested_video_elem.set("name", nested["name"])
+                                    if "enabled" in nested:
+                                        nested_video_elem.set("enabled", nested["enabled"])
                                     
                                     # Add nested transforms
                                     if "adjust_transform" in nested:
